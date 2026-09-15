@@ -20,6 +20,7 @@ import (
 	"github.com/MarkRosemaker/devtool-engine/depgraph"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/config"
+	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/MarkRosemaker/ghrepo"
 	"github.com/MarkRosemaker/gorepo"
 )
@@ -63,7 +64,7 @@ func New(ctx context.Context, cfg ConfigFile, events engine.Emitter, verbose boo
 			ghrepo.CreateRemote,
 			ghrepo.CreateOnGitHub,
 		),
-		runner:  &engine.Runner{},
+		runner:  &engine.Runner{Inert: maintain.Inert},
 		events:  events,
 		verbose: verbose,
 		cfg:     cfg,

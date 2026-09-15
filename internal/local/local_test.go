@@ -154,3 +154,63 @@ func TestTotalCoverage(t *testing.T) {
 		})
 	}
 }
+
+// TestPorcelainPath: the engine matches these against paths, so a line left
+// with its two status characters on the front would never equal the file it
+// names — and every change would look unclaimed, which is the safe answer but
+// the wrong one.
+func TestPorcelainPath(t *testing.T) {
+	for _, tc := range []struct{ line, want string }{
+		{" M README.md", "README.md"},
+		{"?? AGENTS.md", "AGENTS.md"},
+		{"M  mk/extra.mk", "mk/extra.mk"},
+		{"A  thing.go", "thing.go"},
+		{"R  old.go -> new.go", "new.go"},
+		{`?? "a file with spaces.md"`, "a file with spaces.md"},
+		{"", ""},
+		{" M", ""},
+	} {
+		t.Run(tc.line, func(t *testing.T) {
+			if got := porcelainPath(tc.line); got != tc.want {
+				t.Errorf("porcelainPath(%q) = %q, want %q", tc.line, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestGetChangedFilesAgainstRealGit runs the parser against output git
+// actually produced, rather than against lines written from memory.
+func TestGetChangedFilesAgainstRealGit(t *testing.T) {
+	dir := t.TempDir()
+	git(t, dir, "init", "-q")
+	git(t, dir, "config", "user.email", "t@example.com")
+	git(t, dir, "config", "user.name", "T")
+	write(t, dir, "kept.go", "package thing\n")
+	git(t, dir, "add", "-A")
+	git(t, dir, "commit", "-qm", "first")
+
+	write(t, dir, "README.md", "# thing\n")
+	write(t, dir, "kept.go", "package thing // changed\n")
+	write(t, dir, "a file with spaces.md", "x\n")
+
+	r := &repo{dir: dir}
+
+	got, err := r.GetChangedFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := map[string]bool{
+		"README.md": true, "kept.go": true, "a file with spaces.md": true,
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("got %d files %q, want %d", len(got), got, len(want))
+	}
+
+	for _, f := range got {
+		if !want[f] {
+			t.Errorf("unexpected or unparsed path %q in %q", f, got)
+		}
+	}
+}

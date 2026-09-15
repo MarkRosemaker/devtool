@@ -68,13 +68,40 @@ func (r *repo) GetChangedFiles() ([]string, error) {
 
 	var files []string
 
-	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
-		if line = strings.TrimSpace(line); line != "" {
-			files = append(files, line)
+	// Trimmed of newlines only: the first column of a porcelain line is a
+	// status character that is a space for an unstaged change, and trimming
+	// the output as a whole eats it, shifting the path of the first line.
+	for line := range strings.SplitSeq(strings.Trim(string(out), "\n"), "\n") {
+		if path := porcelainPath(line); path != "" {
+			files = append(files, path)
 		}
 	}
 
 	return files, nil
+}
+
+// porcelainPath pulls the path out of one "git status --porcelain" line.
+//
+// The two status characters and a space come first, and a rename reads
+// "old -> new", of which the new name is the one that exists now. Callers
+// match these against paths, so the prefix has to go: a line left whole would
+// never equal the file it names.
+func porcelainPath(line string) string {
+	if len(line) < 4 {
+		return ""
+	}
+
+	path := strings.TrimSpace(line[3:])
+	if _, after, found := strings.Cut(path, " -> "); found {
+		path = after
+	}
+
+	// A path with a space or an oddity in it is quoted by git.
+	if unquoted, err := strconv.Unquote(path); err == nil {
+		return unquoted
+	}
+
+	return path
 }
 
 func (r *repo) CommitAll(msg string) error {
