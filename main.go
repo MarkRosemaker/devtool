@@ -132,14 +132,16 @@ func usage(w io.Writer) {
 	fmt.Fprintf(w, `usage:
   %[1]s                                rebuild this repository's generated files
   %[1]s update                         the same
-  %[1]s update all      --config=PATH  maintain every repository the list names
-  %[1]s update OWNER/NAME --config=PATH  maintain one of them
+  %[1]s update -commit                 the same, then test, commit and push
+  %[1]s update all      -commit --config=PATH  maintain every repository listed
+  %[1]s update OWNER/NAME -commit --config=PATH  maintain one of them
   %[1]s self-update                    update this binary
   %[1]s -version
 
 flags:
   -jsonl      write the run as JSON Lines on stdout
   -config     the list of repositories to maintain
+  -commit     test, commit each change and push; off by default
   -verbose    report the outcome even when nothing changed
   -private    (no list) this repository is private
 `, name)
@@ -153,6 +155,9 @@ func update(ctx context.Context, args []string) error {
 	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
 	verbose := fs.Bool("verbose", false, "report the outcome even when nothing changed")
 	private := fs.Bool("private", false, "this repository is private (no list only)")
+	commit := fs.Bool("commit", false,
+		"test, commit each task that changed something, and push; without it "+
+			"nothing is committed and the worktree is left to read")
 
 	fs.Usage = func() { usage(fs.Output()) }
 
@@ -174,6 +179,7 @@ func update(ctx context.Context, args []string) error {
 		return local.Update(ctx, ".", local.Options{
 			Holder:  licenseHolder,
 			Private: *private,
+			Commit:  *commit,
 		}, events)
 	}
 
@@ -183,14 +189,21 @@ func update(ctx context.Context, args []string) error {
 		return errors.New(`with -config, name what to maintain: "all", or one "owner/name"`)
 	}
 
-	return maintained(ctx, *cfgPath, target, *verbose, events)
+	return maintained(ctx, *cfgPath, target, *commit, *verbose, events)
 }
 
 // maintained is the unattended shape: a list, and everything in it or one of
 // them.
 func maintained(
-	ctx context.Context, cfgPath, target string, verbose bool, events engine.Emitter,
+	ctx context.Context, cfgPath, target string, commit, verbose bool, events engine.Emitter,
 ) error {
+	// A maintained run commits and pushes to every repository on the list, so
+	// it says so out loud rather than being what happens by default.
+	if !commit {
+		return errors.New("maintaining a list means committing and pushing to " +
+			"every repository on it, so say -commit")
+	}
+
 	cfg, err := run.OpenConfigFile(ctx, cfgPath, config.StateName)
 	if err != nil {
 		return err

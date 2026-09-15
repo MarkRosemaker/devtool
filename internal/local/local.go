@@ -12,57 +12,16 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/remote"
 	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/spf13/afero"
 )
-
-// repo is a [engine.Repo] backed by a directory on disk.
-//
-// The operations a maintained run needs and this one does not — pulling,
-// pushing, committing, telling GitHub about a description — do nothing. They
-// are unreachable: the tasks below never call them, and no Runner is involved
-// to do it on their behalf.
-type repo struct {
-	dir     string
-	owner   string
-	name    string
-	private bool
-	fs      afero.Fs
-}
-
-func (r *repo) Owner() string    { return r.owner }
-func (r *repo) Name() string     { return r.name }
-func (r *repo) String() string   { return r.owner + "/" + r.name }
-func (r *repo) Private() bool    { return r.private }
-func (r *repo) Fs() afero.Fs     { return r.fs }
-func (r *repo) HardReset() error { return nil }
-func (r *repo) Clean() error     { return nil }
-
-func (r *repo) ExecCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Dir = r.dir
-
-	return cmd.CombinedOutput()
-}
-
-func (r *repo) Pull(context.Context) error                   { return nil }
-func (r *repo) Push(context.Context) error                   { return nil }
-func (r *repo) CommitAll(string) error                       { return nil }
-func (r *repo) GetChangedFiles() ([]string, error)           { return nil, nil }
-func (r *repo) IsGoRepo() (bool, error)                      { return true, nil }
-func (r *repo) GoModInit(context.Context) error              { return nil }
-func (r *repo) GoTestCover(context.Context) (float64, error) { return 0, nil }
-func (r *repo) SetDescription(context.Context, string) error { return nil }
-func (r *repo) SetTopics(context.Context, []string) error    { return nil }
-
-var _ engine.Repo = (*repo)(nil)
 
 // Options are what cannot be worked out from the directory itself.
 type Options struct {
@@ -77,6 +36,12 @@ type Options struct {
 	// Coverage is the figure the README badge shows. Left at zero, whatever
 	// the current README already claims is carried across.
 	Coverage float64
+
+	// Commit turns the rebuild into a run: test, commit each task that
+	// changed something, and push once at the end, which is what a
+	// maintained run does. Without it nothing is committed and the worktree
+	// is left for whoever ran it to read.
+	Commit bool
 }
 
 // coverageBadge matches the figure in a README this tool wrote, which is the
@@ -132,6 +97,10 @@ func Update(ctx context.Context, dir string, opts Options, events engine.Emitter
 		opts.Coverage = keepCoverage(r.fs)
 	}
 
+	if opts.Commit {
+		return commitRun(ctx, r, opts, events)
+	}
+
 	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
 	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
 
@@ -184,4 +153,38 @@ func identify(ctx context.Context, dir string) (owner, name string) {
 	}
 
 	return owner, name
+}
+
+// commitRun hands the repository to the engine's runner, which tests, commits
+// each task that changed something, and pushes once at the end.
+//
+// It refuses a dirty worktree, and that refusal is the whole reason this is
+// not simply the same call with a flag: the runner starts by discarding
+// whatever it finds uncommitted, which is correct for a checkout it owns on a
+// server and catastrophic for the one somebody is working in.
+func commitRun(
+	ctx context.Context, r *repo, opts Options, events engine.Emitter,
+) error {
+	files, err := r.GetChangedFiles()
+	if err != nil {
+		return err
+	}
+
+	if len(files) > 0 {
+		return fmt.Errorf(
+			"the worktree has uncommitted changes and -commit would discard them; "+
+				"commit or stash first (%d: %s)",
+			len(files), strings.Join(files, ", "),
+		)
+	}
+
+	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
+	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+
+	res := (&engine.Runner{}).Update(ctx, r, engine.Spec{Coverage: opts.Coverage},
+		func(*engine.Runner, engine.Repo, engine.Spec) []engine.Task {
+			return tasks(r, opts)
+		}, events)
+
+	return res.Err
 }

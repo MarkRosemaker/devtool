@@ -47,7 +47,7 @@ func TestNamingARepositoryNeedsAList(t *testing.T) {
 
 func TestMaintainedRejectsAMalformedRepository(t *testing.T) {
 	for _, target := range []string{"nope", "/beta", "user/", "a/b/c"} {
-		err := maintained(t.Context(), "does-not-exist.json", target, false, emitter(false))
+		err := maintained(t.Context(), "does-not-exist.json", target, true, false, emitter(false))
 		if err == nil {
 			t.Errorf("%q was accepted", target)
 		}
@@ -77,7 +77,21 @@ func TestUpdateWithAListNeedsATarget(t *testing.T) {
 
 // TestMaintainedNeedsAllSpelled: only "all" means all.
 func TestMaintainedNeedsAllSpelled(t *testing.T) {
-	if err := maintained(t.Context(), "does-not-exist.json", "", false, emitter(false)); err == nil {
+	if err := maintained(t.Context(), "does-not-exist.json", "", true, false, emitter(false)); err == nil {
 		t.Error("an empty target was taken for all")
+	}
+}
+
+// TestMaintainedNeedsCommit: a maintained run commits and pushes to every
+// repository on the list, so it says so out loud rather than being the
+// default.
+func TestMaintainedNeedsCommit(t *testing.T) {
+	err := maintained(t.Context(), "somewhere.json", "all", false, false, emitter(false))
+	if err == nil {
+		t.Fatal("a maintained run without -commit was accepted")
+	}
+
+	if !strings.Contains(err.Error(), "-commit") {
+		t.Errorf("the error does not say what is missing: %v", err)
 	}
 }
