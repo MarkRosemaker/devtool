@@ -219,7 +219,12 @@ func houseTargets(shape repoShape) []makeTarget {
 			Name:   "deps",
 			Recipe: []string{"go get -u ./...", "$(MAKE) tidy"},
 		},
-		{Name: "generate", Recipe: []string{"go generate ./..."}},
+		{
+			Name: "generate",
+			Comment: "Everything a tool writes: the go:generate directives, " +
+				"then the files devtool owns.",
+			Recipe: []string{"go generate ./...", "devtool update"},
+		},
 		{
 			Name:    "verify",
 			Comment: "Run on a commit: it reports through git, so your own edits look like drift.",
@@ -252,6 +257,9 @@ var houseTools = []string{
 	"github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
 	"golang.org/x/vuln/cmd/govulncheck",
 	"golang.org/x/pkgsite/cmd/pkgsite",
+	// The generator itself, installed like any other tool rather than
+	// vendored into every repository it writes.
+	"github.com/MarkRosemaker/devtool",
 }
 
 // toolInstalls is the recipe that installs [houseTools].
