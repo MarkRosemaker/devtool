@@ -383,14 +383,22 @@ const (
 // existed: split into fragments where its headings allow, kept whole in
 // README/legacy.md where they don't.
 //
-// Called only once no fragment exists, so there is nothing this task's own
-// output could be mistaken for.
+// It refuses to adopt a README this task wrote, the way the AGENTS.md and
+// Makefile generators do. "No fragment exists yet" is not enough on its own:
+// a repository with nothing to say gets a generated README carrying only the
+// badge row and no fragment to go with it, and the next run would then adopt
+// that as though a human had written it — folding the stamp and the badges
+// into README/description.md and rendering them inside the next README.
 func adoptExistingReadme(fs afero.Fs, name string) (readmeAdoption, error) {
 	existing, err := afero.ReadFile(fs, readmePath)
 	if errors.Is(err, os.ErrNotExist) {
 		return readmeAbsent, nil
 	} else if err != nil {
 		return 0, fmt.Errorf("reading existing %s: %w", readmePath, err)
+	}
+
+	if bytes.Contains(firstLine(existing), []byte(generatedMarker)) {
+		return readmeAbsent, nil
 	}
 
 	if err := fs.MkdirAll(readmeDir, 0o755); err != nil {

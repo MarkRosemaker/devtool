@@ -969,3 +969,50 @@ func TestGenerateReadmeLinksConventionalDocs(t *testing.T) {
 		}
 	})
 }
+
+// TestGenerateReadmeTwiceDoesNotAdoptItsOwnOutput reproduces what two
+// scheduled runs did to a repository with nothing to say: the first wrote a
+// README carrying only the stamp and the badge row and no fragment to go with
+// it, and the second adopted that as though a human had written it — folding
+// the stamp and the badges into README/description.md and rendering them
+// inside the next README, which then carried the stamp twice.
+func TestGenerateReadmeTwiceDoesNotAdoptItsOwnOutput(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	for range 2 {
+		if err := generateReadme(fs, "MarkRosemaker", "patchpal", false, 34); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := readFile(t, fs, readmePath)
+
+	if n := strings.Count(got, generatedMarker); n != 1 {
+		t.Errorf("README.md carries the stamp %d times, want 1:\n%s", n, got)
+	}
+
+	// The fragment must not exist at all: there was nothing to adopt.
+	if ok, err := afero.Exists(fs, filepath.Join(readmeDir, "description.md")); err != nil {
+		t.Fatal(err)
+	} else if ok {
+		body := readFile(t, fs, filepath.Join(readmeDir, "description.md"))
+		t.Errorf("a description fragment was invented from this task's own output:\n%s", body)
+	}
+}
+
+// TestGenerateReadmeStillAdoptsAHandWrittenOne is the other half: the guard
+// must not stop a real adoption.
+func TestGenerateReadmeStillAdoptsAHandWrittenOne(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeFile(t, fs, readmePath, "# thing\n\nSomething a person wrote.\n")
+
+	if err := generateReadme(fs, "MarkRosemaker", "thing", false, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	if ok, err := afero.Exists(fs, readmeDir); err != nil {
+		t.Fatal(err)
+	} else if !ok {
+		t.Fatal("a hand-written README was not adopted")
+	}
+}
