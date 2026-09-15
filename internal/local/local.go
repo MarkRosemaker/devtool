@@ -14,6 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/remote"
@@ -72,10 +74,37 @@ type Options struct {
 	// GitHub, so it is the caller's to say.
 	Private bool
 
-	// Coverage is the figure the README badge shows. A local rebuild does not
-	// measure it — that means running the tests — so it carries whatever was
-	// there, or zero.
+	// Coverage is the figure the README badge shows. Left at zero, whatever
+	// the current README already claims is carried across.
 	Coverage float64
+}
+
+// coverageBadge matches the figure in a README this tool wrote, which is the
+// only place a local rebuild can learn it from.
+var coverageBadge = regexp.MustCompile(`shields\.io/badge/coverage-([0-9.]+)%`)
+
+// keepCoverage reads the coverage out of the README already in dir.
+//
+// A local rebuild does not measure coverage — that means running the tests —
+// and writing zero would quietly downgrade the badge of every repository
+// somebody ran this in.
+func keepCoverage(fs afero.Fs) float64 {
+	existing, err := afero.ReadFile(fs, "README.md")
+	if err != nil {
+		return 0
+	}
+
+	m := coverageBadge.FindSubmatch(existing)
+	if m == nil {
+		return 0
+	}
+
+	pct, err := strconv.ParseFloat(string(m[1]), 64)
+	if err != nil {
+		return 0
+	}
+
+	return pct
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -97,6 +126,10 @@ func Update(ctx context.Context, dir string, opts Options, events engine.Emitter
 		name:    name,
 		private: opts.Private,
 		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
+	}
+
+	if opts.Coverage == 0 {
+		opts.Coverage = keepCoverage(r.fs)
 	}
 
 	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
