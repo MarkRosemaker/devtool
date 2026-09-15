@@ -67,3 +67,5 @@ func formatVersion(version, revision, goVersion string) string {
 	// analyses refuses to run at all, which has cost an afternoon before.
 	return strings.Join(append(parts, goVersion), " ")
 }
+
+// touched to make a new version for the self-update test.
