@@ -13,8 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
@@ -33,8 +31,9 @@ type Options struct {
 	// GitHub, so it is the caller's to say.
 	Private bool
 
-	// Coverage is the figure the README badge shows. Left at zero, whatever
-	// the current README already claims is carried across.
+	// Coverage is the figure the README badge shows. Left at zero, the
+	// generator uses what README/badges.md records, and failing that what the
+	// current badge already claims.
 	Coverage float64
 
 	// Commit turns the rebuild into a run: test, commit each task that
@@ -42,34 +41,6 @@ type Options struct {
 	// maintained run does. Without it nothing is committed and the worktree
 	// is left for whoever ran it to read.
 	Commit bool
-}
-
-// coverageBadge matches the figure in a README this tool wrote, which is the
-// only place a local rebuild can learn it from.
-var coverageBadge = regexp.MustCompile(`shields\.io/badge/coverage-([0-9.]+)%`)
-
-// keepCoverage reads the coverage out of the README already in dir.
-//
-// A local rebuild does not measure coverage — that means running the tests —
-// and writing zero would quietly downgrade the badge of every repository
-// somebody ran this in.
-func keepCoverage(fs afero.Fs) float64 {
-	existing, err := afero.ReadFile(fs, "README.md")
-	if err != nil {
-		return 0
-	}
-
-	m := coverageBadge.FindSubmatch(existing)
-	if m == nil {
-		return 0
-	}
-
-	pct, err := strconv.ParseFloat(string(m[1]), 64)
-	if err != nil {
-		return 0
-	}
-
-	return pct
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -91,10 +62,6 @@ func Update(ctx context.Context, dir string, opts Options, events engine.Emitter
 		name:    name,
 		private: opts.Private,
 		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
-	}
-
-	if opts.Coverage == 0 {
-		opts.Coverage = keepCoverage(r.fs)
 	}
 
 	if opts.Commit {
@@ -188,4 +155,60 @@ func commitRun(
 		}, events)
 
 	return res.Err
+}
+
+// Test runs the repository's tests, records the coverage they report in
+// README/badges.md, and rewrites the README if the badge moved.
+//
+// Separate from Update because measuring is the expensive half: a rebuild of
+// the generated files should not need the test suite, and a measurement should
+// not need a reason.
+func Test(ctx context.Context, dir string, opts Options, events engine.Emitter) error {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("resolving %s: %w", dir, err)
+	}
+
+	owner, name := identify(ctx, abs)
+
+	r := &repo{
+		dir:     abs,
+		owner:   owner,
+		name:    name,
+		private: opts.Private,
+		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
+	}
+
+	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
+	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+
+	engine.Emit(events, engine.Event{Kind: engine.RepoStart, Repo: r.String()})
+	engine.Emit(events, engine.Event{Kind: engine.TaskStart, Repo: r.String(), Task: "test"})
+
+	pct, err := r.GoTestCover(ctx)
+	if err != nil {
+		engine.Emit(events, engine.Event{
+			Kind: engine.RepoDone, Repo: r.String(), Err: err.Error(),
+		})
+
+		return err
+	}
+
+	engine.Emit(events, engine.Event{Kind: engine.TaskDone, Repo: r.String(), Task: "test"})
+
+	if err := maintain.RecordCoverage(r.fs, pct); err != nil {
+		return err
+	}
+
+	// The badge is rendered from the figure just recorded, so this is what
+	// makes the README agree with it.
+	if err := maintain.ReadmeTask(r, pct).Run(ctx); err != nil {
+		return fmt.Errorf("rewriting the README: %w", err)
+	}
+
+	engine.Emit(events, engine.Event{
+		Kind: engine.RepoDone, Repo: r.String(), Coverage: pct,
+	})
+
+	return nil
 }

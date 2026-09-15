@@ -73,6 +73,11 @@ type readmeData struct {
 	// is the roadmap's repository-owned metadata.
 	Coverage int
 
+	// Badges is whatever README/badges.md holds beyond its frontmatter:
+	// badges a repository wants that this does not generate. It joins the end
+	// of the row.
+	Badges string
+
 	// OpenAPI is the repository's parsed API description, or nil where it
 	// does not describe an API. The whole document rather than a version
 	// string: the template gates the badge on it being there at all, and
@@ -173,6 +178,12 @@ func readConventionalDocs(fs afero.Fs) ([]conventionalDoc, error) {
 // and a tagline go, but it is read from any fragment that carries it
 // rather than only that one.
 type readmeMeta struct {
+	// Coverage is the figure the badge shows, as a whole percentage, and it
+	// lives in README/badges.md. The repository owns it: a measurement is
+	// written here, and anything that renders the README afterwards reads it
+	// rather than being told.
+	Coverage *int `yaml:"coverage,omitempty"`
+
 	// Tagline is one line, centred under the logo. It is frontmatter rather
 	// than a fragment of its own because a single line does not earn a file.
 	Tagline string `yaml:"tagline,omitempty"`
@@ -252,6 +263,7 @@ func (d readmeData) hasContent() bool {
 // an entry that is in neither be reported rather than silently skipped.
 func (d *readmeData) bodyByFragment() map[string]*string {
 	return map[string]*string{
+		"badges.md":      &d.Badges,
 		"description.md": &d.Description,
 		"intro.md":       &d.Intro,
 		"features.md":    &d.Features,
@@ -793,6 +805,8 @@ func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage f
 
 	entries, err := afero.ReadDir(fs, readmeDir)
 	if errors.Is(err, os.ErrNotExist) {
+		data.keepCoverage(fs)
+
 		return data, nil
 	} else if err != nil {
 		return readmeData{}, fmt.Errorf("reading %s: %w", readmeDir, err)
@@ -845,7 +859,37 @@ func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage f
 		*body = strings.TrimSpace(string(text))
 	}
 
+	data.keepCoverage(fs)
+
 	return data, nil
+}
+
+// coverageBadge matches the figure in a README this package wrote.
+var coverageBadge = regexp.MustCompile(`shields\.io/badge/coverage-([0-9.]+)%`)
+
+// keepCoverage is the last resort: a caller that measured nothing, and a
+// repository with no figure recorded in README/badges.md yet, would otherwise
+// have its badge rewritten to zero. Reading it back out of the badge already
+// rendered keeps what the last measurement knew until something measures
+// again.
+func (d *readmeData) keepCoverage(fs afero.Fs) {
+	if d.Coverage != 0 {
+		return
+	}
+
+	existing, err := afero.ReadFile(fs, readmePath)
+	if err != nil {
+		return
+	}
+
+	m := coverageBadge.FindSubmatch(existing)
+	if m == nil {
+		return
+	}
+
+	if pct, err := strconv.ParseFloat(string(m[1]), 64); err == nil {
+		d.Coverage = int(pct)
+	}
 }
 
 // splitFrontmatter splits a fragment's leading YAML frontmatter — the block
@@ -883,6 +927,12 @@ func (d *readmeData) applyFrontmatter(fs afero.Fs, front []byte) error {
 	var meta readmeMeta
 	if err := yaml.Unmarshal(front, &meta); err != nil {
 		return err
+	}
+
+	// A caller that measured coverage has the newer figure, so what is stored
+	// only fills in for one that did not.
+	if meta.Coverage != nil && d.Coverage == 0 {
+		d.Coverage = *meta.Coverage
 	}
 
 	if meta.Tagline != "" {

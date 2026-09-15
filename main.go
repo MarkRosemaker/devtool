@@ -92,6 +92,8 @@ func dispatch(ctx context.Context, args []string) error {
 			return selfUpdate(ctx, args[1:])
 		case "update":
 			return update(ctx, args[1:])
+		case "test":
+			return runTests(ctx, args[1:])
 		}
 	}
 
@@ -135,6 +137,7 @@ func usage(w io.Writer) {
   %[1]s update -commit                 the same, then test, commit and push
   %[1]s update all      -commit --config=PATH  maintain every repository listed
   %[1]s update OWNER/NAME -commit --config=PATH  maintain one of them
+  %[1]s test                          run the tests and record the coverage
   %[1]s self-update                    update this binary
   %[1]s -version
 
@@ -260,4 +263,28 @@ func selfUpdate(ctx context.Context, args []string) error {
 	fmt.Println(out)
 
 	return nil
+}
+
+// runTests measures this repository's coverage and records it where the README
+// reads it from. Named around the subcommand rather than "test", which in a
+// package with tests of its own would read as one.
+func runTests(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet(name+" test", flag.ContinueOnError)
+	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
+	private := fs.Bool("private", false, "this repository is private")
+
+	fs.Usage = func() { usage(fs.Output()) }
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if fs.NArg() > 0 {
+		return fmt.Errorf("%s test takes no arguments, got %q", name, fs.Arg(0))
+	}
+
+	return local.Test(ctx, ".", local.Options{
+		Holder:  licenseHolder,
+		Private: *private,
+	}, emitter(*jsonl))
 }

@@ -30,6 +30,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/{{ .Owner }}/{{ .Name }}.svg)](https://pkg.go.dev/github.com/{{ .Owner }}/{{ .Name }}) {{ end -}}
 ![Code Coverage](https://img.shields.io/badge/coverage-{{ .Coverage }}%25-{{ .CoverageColor }})
 {{- if not .Private }} [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE){{ end }}
+{{- with .Badges }} {{ . }}{{ end }}
 
 {{ with .Logo -}}
 <p align="center">
