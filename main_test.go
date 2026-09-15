@@ -59,3 +59,25 @@ func TestEmitter(t *testing.T) {
 		t.Error("an emitter is always needed, even when nothing reads it")
 	}
 }
+
+// TestUpdateWithAListNeedsATarget: "devtool update" with nothing after it
+// rebuilds the repository you are standing in, so with a list it has to say
+// which — maintaining thirty repositories unattended is not what somebody who
+// typed two words and forgot the third meant.
+func TestUpdateWithAListNeedsATarget(t *testing.T) {
+	err := dispatch(t.Context(), []string{"update", "-config=somewhere.json"})
+	if err == nil {
+		t.Fatal("a list with no target was accepted")
+	}
+
+	if !strings.Contains(err.Error(), "all") {
+		t.Errorf("the error does not say what to name: %v", err)
+	}
+}
+
+// TestMaintainedNeedsAllSpelled: only "all" means all.
+func TestMaintainedNeedsAllSpelled(t *testing.T) {
+	if err := maintained(t.Context(), "does-not-exist.json", "", false, emitter(false)); err == nil {
+		t.Error("an empty target was taken for all")
+	}
+}

@@ -62,6 +62,10 @@ import (
 
 //go:generate go run ./internal/lintgen
 
+// allTarget is what to name instead of a repository to maintain every one the
+// list holds.
+const allTarget = "all"
+
 // licenseHolder is who the copyright is asserted by: the legal person, with the
 // GitHub handle after it so the notice connects to where the work lives. A
 // notice naming only a pseudonym would leave the holder to establish that link
@@ -165,10 +169,18 @@ func update(ctx context.Context, args []string) error {
 				"the repository you are standing in is the only one there is")
 		}
 
+		// "devtool update" with nothing after it is "devtool": rebuild the
+		// generated files of the repository you are standing in.
 		return local.Update(ctx, ".", local.Options{
 			Holder:  licenseHolder,
 			Private: *private,
 		}, events)
+	}
+
+	// With a list, say which. Maintaining thirty repositories unattended is
+	// not what somebody who typed two words and forgot the third meant.
+	if target == "" {
+		return errors.New(`with -config, name what to maintain: "all", or one "owner/name"`)
 	}
 
 	return maintained(ctx, *cfgPath, target, *verbose, events)
@@ -189,8 +201,7 @@ func maintained(
 		return err
 	}
 
-	switch target {
-	case "", "all":
+	if target == allTarget {
 		return svc.Run(ctx)
 	}
 
