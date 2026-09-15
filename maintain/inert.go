@@ -13,13 +13,14 @@ const lintfilePath = ".golangci.yaml"
 // is a change this tool made, and none of them is read by a Go program at run
 // time or by "go test".
 var generatedFiles = map[string]bool{
-	readmePath:    true,
-	makefilePath:  true,
-	agentsPath:    true,
-	claudePath:    true,
-	licensePath:   true,
-	gitignorePath: true,
-	lintfilePath:  true,
+	readmePath:     true,
+	makefilePath:   true,
+	agentsPath:     true,
+	claudePath:     true,
+	licensePath:    true,
+	gitignorePath:  true,
+	lintfilePath:   true,
+	DefinitionPath: true,
 }
 
 // generatedDirs hold the fragments the generators read to write those files.

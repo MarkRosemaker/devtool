@@ -178,12 +178,6 @@ func readConventionalDocs(fs afero.Fs) ([]conventionalDoc, error) {
 // and a tagline go, but it is read from any fragment that carries it
 // rather than only that one.
 type readmeMeta struct {
-	// Coverage is the figure the badge shows, as a whole percentage, and it
-	// lives in README/badges.md. The repository owns it: a measurement is
-	// written here, and anything that renders the README afterwards reads it
-	// rather than being told.
-	Coverage *int `yaml:"coverage,omitempty"`
-
 	// Tagline is one line, centred under the logo. It is frontmatter rather
 	// than a fragment of its own because a single line does not earn a file.
 	Tagline string `yaml:"tagline,omitempty"`
@@ -867,13 +861,21 @@ func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage f
 // coverageBadge matches the figure in a README this package wrote.
 var coverageBadge = regexp.MustCompile(`shields\.io/badge/coverage-([0-9.]+)%`)
 
-// keepCoverage is the last resort: a caller that measured nothing, and a
-// repository with no figure recorded in README/badges.md yet, would otherwise
-// have its badge rewritten to zero. Reading it back out of the badge already
-// rendered keeps what the last measurement knew until something measures
-// again.
+// keepCoverage fills in a figure the caller did not supply.
+//
+// devtool.json is where a repository records what its tests last reported, so
+// that is asked first. A repository with no definition yet falls back to the
+// badge already rendered, which keeps what the last measurement knew until
+// something measures again — without it, every rebuild of a README nobody
+// measured for would reset the badge to zero.
 func (d *readmeData) keepCoverage(fs afero.Fs) {
 	if d.Coverage != 0 {
+		return
+	}
+
+	if def, ok, err := LoadDefinition(fs); err == nil && ok && def.Coverage != 0 {
+		d.Coverage = int(def.Coverage)
+
 		return
 	}
 
@@ -927,12 +929,6 @@ func (d *readmeData) applyFrontmatter(fs afero.Fs, front []byte) error {
 	var meta readmeMeta
 	if err := yaml.Unmarshal(front, &meta); err != nil {
 		return err
-	}
-
-	// A caller that measured coverage has the newer figure, so what is stored
-	// only fills in for one that did not.
-	if meta.Coverage != nil && d.Coverage == 0 {
-		d.Coverage = *meta.Coverage
 	}
 
 	if meta.Tagline != "" {

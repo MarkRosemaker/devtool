@@ -35,6 +35,10 @@ type Service struct {
 	events  engine.Emitter
 	verbose bool
 
+	// version is the build doing the work, recorded in each repository's
+	// definition so a repository can say which generator last touched it.
+	version string
+
 	// cfg is where the list lives and which repository holds it. The coverage
 	// a run measures is written back there, so the next run on any machine
 	// starts from it.
@@ -45,7 +49,9 @@ type Service struct {
 //
 // When verbose is set, the run reports its outcome even if nothing changed;
 // otherwise a quiet, uneventful run stays quiet.
-func New(ctx context.Context, cfg ConfigFile, events engine.Emitter, verbose bool) (*Service, error) {
+func New(
+	ctx context.Context, cfg ConfigFile, events engine.Emitter, verbose bool, version string,
+) (*Service, error) {
 	token := os.Getenv(TokenEnv)
 	if token == "" {
 		return nil, fmt.Errorf("%s is not set", TokenEnv)
@@ -67,6 +73,7 @@ func New(ctx context.Context, cfg ConfigFile, events engine.Emitter, verbose boo
 		runner:  &engine.Runner{Inert: maintain.Inert},
 		events:  events,
 		verbose: verbose,
+		version: version,
 		cfg:     cfg,
 	}, nil
 }
@@ -374,13 +381,17 @@ func (s *Service) maintain(
 		return engine.Result{Owner: u.owner, Name: u.name, Err: u.err}
 	}
 
-	res := s.runner.Update(ctx, u.repo, u.cfg.Spec(), u.repo.sequence, events)
+	spec, def := s.spec(ctx, u)
+
+	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence, events)
 
 	// Write the measured coverage back so the next run can report the change.
 	// Each unit owns its own configuration entry, so concurrent runs do not
 	// contend here.
 	if res.Err == nil {
 		u.cfg.Coverage = res.Coverage
+
+		s.record(ctx, u, def, res.Coverage)
 	}
 
 	s.pruneOccasionally(ctx, u.repo)
@@ -392,6 +403,73 @@ func (s *Service) maintain(
 // every repository every run would dominate the run time for a saving that only
 // matters over weeks, so it is spread thinly instead.
 const pruneRate = 0.05
+
+// spec is what the repository should look like, and the definition it came
+// from.
+//
+// devtool.json is the repository's own word on the subject and wins. A
+// repository without one falls back to the list, which is where all of this
+// used to live and where it stays until every repository has been given a
+// definition.
+func (s *Service) spec(ctx context.Context, u *unit) (engine.Spec, maintain.Definition) {
+	spec := u.cfg.Spec()
+
+	def, found, err := maintain.LoadDefinition(u.repo.Fs())
+	if err != nil {
+		slog.WarnContext(ctx, "could not read the repository's definition",
+			"repo", u.repo.String(), "error", err)
+
+		return spec, maintain.Definition{}
+	}
+
+	if !found {
+		// Nothing to migrate from yet beyond the list, which spec already
+		// holds. record writes the definition after the run.
+		return spec, maintain.Definition{}
+	}
+
+	if def.Description != "" {
+		spec.Description = def.Description
+	}
+
+	if len(def.Topics) > 0 {
+		spec.Topics = def.Topics
+	}
+
+	if def.Coverage != 0 {
+		spec.Coverage = def.Coverage
+	}
+
+	return spec, def
+}
+
+// record writes what this run knows back into the repository's own
+// definition, which is how a repository that has never had one gets it: the
+// description and topics come off the list the first time, and stay in the
+// repository afterwards.
+//
+// A failure here is logged rather than returned. The repository was
+// maintained; not recording what it now is, is worth saying and not worth
+// undoing the run over.
+func (s *Service) record(
+	ctx context.Context, u *unit, def maintain.Definition, coverage float64,
+) {
+	def.Coverage = coverage
+	def.DevtoolVersion = s.version
+
+	if def.Description == "" {
+		def.Description = u.cfg.Description
+	}
+
+	if len(def.Topics) == 0 {
+		def.Topics = u.cfg.Topics
+	}
+
+	if err := maintain.SaveDefinition(u.repo.Fs(), def); err != nil {
+		slog.WarnContext(ctx, "could not record the repository's definition",
+			"repo", u.repo.String(), "error", err)
+	}
+}
 
 // pruneOccasionally compacts the repository's git objects now and then.
 //

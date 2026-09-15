@@ -7,45 +7,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-func TestSetCoverage(t *testing.T) {
-	for _, tc := range []struct {
-		name     string
-		existing string
-		want     string
-	}{
-		{
-			name: "no file at all",
-			want: "---\ncoverage: 83\n---\n",
-		},
-		{
-			name:     "frontmatter without the key",
-			existing: "---\ntagline: a thing\n---\n\nsome badges\n",
-			want:     "---\ntagline: a thing\ncoverage: 83\n---\n\nsome badges\n",
-		},
-		{
-			name:     "frontmatter that already says",
-			existing: "---\ncoverage: 12\ntagline: a thing\n---\n\nsome badges\n",
-			want:     "---\ncoverage: 83\ntagline: a thing\n---\n\nsome badges\n",
-		},
-		{
-			name:     "a body with no frontmatter",
-			existing: "some badges\n",
-			want:     "---\ncoverage: 83\n---\n\nsome badges\n",
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := setCoverage([]byte(tc.existing), 83.4)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if string(got) != tc.want {
-				t.Errorf("got:\n%q\nwant:\n%q", got, tc.want)
-			}
-		})
-	}
-}
-
 // TestRecordCoverageRoundTrips is the property that matters: what is written
 // is what the generator reads back, so the badge and the record agree.
 func TestRecordCoverageRoundTrips(t *testing.T) {
@@ -59,29 +20,48 @@ func TestRecordCoverageRoundTrips(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := readFile(t, fs, readmePath)
-	if !strings.Contains(got, "coverage-83%25") {
+	if got := readFile(t, fs, readmePath); !strings.Contains(got, "coverage-83%25") {
 		t.Errorf("the badge does not carry the recorded figure:\n%s", got)
 	}
 }
 
-// TestRecordCoverageKeepsWhatItDoesNotKnow: the frontmatter may hold keys this
-// version has never heard of, and a measurement must not drop them.
-func TestRecordCoverageKeepsWhatItDoesNotKnow(t *testing.T) {
+// TestRecordCoverageKeepsTheRest: a measurement must not disturb what a
+// repository says about itself.
+func TestRecordCoverageKeepsTheRest(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writeFile(t, fs, "README/badges.md",
-		"---\nsomethingNew: keep me\ncoverage: 1\n---\n\n![extra](x)\n")
+
+	if err := SaveDefinition(fs, Definition{
+		Description:    "a thing that does things",
+		Topics:         []string{"go", "openapi"},
+		Coverage:       1,
+		DevtoolVersion: "v0.0.0-earlier",
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := RecordCoverage(fs, 99); err != nil {
 		t.Fatal(err)
 	}
 
-	got := readFile(t, fs, "README/badges.md")
+	def, ok, err := LoadDefinition(fs)
+	if err != nil || !ok {
+		t.Fatalf("loading: %v, found %v", err, ok)
+	}
 
-	for _, want := range []string{"somethingNew: keep me", "coverage: 99", "![extra](x)"} {
-		if !strings.Contains(got, want) {
-			t.Errorf("%q is gone:\n%s", want, got)
-		}
+	if def.Coverage != 99 {
+		t.Errorf("Coverage = %v, want 99", def.Coverage)
+	}
+
+	if def.Description != "a thing that does things" {
+		t.Errorf("the description was lost: %q", def.Description)
+	}
+
+	if len(def.Topics) != 2 {
+		t.Errorf("the topics were lost: %q", def.Topics)
+	}
+
+	if def.DevtoolVersion != "v0.0.0-earlier" {
+		t.Errorf("the version was lost: %q", def.DevtoolVersion)
 	}
 }
 
@@ -103,23 +83,67 @@ func TestMeasuredCoverageBeatsTheRecord(t *testing.T) {
 	}
 }
 
-// TestBadgesFragmentJoinsTheRow: badges.md is a fragment like any other, and
-// whatever it holds beyond its frontmatter belongs on the badge row.
-func TestBadgesFragmentJoinsTheRow(t *testing.T) {
+// TestCoverageFallsBackToTheBadge covers every repository that predates
+// devtool.json: with nothing measured and nothing recorded, a rebuild must not
+// reset the badge to zero.
+func TestCoverageFallsBackToTheBadge(t *testing.T) {
 	fs := afero.NewMemMapFs()
-	writeFile(t, fs, "README/badges.md",
-		"---\ncoverage: 42\n---\n\n[![Extra](https://example.com/b.svg)](https://example.com)\n")
+	writeFile(t, fs, readmePath,
+		"![Code Coverage](https://img.shields.io/badge/coverage-77%25-yellowgreen)\n")
 
 	if err := generateReadme(fs, "MarkRosemaker", "thing", false, 0); err != nil {
 		t.Fatal(err)
 	}
 
-	got := readFile(t, fs, readmePath)
-	if !strings.Contains(got, "coverage-42%25") {
-		t.Errorf("the recorded figure is missing:\n%s", got)
+	if got := readFile(t, fs, readmePath); !strings.Contains(got, "coverage-77%25") {
+		t.Errorf("the badge was reset:\n%s", got)
+	}
+}
+
+// TestBadgesFragmentJoinsTheRow: badges.md stays a fragment, for the badges a
+// repository adds of its own. Only the figure moved out of it.
+func TestBadgesFragmentJoinsTheRow(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeFile(t, fs, "README/badges.md",
+		"[![Extra](https://example.com/b.svg)](https://example.com)\n")
+
+	if err := generateReadme(fs, "MarkRosemaker", "thing", false, 42); err != nil {
+		t.Fatal(err)
 	}
 
+	got := readFile(t, fs, readmePath)
 	if !strings.Contains(got, "[![Extra](https://example.com/b.svg)]") {
 		t.Errorf("the fragment's own badges are missing:\n%s", got)
+	}
+}
+
+func TestDefinitionRoundTrips(t *testing.T) {
+	fs := afero.NewMemMapFs()
+
+	if _, ok, err := LoadDefinition(fs); err != nil || ok {
+		t.Fatalf("a repository with no definition: err %v, found %v", err, ok)
+	}
+
+	want := Definition{
+		Description: "a thing", Topics: []string{"go"},
+		Coverage: 61.5, DevtoolVersion: "v1",
+	}
+
+	if err := SaveDefinition(fs, want); err != nil {
+		t.Fatal(err)
+	}
+
+	got, ok, err := LoadDefinition(fs)
+	if err != nil || !ok {
+		t.Fatalf("err %v, found %v", err, ok)
+	}
+
+	if got.Description != want.Description || got.Coverage != want.Coverage ||
+		got.DevtoolVersion != want.DevtoolVersion || len(got.Topics) != 1 {
+		t.Errorf("got %+v, want %+v", got, want)
+	}
+
+	if b := readFile(t, fs, DefinitionPath); !strings.HasSuffix(b, "\n") {
+		t.Error("the file should end in a newline")
 	}
 }

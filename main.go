@@ -212,7 +212,7 @@ func maintained(
 		return err
 	}
 
-	svc, err := run.New(ctx, cfg, events, verbose)
+	svc, err := run.New(ctx, cfg, events, verbose, selfupdate.Version())
 	if err != nil {
 		return err
 	}

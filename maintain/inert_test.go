@@ -15,6 +15,7 @@ func TestInert(t *testing.T) {
 		{"LICENSE", true},
 		{".gitignore", true},
 		{".golangci.yaml", true},
+		{"devtool.json", true},
 		{"./README.md", true},
 
 		// What they read to write it.
@@ -50,7 +51,7 @@ func TestInert(t *testing.T) {
 func TestInertNamesOnlyWhatIsWritten(t *testing.T) {
 	for _, p := range []string{
 		readmePath, makefilePath, agentsPath, claudePath,
-		licensePath, gitignorePath, lintfilePath,
+		licensePath, gitignorePath, lintfilePath, DefinitionPath,
 	} {
 		if !Inert(p) {
 			t.Errorf("%s is written by these generators but not called inert", p)
