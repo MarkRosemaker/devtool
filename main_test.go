@@ -1,36 +1,61 @@
 package main
 
 import (
-	"errors"
 	"strings"
 	"testing"
 )
 
-// TestRunSaysWhatIsNotHereYet: maintaining repositories has not moved out of
-// portfolio, and a usage message alone would read as a mistyped argument.
-func TestRunSaysWhatIsNotHereYet(t *testing.T) {
-	err := run(t.Context(), nil)
-	if !errors.Is(err, errNotYetMoved) {
-		t.Fatalf("got %v, want it to report what has not moved", err)
-	}
-
-	if !strings.Contains(err.Error(), "portfolio") {
-		t.Errorf("the error does not say where it still lives: %v", err)
-	}
-}
-
 // TestSelfUpdateIsASubcommand keeps "devtool self-update" working without a
-// leading dash, which is how patchpal invokes it.
+// leading dash, which is how patchpal invokes it. A test binary is a local
+// build, so selfupdate declines rather than reinstalling anything over it.
 func TestSelfUpdateIsASubcommand(t *testing.T) {
-	// A local build is stamped "(devel)", so this reaches selfupdate and is
-	// declined there rather than reinstalling anything over the test binary.
-	if err := run(t.Context(), []string{"self-update"}); err != nil {
+	if err := dispatch(t.Context(), []string{"self-update"}); err != nil {
 		t.Fatalf("self-update on a local build should decline, not fail: %v", err)
 	}
 }
 
 func TestVersionFlag(t *testing.T) {
-	if err := run(t.Context(), []string{"-version"}); err != nil {
+	if err := dispatch(t.Context(), []string{"-version"}); err != nil {
 		t.Errorf("-version failed: %v", err)
+	}
+}
+
+func TestUnknownCommand(t *testing.T) {
+	err := dispatch(t.Context(), []string{"frobnicate"})
+	if err == nil {
+		t.Fatal("an unknown command was accepted")
+	}
+
+	if !strings.Contains(err.Error(), "frobnicate") {
+		t.Errorf("the error does not name the command: %v", err)
+	}
+}
+
+// TestNamingARepositoryNeedsAList: without -config there is only the
+// repository you are standing in, so naming another one is a mistake worth
+// catching before anything runs.
+func TestNamingARepositoryNeedsAList(t *testing.T) {
+	err := dispatch(t.Context(), []string{"update", "MarkRosemaker/openapi"})
+	if err == nil {
+		t.Fatal("a repository was accepted without a list")
+	}
+
+	if !strings.Contains(err.Error(), "-config") {
+		t.Errorf("the error does not say what is missing: %v", err)
+	}
+}
+
+func TestMaintainedRejectsAMalformedRepository(t *testing.T) {
+	for _, target := range []string{"nope", "/beta", "user/", "a/b/c"} {
+		err := maintained(t.Context(), "does-not-exist.json", target, false, emitter(false))
+		if err == nil {
+			t.Errorf("%q was accepted", target)
+		}
+	}
+}
+
+func TestEmitter(t *testing.T) {
+	if emitter(false) == nil || emitter(true) == nil {
+		t.Error("an emitter is always needed, even when nothing reads it")
 	}
 }

@@ -1,0 +1,289 @@
+package maintain
+
+import (
+	"bytes"
+	"context"
+	_ "embed"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"unicode/utf8"
+
+	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/spf13/afero"
+)
+
+const (
+	gitignorePath = ".gitignore"
+
+	// gitignoreOpen and gitignoreClose bracket the rules this task owns.
+	// Everything below the close is the repository's, which is why the
+	// marker says "this block" rather than the whole file.
+	gitignoreOpen  = "# " + generatedMarker + " — this block only; your own rules go below it."
+	gitignoreClose = "# end " + generatedMarker
+)
+
+// gitignoreRules are the rules every repository gets: the build products and
+// editor droppings of Go work on a Mac, none of which belongs in a
+// repository and all of which somebody otherwise writes out again each time.
+//
+// A plain file rather than a template, since nothing in it varies by
+// repository. It is embedded all the same, so the rules read as the list
+// they are rather than as a Go string literal.
+//
+//go:embed gitignore.rules
+var gitignoreRules string
+
+// GitignoreTask returns a task that writes the house .gitignore rules into
+// the repository, keeping whatever rules of its own it already had.
+//
+// Merged, not generated. The other root files this package writes it owns
+// outright, and an edit to one is lost; a .gitignore is not like that. It is
+// a flat list that people and tools add a line to constantly, and there is
+// nothing in the format to include a file from elsewhere — so instead of
+// taking the file over, this task owns a marked block at the head and leaves
+// everything below it alone.
+//
+// The block goes at the head for the same reason the repository's rules go
+// below: in a .gitignore the last matching pattern decides, so this order is
+// what leaves the repository able to override a house rule with "!important.log".
+// Reversed, the house rule would be the last word and the negation would do
+// nothing.
+//
+// One house rule cannot be overridden that way whatever the order, and it is
+// git rather than this task that says so: "bin/" excludes the directory, and
+// git does not descend into an excluded directory, so no "!bin/wanted" below
+// can re-include anything in it. A repository that needs a file out of bin/
+// has to replace the rule rather than negate it, with "bin/*" and then the
+// negation.
+//
+// The one time the tail is touched is when the file is taken over: a rule
+// already written out verbatim in the block is dropped from it, along with
+// any comment left heading nothing, so a repository whose .gitignore was the
+// usual Go boilerplate does not end up holding it twice. After that the tail
+// is the repository's, and a run does not read it again.
+func GitignoreTask(repo engine.Repo) engine.Task {
+	return engine.Task{
+		Name:  "generate .gitignore",
+		Short: "gitignore",
+		Run: func(context.Context) error {
+			return generateGitignore(repo.Fs())
+		},
+	}
+}
+
+// generateGitignore is [GitignoreTask]'s work, factored out so it can run
+// against an in-memory filesystem in tests without a real repository.
+func generateGitignore(fs afero.Fs) error {
+	existing, err := afero.ReadFile(fs, gitignorePath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("reading existing %s: %w", gitignorePath, err)
+	}
+
+	if !utf8.Valid(existing) {
+		return fmt.Errorf("%s: not valid UTF-8", gitignorePath)
+	}
+
+	merged, err := mergeGitignore(existing)
+	if err != nil {
+		return err
+	}
+
+	return afero.WriteFile(fs, gitignorePath, merged, 0o644)
+}
+
+// mergeGitignore returns existing with this task's block brought up to date,
+// leaving the repository's own rules below it as they were.
+func mergeGitignore(existing []byte) ([]byte, error) {
+	lines := gitignoreLines(existing)
+
+	before, after, adopting, err := splitGitignore(lines)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only on the run that takes the file over, so that a rule somebody
+	// writes below the block afterwards is never second-guessed.
+	if adopting {
+		after = dropCoveredRules(after)
+	}
+
+	block := append([]string{gitignoreOpen}, gitignoreLines([]byte(gitignoreRules))...)
+	block = append(block, gitignoreClose)
+
+	return joinGitignore(before, block, after), nil
+}
+
+// splitGitignore returns the lines before this task's block and the lines
+// after it, dropping the block itself. adopting reports that there was no
+// block, so this run is the one taking the file over.
+//
+// Half a block is not something to guess at: an open marker with no close
+// would make everything below it this task's to overwrite, and acting on
+// that reading could throw away the lot.
+func splitGitignore(lines []string) (before, after []string, adopting bool, err error) {
+	opened := indexLine(lines, gitignoreOpen)
+	closed := indexLine(lines, gitignoreClose)
+
+	switch {
+	case opened < 0 && closed < 0:
+		// The whole file is the repository's, and the block is about to go
+		// in above it.
+		return nil, lines, true, nil
+	case opened < 0 || closed < 0 || closed < opened:
+		return nil, nil, false, fmt.Errorf(
+			"%s: found %q and %q out of order or on their own: repair the block by hand",
+			gitignorePath, gitignoreOpen, gitignoreClose,
+		)
+	default:
+		// Where the repository moved the block, it stays moved: rewriting it
+		// where it is means a run does not undo somebody's arrangement.
+		return lines[:opened], lines[closed+1:], false, nil
+	}
+}
+
+// indexLine returns the index of the first line equal to want, or -1.
+func indexLine(lines []string, want string) int {
+	for i, line := range lines {
+		if line == want {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// dropCoveredRules removes the rules the house block now states verbatim,
+// and then any comment left heading nothing.
+//
+// Verbatim, rather than asking whether the house rules match the same paths:
+// a rule is dropped only when the very same line appears above, which is the
+// case worth handling — a repository whose .gitignore is the Go boilerplate
+// the house rules were drawn from. Anything else the repository wrote is
+// its own, redundant or not, and deleting a line nobody can point to in the
+// block would be the kind of cleverness that loses somebody's work.
+func dropCoveredRules(lines []string) []string {
+	covered := map[string]bool{}
+	for _, rule := range gitignoreLines([]byte(gitignoreRules)) {
+		if isRule(rule) {
+			covered[rule] = true
+		}
+	}
+
+	var kept []string
+
+	// By group, so that a heading whose every rule went goes with them.
+	for _, group := range groupLines(lines) {
+		var keptGroup []string
+
+		rules := 0
+
+		for _, line := range group {
+			if covered[line] {
+				continue
+			}
+
+			if isRule(line) {
+				rules++
+			}
+
+			keptGroup = append(keptGroup, line)
+		}
+
+		if rules == 0 {
+			continue
+		}
+
+		if len(kept) > 0 {
+			kept = append(kept, "")
+		}
+
+		kept = append(kept, keptGroup...)
+	}
+
+	return kept
+}
+
+// isRule reports whether a line carries a pattern rather than being a
+// comment or blank.
+func isRule(line string) bool {
+	return !strings.HasPrefix(line, "#") && strings.TrimSpace(line) != ""
+}
+
+// groupLines splits lines on blank lines, which is how a .gitignore says
+// that a comment heads the rules under it and not the ones after the gap.
+func groupLines(lines []string) [][]string {
+	var (
+		groups [][]string
+		group  []string
+	)
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			if len(group) > 0 {
+				groups = append(groups, group)
+				group = nil
+			}
+
+			continue
+		}
+
+		group = append(group, line)
+	}
+
+	if len(group) > 0 {
+		groups = append(groups, group)
+	}
+
+	return groups
+}
+
+// gitignoreLines splits b into lines, without a trailing empty one for the
+// final newline.
+func gitignoreLines(b []byte) []string {
+	if len(b) == 0 {
+		return nil
+	}
+
+	return strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
+}
+
+// joinGitignore puts the sections back together with one blank line between
+// any two that have anything in them, so the block reads as its own and the
+// output does not drift as sections come and go.
+func joinGitignore(sections ...[]string) []byte {
+	buf := &bytes.Buffer{}
+
+	for _, section := range sections {
+		section = trimBlankLines(section)
+		if len(section) == 0 {
+			continue
+		}
+
+		if buf.Len() > 0 {
+			buf.WriteByte('\n')
+		}
+
+		for _, line := range section {
+			buf.WriteString(line)
+			buf.WriteByte('\n')
+		}
+	}
+
+	return buf.Bytes()
+}
+
+// trimBlankLines drops the blank lines at either end of a section, the
+// spacing between sections being [joinGitignore]'s to decide.
+func trimBlankLines(lines []string) []string {
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	return lines
+}

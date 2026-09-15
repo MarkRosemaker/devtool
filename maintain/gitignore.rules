@@ -1,0 +1,24 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output files, e.g. from the go coverage tool
+*.out
+
+# IDE directories
+.idea
+.vscode
+.schemas
+.history
+
+# Build and Environment
+bin/
+
+# Log Files
+*.log
+
+# macOS files
+*.DS_Store

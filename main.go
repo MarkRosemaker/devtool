@@ -6,11 +6,27 @@
 // machinery they plug into is github.com/MarkRosemaker/devtool-engine, which
 // anybody's devtool can import unchanged.
 //
-// It reports what it did as JSON Lines on stdout rather than talking to a
-// person, so a long-running front end — patchpal — can render a run it did not
-// perform. Being a separate process is the point: the front end stays up for
-// hours, and devtool is started fresh for every run, so a change to it takes
-// effect on the next run rather than the next restart.
+// # Two ways to run it
+//
+// With no list, it rebuilds the generated files of the repository you are
+// standing in and leaves them uncommitted for you to read. No GitHub, no
+// network, no commits — a person at a terminal asking for their README to be
+// brought up to date.
+//
+//	devtool
+//	update
+//
+// With a list, it maintains every repository the list names, unattended:
+// testing, committing each task separately, and pushing. The coverage it
+// measures is written back into the list and committed to whichever repository
+// holds it.
+//
+//	devtool update all --config=../portfolio/config.json
+//	devtool update MarkRosemaker/openapi --config=../portfolio/config.json
+//
+// -jsonl on any of them writes the run as JSON Lines on stdout instead of
+// leaving it to the log, which is how patchpal follows a run it did not
+// perform.
 //
 // # Two different updates
 //
@@ -27,51 +43,72 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool-engine/selfupdate"
+	"github.com/MarkRosemaker/devtool/internal/config"
+	"github.com/MarkRosemaker/devtool/internal/local"
+	"github.com/MarkRosemaker/devtool/internal/run"
 )
+
+//go:generate go run ./internal/lintgen
+
+// licenseHolder is who the copyright is asserted by: the legal person, with the
+// GitHub handle after it so the notice connects to where the work lives. A
+// notice naming only a pseudonym would leave the holder to establish that link
+// later, if it ever mattered.
+const licenseHolder = "Marco Rösler (MarkRosemaker)"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	if err := run(ctx, os.Args[1:]); err != nil {
+	if err := dispatch(ctx, os.Args[1:]); err != nil {
 		slog.ErrorContext(ctx, name+" failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-// run dispatches on the subcommand, if there is one, and otherwise parses
-// flags. A subcommand is matched before flags are parsed so that
-// "devtool self-update" does not have to be spelled with a leading dash.
-func run(ctx context.Context, args []string) error {
+// dispatch picks the subcommand. A subcommand is matched before flags are
+// parsed so that "devtool update" does not have to be spelled with a dash, and
+// an empty command line means "update", which is the common case.
+func dispatch(ctx context.Context, args []string) error {
 	if len(args) > 0 {
 		switch args[0] {
 		case "self-update":
 			return selfUpdate(ctx, args[1:])
+		case "update":
+			return update(ctx, args[1:])
 		}
 	}
 
-	return runFlags(ctx, args)
+	// Flags with no subcommand: -version, or an empty line meaning "update".
+	if len(args) > 0 && strings.HasPrefix(args[0], "-") {
+		return topLevelFlags(ctx, args)
+	}
+
+	if len(args) > 0 {
+		return fmt.Errorf("unknown command %q", args[0])
+	}
+
+	return update(ctx, nil)
 }
 
-// runFlags handles the flag-shaped invocations.
-func runFlags(_ context.Context, args []string) error {
+// topLevelFlags handles the flags that stand alone.
+func topLevelFlags(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	showVersion := fs.Bool("version", false,
-		"report which build this is and exit")
+	showVersion := fs.Bool("version", false, "report which build this is and exit")
 
-	fs.Usage = func() {
-		fmt.Fprintf(fs.Output(), "usage: %s [flags]\n       %s self-update\n\nflags:\n",
-			name, name)
-		fs.PrintDefaults()
-	}
+	fs.Usage = func() { usage(fs.Output()) }
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -83,22 +120,100 @@ func runFlags(_ context.Context, args []string) error {
 		return nil
 	}
 
-	// Maintaining repositories has not moved here yet: it is still portfolio's
-	// main.go, along with the generators and the task sequence. Saying so is
-	// better than a usage message that implies the tool simply took the
-	// arguments badly.
-	fs.Usage()
-
-	return errNotYetMoved
+	return update(ctx, args)
 }
 
-// errNotYetMoved marks the half of this tool that is still in portfolio.
-var errNotYetMoved = fmt.Errorf(
-	"maintaining repositories is still portfolio's; only self-update and -version are here",
-)
+// usage says what the tool takes, in the order somebody is likely to want it.
+func usage(w io.Writer) {
+	fmt.Fprintf(w, `usage:
+  %[1]s                                rebuild this repository's generated files
+  %[1]s update                         the same
+  %[1]s update all      --config=PATH  maintain every repository the list names
+  %[1]s update OWNER/NAME --config=PATH  maintain one of them
+  %[1]s self-update                    update this binary
+  %[1]s -version
 
-// selfUpdateFlags and selfUpdate: updating this binary, not any repository's
-// dependencies. See the package comment.
+flags:
+  -jsonl      write the run as JSON Lines on stdout
+  -config     the list of repositories to maintain
+  -verbose    report the outcome even when nothing changed
+  -private    (no list) this repository is private
+`, name)
+}
+
+// update runs either shape, depending on whether a list was named.
+func update(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet(name+" update", flag.ContinueOnError)
+	cfgPath := fs.String("config", "",
+		"the list of repositories to maintain; without it, this repository alone")
+	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
+	verbose := fs.Bool("verbose", false, "report the outcome even when nothing changed")
+	private := fs.Bool("private", false, "this repository is private (no list only)")
+
+	fs.Usage = func() { usage(fs.Output()) }
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	events := emitter(*jsonl)
+	target := fs.Arg(0)
+
+	if *cfgPath == "" {
+		if target != "" {
+			return errors.New("naming a repository needs -config; without one, " +
+				"the repository you are standing in is the only one there is")
+		}
+
+		return local.Update(ctx, ".", local.Options{
+			Holder:  licenseHolder,
+			Private: *private,
+		}, events)
+	}
+
+	return maintained(ctx, *cfgPath, target, *verbose, events)
+}
+
+// maintained is the unattended shape: a list, and everything in it or one of
+// them.
+func maintained(
+	ctx context.Context, cfgPath, target string, verbose bool, events engine.Emitter,
+) error {
+	cfg, err := run.OpenConfigFile(ctx, cfgPath, config.StateName)
+	if err != nil {
+		return err
+	}
+
+	svc, err := run.New(ctx, cfg, events, verbose)
+	if err != nil {
+		return err
+	}
+
+	switch target {
+	case "", "all":
+		return svc.Run(ctx)
+	}
+
+	owner, repoName, ok := strings.Cut(target, "/")
+	if !ok || owner == "" || repoName == "" || strings.Contains(repoName, "/") {
+		return fmt.Errorf(`invalid repository %q, want "owner/name" or "all"`, target)
+	}
+
+	return svc.RunOne(ctx, owner, repoName)
+}
+
+// emitter is where a run's events go: onto stdout as JSON Lines for something
+// parsing them, and otherwise nowhere, the log having said it already.
+func emitter(jsonl bool) engine.Emitter {
+	if jsonl {
+		return engine.NewJSONLEmitter(os.Stdout)
+	}
+
+	return engine.EmitterFunc(func(engine.Event) {})
+}
+
+// selfUpdate updates this binary, not any repository's dependencies. See the
+// package comment.
 func selfUpdate(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name+" self-update", flag.ContinueOnError)
 	direct := fs.Bool("direct", true,
@@ -109,13 +224,11 @@ func selfUpdate(ctx context.Context, args []string) error {
 		return err
 	}
 
-	up := &selfupdate.Updater{
+	out, err := (&selfupdate.Updater{
 		Module:  modulePath,
 		Current: selfupdate.Version(),
 		Direct:  *direct,
-	}
-
-	out, err := up.Update(ctx)
+	}).Update(ctx)
 	if err != nil {
 		return err
 	}
