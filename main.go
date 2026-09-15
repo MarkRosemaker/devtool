@@ -94,7 +94,8 @@ func runFlags(_ context.Context, args []string) error {
 
 // errNotYetMoved marks the half of this tool that is still in portfolio.
 var errNotYetMoved = fmt.Errorf(
-	"maintaining repositories is still portfolio's; only self-update and -version are here")
+	"maintaining repositories is still portfolio's; only self-update and -version are here",
+)
 
 // selfUpdateFlags and selfUpdate: updating this binary, not any repository's
 // dependencies. See the package comment.
