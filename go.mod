@@ -4,13 +4,13 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20260915161737-9e10ae8f485b
-	github.com/MarkRosemaker/ghrepo v0.0.0-20260915160114-ec90cd96b696
-	github.com/MarkRosemaker/golangci-json v0.0.0-20260915160113-1aa6698c9d58
-	github.com/MarkRosemaker/gorepo v0.0.0-20260915160323-91d7c0421b01
-	github.com/MarkRosemaker/json2yaml v0.0.0-20260915160105-2cabb9e4bf7f
-	github.com/MarkRosemaker/jsonutil v0.0.0-20260915160107-7037fe0ef7e6
-	github.com/MarkRosemaker/openapi v0.0.0-20260915160141-5595bc912284
-	github.com/MarkRosemaker/ordmap v0.0.0-20260915160122-d4098f99fdd5
+	github.com/MarkRosemaker/ghrepo v0.0.0-20260915220108-24463c1888bb
+	github.com/MarkRosemaker/golangci-json v0.0.0-20260915220108-cfb1b97fec2d
+	github.com/MarkRosemaker/gorepo v0.0.0-20260915220203-30bc5c852a62
+	github.com/MarkRosemaker/json2yaml v0.0.0-20260915220058-ceedba1e386b
+	github.com/MarkRosemaker/jsonutil v0.0.0-20260915220059-af9995971af9
+	github.com/MarkRosemaker/openapi v0.0.0-20260915220135-8f82cf08349b
+	github.com/MarkRosemaker/ordmap v0.0.0-20260915220114-2604f7c312f0
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/golangci/golangci-lint/v2 v2.13.2
 	github.com/spf13/afero v1.15.0
@@ -19,9 +19,9 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	github.com/MarkRosemaker/errpath v0.0.0-20260915160104-7c5a4ce1b43d // indirect
-	github.com/MarkRosemaker/yaml v0.0.0-20260915160125-e72eace4dc52 // indirect
-	github.com/MarkRosemaker/yaml2json v0.0.0-20260915160105-6f7e0ec41e7f // indirect
+	github.com/MarkRosemaker/errpath v0.0.0-20260915220057-24600ade1d51 // indirect
+	github.com/MarkRosemaker/yaml v0.0.0-20260915220119-805783ead0cf // indirect
+	github.com/MarkRosemaker/yaml2json v0.0.0-20260915220058-6d2fd2ad71fd // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
