@@ -19,7 +19,7 @@ func TestGenerateMakefile(t *testing.T) {
 	t.Run("a repository with nothing of its own gets the house targets", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -49,7 +49,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/repo.mk", "test:\n\tgo test -race ./...\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -76,7 +76,7 @@ func TestGenerateMakefile(t *testing.T) {
 		const handWritten = "build:\n\t@echo building\n\ntest:\n\t@echo testing\n"
 		writeFile(t, fs, makefilePath, handWritten)
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -100,13 +100,13 @@ func TestGenerateMakefile(t *testing.T) {
 	t.Run("a Makefile this task wrote is rewritten, not adopted again", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
 		first := readFile(t, fs, makefilePath)
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -128,7 +128,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/repo.mk", "deploy:\n\t@echo deploying\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -142,7 +142,7 @@ func TestGenerateMakefile(t *testing.T) {
 		writeFile(t, fs, makefilePath, "build:\n\t@echo building\n")
 		writeFile(t, fs, "mk/legacy.mk", "something else already here\n")
 
-		err := generateMakefile(fs)
+		err := generateMakefile(fs, false)
 		if err == nil {
 			t.Fatal("expected an error rather than either file being overwritten")
 		}
@@ -158,7 +158,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/notes.txt", "make ignores this entirely\n")
 
-		err := generateMakefile(fs)
+		err := generateMakefile(fs, false)
 		if err == nil {
 			t.Fatal("expected an error for a file that would never be included, got nil")
 		}
@@ -172,7 +172,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/.keep", "")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -183,7 +183,7 @@ func TestGenerateMakefile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := generateMakefile(fs); err == nil {
+		if err := generateMakefile(fs, false); err == nil {
 			t.Fatal("expected an error for non-UTF-8 fragment content, got nil")
 		}
 	})
@@ -238,7 +238,7 @@ func TestGenerateMakefileRunsUnderMake(t *testing.T) {
 	writeFile(t, fs, makefilePath,
 		"build:\n\t@echo built\n\ntest:\n\t@echo repo-test\n\nship: build\n\t@echo shipped\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -353,7 +353,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 				writeFile(t, fs, "cmd/"+cmd+"/main.go", "package main\n")
 			}
 
-			if err := generateMakefile(fs); err != nil {
+			if err := generateMakefile(fs, false); err != nil {
 				t.Fatal(err)
 			}
 
@@ -402,7 +402,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 		writeFile(t, fs, "cmd/worldweaver/main.go", "package main\n")
 		writeFile(t, fs, "mk/repo.mk", "build:\n\tgo build -tags prod ./...\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -476,7 +476,7 @@ func TestGenerateMakefileIncludes(t *testing.T) {
 func generateAndRead(t *testing.T, fs afero.Fs) string {
 	t.Helper()
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -515,7 +515,7 @@ func TestGenerateMakefileBuildsUnderMake(t *testing.T) {
 	// a make too old to have.
 	writeFile(t, fs, "mk/probe.mk", "show:\n\t@echo [$(SET_BY_FLAGS)]\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, false); err != nil {
 		t.Fatal(err)
 	}
 
@@ -747,7 +747,7 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 	// to something a test can install.
 	writeFile(t, fs, "mk/probe.mk", "which:\n\t@housetool\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, false); err != nil {
 		t.Fatal(err)
 	}
 
