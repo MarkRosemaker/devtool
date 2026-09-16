@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"strings"
 	"testing"
 )
@@ -93,5 +94,86 @@ func TestMaintainedNeedsCommit(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "-commit") {
 		t.Errorf("the error does not say what is missing: %v", err)
+	}
+}
+
+// TestParseFlagsAfterAPositional is the bug this exists to prevent. Go's flag
+// package stops at the first argument that is not a flag, so
+// "update all -config=... -commit -jsonl" parsed "all" and silently ignored
+// every flag after it — which is exactly how a person, and patchpal, type it.
+func TestParseFlagsAfterAPositional(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		args       []string
+		wantCfg    string
+		wantCommit bool
+		wantPos    []string
+	}{
+		{
+			name:    "flags after the positional",
+			args:    []string{"all", "-config=c.json", "-commit"},
+			wantCfg: "c.json", wantCommit: true, wantPos: []string{"all"},
+		},
+		{
+			name:    "flags before it",
+			args:    []string{"-config=c.json", "-commit", "all"},
+			wantCfg: "c.json", wantCommit: true, wantPos: []string{"all"},
+		},
+		{
+			name:    "on both sides",
+			args:    []string{"-commit", "all", "-config=c.json"},
+			wantCfg: "c.json", wantCommit: true, wantPos: []string{"all"},
+		},
+		{
+			name:    "a flag value given as its own argument",
+			args:    []string{"all", "-config", "c.json"},
+			wantCfg: "c.json", wantPos: []string{"all"},
+		},
+		{
+			name:    "no positional at all",
+			args:    []string{"-config=c.json"},
+			wantCfg: "c.json", wantPos: nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := flag.NewFlagSet("t", flag.ContinueOnError)
+			cfg := fs.String("config", "", "")
+			commit := fs.Bool("commit", false, "")
+
+			pos, err := parseFlags(fs, tc.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if *cfg != tc.wantCfg {
+				t.Errorf("-config = %q, want %q", *cfg, tc.wantCfg)
+			}
+
+			if *commit != tc.wantCommit {
+				t.Errorf("-commit = %v, want %v", *commit, tc.wantCommit)
+			}
+
+			if strings.Join(pos, ",") != strings.Join(tc.wantPos, ",") {
+				t.Errorf("positional = %q, want %q", pos, tc.wantPos)
+			}
+		})
+	}
+}
+
+// TestUpdateAllReachesTheList drives the command line as it is actually typed,
+// through dispatch, rather than calling maintained with arguments already
+// separated. The unit tests all did the latter, which is why the parsing bug
+// survived them.
+func TestUpdateAllReachesTheList(t *testing.T) {
+	err := dispatch(t.Context(),
+		[]string{"update", "all", "-config=does-not-exist.json", "-commit", "-jsonl"})
+	if err == nil {
+		t.Fatal("expected a failure about the list, not success")
+	}
+
+	// It must get as far as trying to use the list. The old failure was the
+	// parser never seeing -config at all.
+	if strings.Contains(err.Error(), "naming a repository needs -config") {
+		t.Errorf("the flags after the positional were ignored: %v", err)
 	}
 }

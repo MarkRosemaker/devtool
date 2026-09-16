@@ -150,6 +150,29 @@ flags:
 `, name)
 }
 
+// parseFlags parses args where a flag may follow a positional argument.
+//
+// Go's flag package stops at the first argument that is not a flag, so
+// "update all -config=..." would take "all" and silently ignore everything
+// after it — which is exactly how somebody would type it. Parsing is resumed
+// past each positional instead, and the positionals are returned in order.
+func parseFlags(fs *flag.FlagSet, args []string) ([]string, error) {
+	var positional []string
+
+	for {
+		if err := fs.Parse(args); err != nil {
+			return nil, err
+		}
+
+		if fs.NArg() == 0 {
+			return positional, nil
+		}
+
+		positional = append(positional, fs.Arg(0))
+		args = fs.Args()[1:]
+	}
+}
+
 // update runs either shape, depending on whether a list was named.
 func update(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name+" update", flag.ContinueOnError)
@@ -164,12 +187,22 @@ func update(ctx context.Context, args []string) error {
 
 	fs.Usage = func() { usage(fs.Output()) }
 
-	if err := fs.Parse(args); err != nil {
+	positional, err := parseFlags(fs, args)
+	if err != nil {
 		return err
 	}
 
+	if len(positional) > 1 {
+		return fmt.Errorf("%s update takes one repository or %q, got %q",
+			name, allTarget, positional)
+	}
+
 	events := emitter(*jsonl)
-	target := fs.Arg(0)
+
+	var target string
+	if len(positional) == 1 {
+		target = positional[0]
+	}
 
 	if *cfgPath == "" {
 		if target != "" {
@@ -207,6 +240,21 @@ func maintained(
 			"every repository on it, so say -commit")
 	}
 
+	// What was asked for is checked before anything is opened or cloned: a
+	// mistyped repository should not first cost a token check and a pass over
+	// the list.
+	var owner, repoName string
+
+	if target != allTarget {
+		var ok bool
+
+		owner, repoName, ok = strings.Cut(target, "/")
+		if !ok || owner == "" || repoName == "" || strings.Contains(repoName, "/") {
+			return fmt.Errorf(`invalid repository %q, want "owner/name" or %q`,
+				target, allTarget)
+		}
+	}
+
 	cfg, err := run.OpenConfigFile(ctx, cfgPath, config.StateName)
 	if err != nil {
 		return err
@@ -219,11 +267,6 @@ func maintained(
 
 	if target == allTarget {
 		return svc.Run(ctx)
-	}
-
-	owner, repoName, ok := strings.Cut(target, "/")
-	if !ok || owner == "" || repoName == "" || strings.Contains(repoName, "/") {
-		return fmt.Errorf(`invalid repository %q, want "owner/name" or "all"`, target)
 	}
 
 	return svc.RunOne(ctx, owner, repoName)
@@ -275,12 +318,13 @@ func runTests(ctx context.Context, args []string) error {
 
 	fs.Usage = func() { usage(fs.Output()) }
 
-	if err := fs.Parse(args); err != nil {
+	positional, err := parseFlags(fs, args)
+	if err != nil {
 		return err
 	}
 
-	if fs.NArg() > 0 {
-		return fmt.Errorf("%s test takes no arguments, got %q", name, fs.Arg(0))
+	if len(positional) > 0 {
+		return fmt.Errorf("%s test takes no arguments, got %q", name, positional[0])
 	}
 
 	return local.Test(ctx, ".", local.Options{
