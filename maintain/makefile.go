@@ -209,10 +209,13 @@ func houseTargets(shape repoShape) []makeTarget {
 		// golangci-lint fmt, not gofumpt directly: .golangci.yaml is what
 		// says which formatters run and how.
 		{Name: "format", Recipe: []string{"golangci-lint fmt"}},
-		// In golangci-lint v2, run --fix does not format; fmt is separate.
 		{
-			Name:   "fix",
-			Recipe: []string{"go fix ./...", "golangci-lint fmt", "golangci-lint run --fix"},
+			Name: "fix",
+			Recipe: []string{
+				"go fix ./...",
+				// In golangci-lint v2, run --fix already runs format, so no separate fmt needed.
+				"golangci-lint run --fix",
+			},
 		},
 		{Name: "tidy", Recipe: []string{"go mod tidy", "go mod vendor"}},
 		{
