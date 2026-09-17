@@ -73,6 +73,12 @@ type readmeData struct {
 	// is the roadmap's repository-owned metadata.
 	Coverage int
 
+	// Measured is false where the module has no Go packages, and the
+	// coverage badge is then left out altogether. A repository whose
+	// contents have moved elsewhere but which keeps its go.mod has no
+	// coverage to report, which is not the same as having none of it.
+	Measured bool
+
 	// Badges is whatever README/badges.md holds beyond its frontmatter:
 	// badges a repository wants that this does not generate. It joins the end
 	// of the row.
@@ -219,6 +225,13 @@ func readOpenAPI(fs afero.Fs) (*openapi.Document, error) {
 	}
 
 	return doc, nil
+}
+
+// HasBadges reports whether the badge row renders anything at all. A private
+// repository with no Go packages and no badges of its own is the case that
+// would otherwise leave an empty line where the row was.
+func (d readmeData) HasBadges() bool {
+	return d.OpenAPI != nil || !d.Private || d.Measured || d.Badges != ""
 }
 
 // CoverageColor is the shields.io colour for [readmeData.Coverage], the
@@ -777,9 +790,14 @@ func assembleLegacyFragments(sections map[string]*bytes.Buffer, meta readmeMeta)
 // it is being rendered, and silently ignoring it would leave whoever wrote
 // it wondering where their words went.
 func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage float64) (readmeData, error) {
+	measured, err := hasGoFiles(fs)
+	if err != nil {
+		return readmeData{}, err
+	}
+
 	data := readmeData{
 		Owner: owner, Name: name, Private: private,
-		Coverage: int(coverage),
+		Coverage: int(coverage), Measured: measured,
 	}
 	bodies := data.bodyByFragment()
 
@@ -959,5 +977,11 @@ func renderReadme(data readmeData) ([]byte, error) {
 		return nil, fmt.Errorf("rendering README.md: %w", err)
 	}
 
-	return append(bytes.TrimSpace(buf.Bytes()), '\n'), nil
+	// A badge the row left out takes its separating space with it.
+	lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte("\n"))
+	for i, line := range lines {
+		lines[i] = bytes.TrimRight(line, " \t")
+	}
+
+	return append(bytes.Join(lines, []byte("\n")), '\n'), nil
 }

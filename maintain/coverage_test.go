@@ -3,14 +3,12 @@ package maintain
 import (
 	"strings"
 	"testing"
-
-	"github.com/spf13/afero"
 )
 
 // TestRecordCoverageRoundTrips is the property that matters: what is written
 // is what the generator reads back, so the badge and the record agree.
 func TestRecordCoverageRoundTrips(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 
 	if err := RecordCoverage(fs, 83.4); err != nil {
 		t.Fatal(err)
@@ -28,7 +26,7 @@ func TestRecordCoverageRoundTrips(t *testing.T) {
 // TestRecordCoverageKeepsTheRest: a measurement must not disturb what a
 // repository says about itself.
 func TestRecordCoverageKeepsTheRest(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 
 	if err := SaveDefinition(fs, Definition{
 		Description:    "a thing that does things",
@@ -68,7 +66,7 @@ func TestRecordCoverageKeepsTheRest(t *testing.T) {
 // TestMeasuredCoverageBeatsTheRecord: a caller that just ran the tests has the
 // newer figure.
 func TestMeasuredCoverageBeatsTheRecord(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 
 	if err := RecordCoverage(fs, 10); err != nil {
 		t.Fatal(err)
@@ -87,7 +85,7 @@ func TestMeasuredCoverageBeatsTheRecord(t *testing.T) {
 // devtool.json: with nothing measured and nothing recorded, a rebuild must not
 // reset the badge to zero.
 func TestCoverageFallsBackToTheBadge(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 	writeFile(t, fs, readmePath,
 		"![Code Coverage](https://img.shields.io/badge/coverage-77%25-yellowgreen)\n")
 
@@ -103,7 +101,7 @@ func TestCoverageFallsBackToTheBadge(t *testing.T) {
 // TestBadgesFragmentJoinsTheRow: badges.md stays a fragment, for the badges a
 // repository adds of its own. Only the figure moved out of it.
 func TestBadgesFragmentJoinsTheRow(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 	writeFile(t, fs, "README/badges.md",
 		"[![Extra](https://example.com/b.svg)](https://example.com)\n")
 
@@ -118,7 +116,7 @@ func TestBadgesFragmentJoinsTheRow(t *testing.T) {
 }
 
 func TestDefinitionRoundTrips(t *testing.T) {
-	fs := afero.NewMemMapFs()
+	fs := newModuleFs(t)
 
 	if _, ok, err := LoadDefinition(fs); err != nil || ok {
 		t.Fatalf("a repository with no definition: err %v, found %v", err, ok)
