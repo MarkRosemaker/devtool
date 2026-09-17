@@ -40,6 +40,9 @@ func TestGenerateAgents(t *testing.T) {
 
 		for _, want := range []string{
 			"Pull `main` and branch from it",
+			"`feat/`, `fix/` or `chore/`",
+			// Merging deletes the branch, so the next work starts a new one.
+			"Merging deletes the branch.",
 			"One branch and one pull request at a time",
 			"Once you have branched, leave `main` alone",
 			// The exit from that rule: a branch that cannot merge is not
