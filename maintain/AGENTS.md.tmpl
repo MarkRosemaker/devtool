@@ -18,11 +18,19 @@ cost you something.
 ## Starting work
 
 - Pull `main` and branch from it. Name the branch after the work.
-- One branch and one pull request at a time. Keep working on that branch
-  until it is merged, then start again from `main`.
+- One branch and one pull request at a time — one thing at a time, in this
+  repository, in this conversation. Keep working on that branch until it is
+  merged, then start again from `main`. Somebody else's pull request here,
+  or your own in another repository, is not in the way: a change spanning
+  two repositories is two pull requests.
+- A new idea that arrives while a pull request is open belongs in that
+  pull request if it fits, and on `docs/roadmap.md` if it is bigger than it.
+  Not in a second branch.
 - Once you have branched, leave `main` alone. Do not go looking for what
   has changed on it, and do not merge it in. Reconciling is its own
-  instruction, and you will be given it when it is wanted.
+  instruction, and you will be given it when it is wanted. Where the pull
+  request stops being mergeable, say so and stop — that is the instruction
+  arriving, and it is not yours to give yourself.
 
 ## Committing
 
@@ -30,6 +38,9 @@ cost you something.
   module cache, so it runs in a sandbox. `make tools` installs what it
   shells out to, and the Makefile puts that directory on its own `PATH`, so
   you do not have to.
+- Stage before running it. `verify` reports through `git diff --exit-code`,
+  so work you have not staged reads as drift and fails a run that was
+  otherwise clean.
 - `make` runs `ci` plus the checks that need the network. Prefer it where
   you have one; say which step you could not run where you do not.
 - One commit per piece of work, not one per session.
