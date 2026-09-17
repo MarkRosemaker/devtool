@@ -403,7 +403,7 @@ func adoptExistingReadme(fs afero.Fs, name string) (readmeAdoption, error) {
 		return 0, fmt.Errorf("reading existing %s: %w", readmePath, err)
 	}
 
-	if bytes.Contains(firstLine(existing), []byte(generatedMarker)) {
+	if generatedMarker.Match(firstLine(existing)) {
 		return readmeAbsent, nil
 	}
 
