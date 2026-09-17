@@ -42,7 +42,7 @@ func TestGenerateAgents(t *testing.T) {
 			"Pull `main` and branch from it",
 			"One branch and one pull request at a time",
 			"Once you have branched, leave `main` alone",
-			"Do not watch a pull request for activity unless you are asked to",
+			"Watching a pull request costs nothing",
 			"`make ci` passes before every commit",
 			"`make` runs `ci` plus the checks that need the network",
 			"One commit per piece of work",
@@ -52,6 +52,10 @@ func TestGenerateAgents(t *testing.T) {
 			"`docs/architecture.md` describes the architecture as it stands",
 			"Delete an entry when it is done",
 			"`mk/*.mk` is where a make target goes",
+			"`AGENTS/*.md` is this file's repository-specific half",
+			// The feedback loop: an agent that hits a bad instruction is
+			// meant to say so, and losing this line loses the loop.
+			"and it is meant to improve",
 			"Comments are one line",
 			"Resolve a thread once you have acted on it",
 		} {
