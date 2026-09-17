@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/MarkRosemaker/devtool-engine/depgraph"
+	"github.com/MarkRosemaker/devtool-engine/event"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/devtool/maintain"
@@ -32,7 +33,7 @@ const TokenEnv = "GITHUB_TOKEN"
 type Service struct {
 	repos   *gorepo.Service
 	runner  *engine.Runner
-	events  engine.Emitter
+	events  event.Emitter
 	verbose bool
 
 	// version is the build doing the work, recorded in each repository's
@@ -50,7 +51,7 @@ type Service struct {
 // When verbose is set, the run reports its outcome even if nothing changed;
 // otherwise a quiet, uneventful run stays quiet.
 func New(
-	ctx context.Context, cfg ConfigFile, events engine.Emitter, verbose bool, version string,
+	ctx context.Context, cfg ConfigFile, events event.Emitter, verbose bool, version string,
 ) (*Service, error) {
 	token := os.Getenv(TokenEnv)
 	if token == "" {
@@ -219,7 +220,7 @@ type unit struct {
 }
 
 // key returns the unit's canonical identifier.
-func (u *unit) key() string { return engine.Key(u.owner, u.name) }
+func (u *unit) key() string { return event.Key(u.owner, u.name) }
 
 // plan is the work a run has decided to do, and the order it has to respect.
 type plan struct {
@@ -241,7 +242,7 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 	byModulePath := make(map[string]string, count)
 	for ownerName, owner := range cfg.ByIndex() {
 		for name := range owner.Repositories.ByIndex() {
-			key := engine.Key(ownerName, name)
+			key := event.Key(ownerName, name)
 			byModulePath["github.com/"+key] = key
 		}
 	}
@@ -327,19 +328,19 @@ func (s *Service) open(ctx context.Context, u *unit, byModulePath map[string]str
 
 // execute maintains every repository, in dependency order and as parallel as
 // that order allows, streaming progress as results arrive.
-func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) []engine.Result {
-	rows := make([]engine.Result, len(p.keys))
+func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) []event.Result {
+	rows := make([]event.Result, len(p.keys))
 	for i, key := range p.keys {
 		u := p.units[key]
-		rows[i] = engine.Result{Owner: u.owner, Name: u.name}
+		rows[i] = event.Result{Owner: u.owner, Name: u.name}
 	}
 
 	// The board is kept for the results it returns in configuration order,
 	// which is the order a reader expects. Rendering one is the job of
 	// whatever is reading the events, in its own process.
-	board := engine.NewBoard(rows)
+	board := event.NewBoard(rows)
 
-	events := engine.EmitterFunc(func(ev engine.Event) {
+	events := event.EmitterFunc(func(ev event.Event) {
 		board.Apply(ev)
 		s.events.Emit(ev)
 	})
@@ -348,20 +349,20 @@ func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) [
 	// repository, so only the caller knows where a run begins and ends. It
 	// names every repository it covers, because a reader in another process
 	// has no other way to know what rows its table should have.
-	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: p.keys})
-	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+	event.Emit(events, event.Event{Kind: event.RunStart, Repos: p.keys})
+	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
 	depgraph.Run(ctx, graph,
-		func(ctx context.Context, key string) engine.Result {
+		func(ctx context.Context, key string) event.Result {
 			return s.maintain(ctx, p.units[key], events)
 		},
-		func(res engine.Result) {
+		func(res event.Result) {
 			// A repository the engine never saw emits nothing, so its row is
 			// filled in here: it failed before there was anything to run.
 			if res.Err != nil {
 				board.Set(res)
-				engine.Emit(events, engine.Event{
-					Kind: engine.RepoDone,
+				event.Emit(events, event.Event{
+					Kind: event.RepoDone,
 					Repo: res.Key(),
 					Err:  res.ErrorMessage(),
 				})
@@ -375,10 +376,10 @@ func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) [
 
 // maintain brings one repository up to standard and records its new coverage.
 func (s *Service) maintain(
-	ctx context.Context, u *unit, events engine.Emitter,
-) engine.Result {
+	ctx context.Context, u *unit, events event.Emitter,
+) event.Result {
 	if u.err != nil {
-		return engine.Result{Owner: u.owner, Name: u.name, Err: u.err}
+		return event.Result{Owner: u.owner, Name: u.name, Err: u.err}
 	}
 
 	spec, def := s.spec(ctx, u)
@@ -497,7 +498,7 @@ func (s *Service) finish(
 	ctx context.Context,
 	cfg config.Config,
 	previous *config.State,
-	results []engine.Result,
+	results []event.Result,
 ) error {
 	failed := false
 	notable := s.verbose

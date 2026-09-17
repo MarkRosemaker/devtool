@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/devtool-engine/event"
 )
 
 func TestUpdateRejectsSomethingThatIsNotARepository(t *testing.T) {
@@ -19,7 +19,7 @@ func TestUpdateRejectsSomethingThatIsNotARepository(t *testing.T) {
 
 type nopEmitter struct{}
 
-func (nopEmitter) Emit(engine.Event) {}
+func (nopEmitter) Emit(event.Event) {}
 
 // TestCommitRefusesADirtyWorktree is the one that matters. The engine's runner
 // begins by discarding whatever it finds uncommitted — correct for a checkout

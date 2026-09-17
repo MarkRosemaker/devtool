@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/devtool-engine/event"
 )
 
 // TestStdoutCarriesOnlyEvents is the guard for the bug that made this stream
@@ -50,7 +50,7 @@ func TestStdoutCarriesOnlyEvents(t *testing.T) {
 		}
 
 		var ev struct {
-			Kind engine.EventKind `json:"kind"`
+			Kind event.Kind `json:"kind"`
 		}
 
 		if err := json.Unmarshal([]byte(line), &ev); err != nil {
@@ -59,7 +59,7 @@ func TestStdoutCarriesOnlyEvents(t *testing.T) {
 			continue
 		}
 
-		if !known(ev.Kind) {
+		if !ev.Kind.Valid() {
 			t.Errorf("stdout line %d has kind %q, so it is not an event: %q",
 				i+1, ev.Kind, line)
 		}
@@ -92,19 +92,6 @@ func TestLogsGoToStderr(t *testing.T) {
 
 	if stdout.Len() != 0 {
 		t.Errorf("a run that emitted nothing still wrote to stdout:\n%s", stdout)
-	}
-}
-
-// known reports whether k is a kind the engine defines, which is what
-// separates an event from some other JSON object.
-func known(k engine.EventKind) bool {
-	switch k {
-	case engine.RunStart, engine.RunDone,
-		engine.RepoStart, engine.RepoDone,
-		engine.TaskStart, engine.TaskDone:
-		return true
-	default:
-		return false
 	}
 }
 

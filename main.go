@@ -53,7 +53,7 @@ import (
 	"strings"
 	"syscall"
 
-	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/devtool-engine/event"
 	"github.com/MarkRosemaker/devtool-engine/selfupdate"
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/devtool/internal/local"
@@ -231,7 +231,7 @@ func update(ctx context.Context, args []string) error {
 // maintained is the unattended shape: a list, and everything in it or one of
 // them.
 func maintained(
-	ctx context.Context, cfgPath, target string, commit, verbose bool, events engine.Emitter,
+	ctx context.Context, cfgPath, target string, commit, verbose bool, events event.Emitter,
 ) error {
 	// A maintained run commits and pushes to every repository on the list, so
 	// it says so out loud rather than being what happens by default.
@@ -274,12 +274,12 @@ func maintained(
 
 // emitter is where a run's events go: onto stdout as JSON Lines for something
 // parsing them, and otherwise nowhere, the log having said it already.
-func emitter(jsonl bool) engine.Emitter {
+func emitter(jsonl bool) event.Emitter {
 	if jsonl {
-		return engine.NewJSONLEmitter(os.Stdout)
+		return event.Write(os.Stdout)
 	}
 
-	return engine.EmitterFunc(func(engine.Event) {})
+	return event.EmitterFunc(func(event.Event) {})
 }
 
 // selfUpdate updates this binary, not any repository's dependencies. See the

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/MarkRosemaker/devtool-engine/event"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/remote"
 	"github.com/MarkRosemaker/devtool/maintain"
@@ -44,7 +45,7 @@ type Options struct {
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
-func Update(ctx context.Context, dir string, opts Options, events engine.Emitter) error {
+func Update(ctx context.Context, dir string, opts Options, events event.Emitter) error {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("resolving %s: %w", dir, err)
@@ -68,31 +69,31 @@ func Update(ctx context.Context, dir string, opts Options, events engine.Emitter
 		return commitRun(ctx, r, opts, events)
 	}
 
-	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
-	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})
+	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
-	engine.Emit(events, engine.Event{Kind: engine.RepoStart, Repo: r.String()})
+	event.Emit(events, event.Event{Kind: event.RepoStart, Repo: r.String()})
 
 	for _, t := range tasks(r, opts) {
-		engine.Emit(events, engine.Event{
-			Kind: engine.TaskStart, Repo: r.String(), Task: t.Short,
+		event.Emit(events, event.Event{
+			Kind: event.TaskStart, Repo: r.String(), Task: t.Short,
 		})
 
 		if err := t.Run(ctx); err != nil {
-			engine.Emit(events, engine.Event{
-				Kind: engine.RepoDone, Repo: r.String(),
+			event.Emit(events, event.Event{
+				Kind: event.RepoDone, Repo: r.String(),
 				Err: fmt.Sprintf("%s: %v", t.Name, err),
 			})
 
 			return fmt.Errorf("%s: %w", t.Name, err)
 		}
 
-		engine.Emit(events, engine.Event{
-			Kind: engine.TaskDone, Repo: r.String(), Task: t.Short,
+		event.Emit(events, event.Event{
+			Kind: event.TaskDone, Repo: r.String(), Task: t.Short,
 		})
 	}
 
-	engine.Emit(events, engine.Event{Kind: engine.RepoDone, Repo: r.String()})
+	event.Emit(events, event.Event{Kind: event.RepoDone, Repo: r.String()})
 
 	return nil
 }
@@ -130,7 +131,7 @@ func identify(ctx context.Context, dir string) (owner, name string) {
 // whatever it finds uncommitted, which is correct for a checkout it owns on a
 // server and catastrophic for the one somebody is working in.
 func commitRun(
-	ctx context.Context, r *repo, opts Options, events engine.Emitter,
+	ctx context.Context, r *repo, opts Options, events event.Emitter,
 ) error {
 	files, err := r.GetChangedFiles()
 	if err != nil {
@@ -145,8 +146,8 @@ func commitRun(
 		)
 	}
 
-	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
-	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})
+	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
 	res := (&engine.Runner{Inert: maintain.Inert}).Update(ctx, r,
 		engine.Spec{Coverage: opts.Coverage},
@@ -163,7 +164,7 @@ func commitRun(
 // Separate from Update because measuring is the expensive half: a rebuild of
 // the generated files should not need the test suite, and a measurement should
 // not need a reason.
-func Test(ctx context.Context, dir string, opts Options, events engine.Emitter) error {
+func Test(ctx context.Context, dir string, opts Options, events event.Emitter) error {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("resolving %s: %w", dir, err)
@@ -179,22 +180,22 @@ func Test(ctx context.Context, dir string, opts Options, events engine.Emitter) 
 		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
 	}
 
-	engine.Emit(events, engine.Event{Kind: engine.RunStart, Repos: []string{r.String()}})
-	defer engine.Emit(events, engine.Event{Kind: engine.RunDone})
+	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})
+	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
-	engine.Emit(events, engine.Event{Kind: engine.RepoStart, Repo: r.String()})
-	engine.Emit(events, engine.Event{Kind: engine.TaskStart, Repo: r.String(), Task: "test"})
+	event.Emit(events, event.Event{Kind: event.RepoStart, Repo: r.String()})
+	event.Emit(events, event.Event{Kind: event.TaskStart, Repo: r.String(), Task: "test"})
 
 	pct, err := r.GoTestCover(ctx)
 	if err != nil {
-		engine.Emit(events, engine.Event{
-			Kind: engine.RepoDone, Repo: r.String(), Err: err.Error(),
+		event.Emit(events, event.Event{
+			Kind: event.RepoDone, Repo: r.String(), Err: err.Error(),
 		})
 
 		return err
 	}
 
-	engine.Emit(events, engine.Event{Kind: engine.TaskDone, Repo: r.String(), Task: "test"})
+	event.Emit(events, event.Event{Kind: event.TaskDone, Repo: r.String(), Task: "test"})
 
 	if err := maintain.RecordCoverage(r.fs, pct); err != nil {
 		return err
@@ -206,8 +207,8 @@ func Test(ctx context.Context, dir string, opts Options, events engine.Emitter) 
 		return fmt.Errorf("rewriting the README: %w", err)
 	}
 
-	engine.Emit(events, engine.Event{
-		Kind: engine.RepoDone, Repo: r.String(), Coverage: pct,
+	event.Emit(events, event.Event{
+		Kind: event.RepoDone, Repo: r.String(), Coverage: pct,
 	})
 
 	return nil

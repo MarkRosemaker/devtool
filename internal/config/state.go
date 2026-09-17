@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"time"
 
-	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/devtool-engine/event"
 	"github.com/MarkRosemaker/jsonutil"
 )
 
@@ -42,7 +42,7 @@ func LoadState(path string) (*State, error) {
 }
 
 // SaveState records the outcome of a run.
-func SaveState(path string, results []engine.Result) error {
+func SaveState(path string, results []event.Result) error {
 	return jsonutil.WriteFile(path, State{
 		Time:     time.Now(),
 		HadError: anyFailed(results),
@@ -50,7 +50,7 @@ func SaveState(path string, results []engine.Result) error {
 }
 
 // anyFailed reports whether any repository failed.
-func anyFailed(results []engine.Result) bool {
+func anyFailed(results []event.Result) bool {
 	for _, res := range results {
 		if res.Err != nil {
 			return true
