@@ -124,7 +124,7 @@ func adoptExistingAgents(fs afero.Fs) error {
 		return fmt.Errorf("reading existing %s: %w", agentsPath, err)
 	}
 
-	if bytes.Contains(firstLine(existing), []byte(generatedMarker)) {
+	if generatedMarker.Match(firstLine(existing)) {
 		return nil
 	}
 
@@ -281,7 +281,7 @@ func generatedRoots(fs afero.Fs) ([]generatedRoot, error) {
 			return nil, fmt.Errorf("reading %s: %w", root.File, err)
 		}
 
-		if bytes.Contains(firstLine(b), []byte(generatedMarker)) {
+		if generatedMarker.Match(firstLine(b)) {
 			found = append(found, root)
 		}
 	}

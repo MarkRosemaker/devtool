@@ -61,7 +61,7 @@ const (
 
 // makefileStamp opens every generated Makefile, so a human or an agent
 // reading it finds out, before editing, that the edit will be lost.
-const makefileStamp = "# " + generatedMarker + " — edit files in mk/ instead."
+const makefileStamp = "# " + generatedBy + " — edit files in mk/ instead."
 
 //go:embed Makefile.tmpl
 var makefileTmplText string
@@ -382,7 +382,10 @@ func adoptExistingMakefile(fs afero.Fs) error {
 		return fmt.Errorf("reading existing %s: %w", makefilePath, err)
 	}
 
-	if bytes.HasPrefix(existing, []byte(makefileStamp)) {
+	// By the marker rather than by this run's own stamp: a Makefile an older
+	// generator wrote is still this task's, and matching the exact stamp
+	// would move it to mk/ the first time the generator is renamed.
+	if generatedMarker.Match(firstLine(existing)) {
 		return nil
 	}
 
