@@ -172,3 +172,21 @@ func TestGetChangedFilesAgainstRealGit(t *testing.T) {
 		}
 	}
 }
+
+// TestGoTestCoverWithNoPackages covers the shape a repository takes once
+// everything in it has moved elsewhere: a module kept only so a run does not
+// recreate one, with no Go files left. "go test ./..." calls that an error,
+// which is not the same as the tests having failed.
+func TestGoTestCoverWithNoPackages(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, "go.mod", "module example.com/empty\n\ngo 1.27.0\n")
+
+	got, err := (&repo{dir: dir}).GoTestCover(t.Context())
+	if err != nil {
+		t.Fatalf("a module with nothing to test should not be a failure: %v", err)
+	}
+
+	if got != 0 {
+		t.Errorf("coverage = %v, want 0", got)
+	}
+}
