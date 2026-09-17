@@ -215,10 +215,13 @@ func houseTargets(shape repoShape) []makeTarget {
 		// golangci-lint fmt, not gofumpt directly: .golangci.yaml is what
 		// says which formatters run and how.
 		{Name: "format", Recipe: []string{"golangci-lint fmt"}},
-		// In golangci-lint v2, run --fix does not format; fmt is separate.
 		{
-			Name:   "fix",
-			Recipe: []string{"go fix ./...", "golangci-lint fmt", "golangci-lint run --fix"},
+			Name: "fix",
+			Recipe: []string{
+				"go fix ./...",
+				// In golangci-lint v2, run --fix already runs format, so no separate fmt needed.
+				"golangci-lint run --fix",
+			},
 		},
 		{Name: "tidy", Recipe: []string{"go mod tidy", "go mod vendor"}},
 		{
@@ -334,8 +337,6 @@ func MakefileTask(repo engine.Repo) engine.Task {
 	}
 }
 
-// generateMakefile is [MakefileTask]'s work, factored out so it can run
-// against an in-memory filesystem in tests without a real repository.
 // updateCommand is how the generate target invokes devtool over this
 // repository, which has to be how a person would invoke it by hand.
 func updateCommand(private bool) string {
@@ -346,6 +347,8 @@ func updateCommand(private bool) string {
 	return "devtool update"
 }
 
+// generateMakefile is [MakefileTask]'s work, factored out so it can run
+// against an in-memory filesystem in tests without a real repository.
 func generateMakefile(fs afero.Fs, private bool) error {
 	if err := adoptExistingMakefile(fs); err != nil {
 		return err
