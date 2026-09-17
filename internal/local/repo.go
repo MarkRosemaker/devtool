@@ -162,11 +162,6 @@ func (r *repo) GoTestCover(ctx context.Context) (float64, error) {
 
 	if out, err := r.ExecCommand(ctx,
 		"go", "test", "-coverprofile="+coverProfile, "./..."); err != nil {
-		// A module with no packages is not a failure, only nothing to measure.
-		if strings.Contains(string(out), "matched no packages") {
-			return 0, nil
-		}
-
 		return 0, fmt.Errorf("tests failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 

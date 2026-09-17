@@ -167,4 +167,4 @@ What is untested is what touches a repository from the outside:
 - `internal/run`'s failure-to-open path, recorded on the unit.
 
 `internal/local` is covered where it matters, including the refusal to touch a
-dirty worktree and the module with no packages.
+dirty worktree.

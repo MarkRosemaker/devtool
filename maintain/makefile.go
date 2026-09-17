@@ -131,14 +131,6 @@ type repoShape struct {
 	// target is worth having.
 	Benchmarks bool
 
-	// Packages is true where the module has at least one Go package. A
-	// repository can keep a go.mod with nothing under it — a run over a
-	// repository without one would create it, so an emptied repository keeps
-	// the module deliberately — and over that module "go vet", "go test" and
-	// "go fix" all exit non-zero on "matched no packages". Targets that would
-	// only ever fail are left out.
-	Packages bool
-
 	// Private is the repository's own visibility, which the generate target
 	// has to pass back to devtool: without it a private repository's README
 	// is rebuilt as a public one's, and "make ci" then fails on the drift it
@@ -153,10 +145,6 @@ type repoShape struct {
 // this one is left out, since make warns about an overridden recipe on
 // every invocation.
 func houseTargets(shape repoShape) []makeTarget {
-	if !shape.Packages {
-		return documentOnlyTargets(shape)
-	}
-
 	// Two bundles, one a superset of the other: ci is everything that runs
 	// wherever it is asked to, and all adds what needs the network. Both
 	// run the race detector; plain "make test" stays quick.
@@ -265,49 +253,6 @@ func houseTargets(shape repoShape) []makeTarget {
 			Recipe:  []string{"rm -rf $(CLEAN_FILES)"},
 		},
 	})
-}
-
-// documentOnlyTargets are what is left of the house targets for a module with
-// no Go packages in it: everything else analyses, builds or tests packages
-// that are not there. Generating and verifying still mean something, since the
-// files a run writes — README.md, AGENTS.md, the Makefile itself — do not need
-// a package to be written.
-func documentOnlyTargets(shape repoShape) []makeTarget {
-	return []makeTarget{
-		{
-			Name:    "all",
-			Comment: "There are no Go packages here, so there is nothing to build or test.",
-			Prereqs: []string{"ci"},
-		},
-		{
-			Name:    "ci",
-			Comment: "Before every commit. Needs no network beyond the module cache.",
-			Prereqs: []string{"verify"},
-		},
-		{
-			Name: "generate",
-			Comment: "Everything a tool writes: the go:generate directives, " +
-				"then the files devtool owns.",
-			Recipe: []string{"go generate ./...", updateCommand(shape.Private)},
-		},
-		{
-			Name:    "verify",
-			Comment: "Run on a commit: it reports through git, so your own edits look like drift.",
-			Prereqs: []string{"generate"},
-			Recipe:  []string{"git diff --exit-code"},
-		},
-		{Name: "tidy", Recipe: []string{"go mod tidy"}},
-		{
-			Name:    "tools",
-			Comment: "Installs what the targets above shell out to, into $(go env GOPATH)/bin.",
-			Recipe:  toolInstalls(),
-		},
-		{
-			Name:    "clean",
-			Comment: "A fragment adds its own with CLEAN_FILES += dist.",
-			Recipe:  []string{"rm -rf $(CLEAN_FILES)"},
-		},
-	}
 }
 
 // houseTools are installed globally, latest of each, rather than pinned as
@@ -530,12 +475,7 @@ func readRepoShape(fs afero.Fs) (repoShape, error) {
 		return repoShape{}, err
 	}
 
-	packages, err := hasGoFiles(fs)
-	if err != nil {
-		return repoShape{}, err
-	}
-
-	return repoShape{Command: command, Benchmarks: benchmarks, Packages: packages}, nil
+	return repoShape{Command: command, Benchmarks: benchmarks}, nil
 }
 
 // errBenchmarkFound stops the walk in [hasBenchmarks] at the first
@@ -584,42 +524,6 @@ func hasBenchmarks(fs afero.Fs) (bool, error) {
 		return true, nil
 	case err != nil:
 		return false, fmt.Errorf("looking for benchmarks: %w", err)
-	default:
-		return false, nil
-	}
-}
-
-// errGoFileFound stops the walk in [hasGoFiles] at the first one.
-var errGoFileFound = errors.New("go file found")
-
-// hasGoFiles reports whether the module has any Go source of its own, which
-// is what decides whether the Go targets are worth generating at all.
-func hasGoFiles(fs afero.Fs) (bool, error) {
-	err := afero.Walk(fs, ".", func(p string, info os.FileInfo, err error) error {
-		switch {
-		case err != nil:
-			return err
-		case info.IsDir():
-			// Nothing under vendor/ is this repository's own, and a dotted
-			// directory is not source.
-			if base := filepath.Base(p); base == "vendor" ||
-				(strings.HasPrefix(base, ".") && base != ".") {
-				return filepath.SkipDir
-			}
-
-			return nil
-		case strings.HasSuffix(p, ".go"):
-			return errGoFileFound
-		default:
-			return nil
-		}
-	})
-
-	switch {
-	case errors.Is(err, errGoFileFound):
-		return true, nil
-	case err != nil:
-		return false, fmt.Errorf("looking for Go files: %w", err)
 	default:
 		return false, nil
 	}

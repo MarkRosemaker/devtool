@@ -8,10 +8,9 @@
 	behind. The stamp above is followed directly by whatever comes first,
 	and renderReadme trims the close back to a single newline.
 
-	The badge row follows the same rule as any other block: it renders with
-	a blank line after it, or not at all. Each badge is written once and
-	carries a trailing space, and renderReadme trims what a line ends with,
-	so any combination of them joins with exactly one space.
+	The badge row is not optional — a repository always has coverage worth
+	showing its owner — so only the badges that need an audience are
+	conditional, and each badge is written once.
 
 	The footer is two blocks, not one: Additional Information renders for a
 	private repository too, because the documents it links sit beside the
@@ -25,18 +24,14 @@
 	badge labelled OpenAPI is claiming. The API's own version lives at
 	.Info.Version and would say something else entirely.
 */ -}}
-{{ if .HasBadges -}}
 {{ with .OpenAPI -}}
 ![OpenAPI](https://img.shields.io/badge/OpenAPI-{{ .OpenAPI }}-blue) {{ end -}}
 {{ if not .Private -}}
 [![Go Reference](https://pkg.go.dev/badge/github.com/{{ .Owner }}/{{ .Name }}.svg)](https://pkg.go.dev/github.com/{{ .Owner }}/{{ .Name }}) {{ end -}}
-{{ if .Measured -}}
-![Code Coverage](https://img.shields.io/badge/coverage-{{ .Coverage }}%25-{{ .CoverageColor }}) {{ end -}}
-{{ if not .Private -}}
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE) {{ end -}}
-{{ with .Badges }}{{ . }}{{ end }}
+![Code Coverage](https://img.shields.io/badge/coverage-{{ .Coverage }}%25-{{ .CoverageColor }})
+{{- if not .Private }} [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE){{ end }}
+{{- with .Badges }} {{ . }}{{ end }}
 
-{{ end -}}
 {{ with .Logo -}}
 <p align="center">
   <img alt="{{ .Alt }}" src="{{ .Source }}" width="{{ if .Width }}{{ .Width }}{{ else }}500{{ end }}">
