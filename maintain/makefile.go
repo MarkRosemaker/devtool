@@ -130,6 +130,12 @@ type repoShape struct {
 	// Benchmarks is true where some test file defines one, so a bench
 	// target is worth having.
 	Benchmarks bool
+
+	// Private is the repository's own visibility, which the generate target
+	// has to pass back to devtool: without it a private repository's README
+	// is rebuilt as a public one's, and "make ci" then fails on the drift it
+	// just created.
+	Private bool
 }
 
 // houseTargets are the targets every repository gets, so anything — a
@@ -223,7 +229,7 @@ func houseTargets(shape repoShape) []makeTarget {
 			Name: "generate",
 			Comment: "Everything a tool writes: the go:generate directives, " +
 				"then the files devtool owns.",
-			Recipe: []string{"go generate ./...", "devtool update"},
+			Recipe: []string{"go generate ./...", updateCommand(shape.Private)},
 		},
 		{
 			Name:    "verify",
@@ -323,19 +329,29 @@ func MakefileTask(repo engine.Repo) engine.Task {
 		Name:  "generate Makefile",
 		Short: "makefile",
 		Run: func(context.Context) error {
-			return generateMakefile(repo.Fs())
+			return generateMakefile(repo.Fs(), repo.Private())
 		},
 	}
 }
 
 // generateMakefile is [MakefileTask]'s work, factored out so it can run
 // against an in-memory filesystem in tests without a real repository.
-func generateMakefile(fs afero.Fs) error {
+// updateCommand is how the generate target invokes devtool over this
+// repository, which has to be how a person would invoke it by hand.
+func updateCommand(private bool) string {
+	if private {
+		return "devtool update -private"
+	}
+
+	return "devtool update"
+}
+
+func generateMakefile(fs afero.Fs, private bool) error {
 	if err := adoptExistingMakefile(fs); err != nil {
 		return err
 	}
 
-	data, err := collectMakefileData(fs)
+	data, err := collectMakefileData(fs, private)
 	if err != nil {
 		return err
 	}
@@ -392,7 +408,7 @@ func adoptExistingMakefile(fs afero.Fs) error {
 // collectMakefileData reads mk/ and works out what the generated Makefile
 // should say: which of the house targets the repository has not already
 // defined for itself, and what plain "make" should run.
-func collectMakefileData(fs afero.Fs) (makefileData, error) {
+func collectMakefileData(fs afero.Fs, private bool) (makefileData, error) {
 	fragments, err := readMakeFragments(fs)
 	if err != nil {
 		return makefileData{}, err
@@ -402,6 +418,8 @@ func collectMakefileData(fs afero.Fs) (makefileData, error) {
 	if err != nil {
 		return makefileData{}, err
 	}
+
+	shape.Private = private
 
 	cleanFiles := []string{coverProfile}
 	if shape.Command != "" {
