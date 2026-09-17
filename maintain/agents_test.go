@@ -40,10 +40,21 @@ func TestGenerateAgents(t *testing.T) {
 
 		for _, want := range []string{
 			"Pull `main` and branch from it",
+			"`feat/`, `fix/` or `chore/`",
+			// Merging deletes the branch, so the next work starts a new one.
+			"Merging deletes the branch.",
 			"One branch and one pull request at a time",
 			"Once you have branched, leave `main` alone",
+			// The exit from that rule: a branch that cannot merge is not
+			// something to reconcile on your own initiative.
+			"say so and stop",
+			// One thing at a time is per repository and per conversation,
+			// and a second idea rides the open pull request or the roadmap.
+			"Not in a second branch.",
 			"Watching a pull request costs nothing",
 			"`make ci` passes before every commit",
+			// verify reports through git, so unstaged work reads as drift.
+			"Stage before running it.",
 			"`make` runs `ci` plus the checks that need the network",
 			"One commit per piece of work",
 			"Push each commit as soon as it is made",
