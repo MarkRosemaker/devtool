@@ -130,7 +130,11 @@ type repoShape struct {
 	// Benchmarks is true where some test file defines one, so a bench
 	// target is worth having.
 	Benchmarks bool
-	// Private is true if the repo is considered private.
+
+	// Private is the repository's own visibility, which the generate target
+	// has to pass back to devtool: without it a private repository's README
+	// is rebuilt as a public one's, and "make ci" then fails on the drift it
+	// just created.
 	Private bool
 }
 
@@ -190,11 +194,6 @@ func houseTargets(shape repoShape) []makeTarget {
 		}}
 	}
 
-	devtoolUpdate := "devtool update"
-	if shape.Private {
-		devtoolUpdate += " -private"
-	}
-
 	return slices.Concat([]makeTarget{all, ci}, build, []makeTarget{
 		{Name: "lint", Recipe: []string{"golangci-lint run"}},
 		{Name: "vet", Recipe: []string{"go vet ./..."}},
@@ -233,7 +232,7 @@ func houseTargets(shape repoShape) []makeTarget {
 			Name: "generate",
 			Comment: "Everything a tool writes: the go:generate directives, " +
 				"then the files devtool owns.",
-			Recipe: []string{"go generate ./...", devtoolUpdate},
+			Recipe: []string{"go generate ./...", updateCommand(shape.Private)},
 		},
 		{
 			Name:    "verify",
@@ -336,6 +335,16 @@ func MakefileTask(repo engine.Repo) engine.Task {
 			return generateMakefile(repo.Fs(), repo.Private())
 		},
 	}
+}
+
+// updateCommand is how the generate target invokes devtool over this
+// repository, which has to be how a person would invoke it by hand.
+func updateCommand(private bool) string {
+	if private {
+		return "devtool update -private"
+	}
+
+	return "devtool update"
 }
 
 // generateMakefile is [MakefileTask]'s work, factored out so it can run

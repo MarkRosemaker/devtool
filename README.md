@@ -10,3 +10,7 @@ Run it in a repository to rebuild that one's generated files, or give it a list
 to maintain every repository on it unattended. The machinery underneath is
 [devtool-engine](https://github.com/MarkRosemaker/devtool-engine); what is here
 is one owner's taste.
+
+## Additional Information
+
+- [**Roadmap**](docs/roadmap.md): what is planned and not yet done.

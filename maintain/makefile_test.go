@@ -767,3 +767,34 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 		t.Errorf("recipe ran %q, want the copy in GOBIN: the PATH export is not working", got)
 	}
 }
+
+// TestGenerateMakefilePassesPrivacyBack: the generate target invokes devtool
+// over this repository, and devtool has no other way to learn that the
+// repository is private. Without the flag the README is rebuilt as a public
+// one's, so "make ci" fails on drift the target itself produced.
+func TestGenerateMakefilePassesPrivacyBack(t *testing.T) {
+	for _, tc := range []struct {
+		private bool
+		want    string
+	}{
+		{private: false, want: "\tdevtool update\n"},
+		{private: true, want: "\tdevtool update -private\n"},
+	} {
+		t.Run(tc.want, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+
+			if err := generateMakefile(fs, tc.private); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := afero.ReadFile(fs, "Makefile")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !strings.Contains(string(got), tc.want) {
+				t.Errorf("the generate target does not run %q", strings.TrimSpace(tc.want))
+			}
+		})
+	}
+}
