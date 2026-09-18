@@ -29,8 +29,10 @@ pass over the repository.
 ## Repository-owned metadata
 
 `devtool.json` in each repository's root holds `description`, `topics`,
-`coverage` and the `devtoolVersion` that last maintained it. `devtool test`
-measures coverage and records it; the README badge reads it. A maintained run
+`coverage` and the newest `devtoolVersion` known to have maintained it.
+`devtool test` measures coverage and records it; the README badge reads it. The
+version is a high-water mark, and a run compares its own build against it to
+notice, without asking anything, that it is behind. A maintained run
 prefers the definition, falls back to `portfolio`'s `config.json` where a
 repository has none, and writes the definition afterwards with whatever it
 used — so one full run over the portfolio gives every repository one.

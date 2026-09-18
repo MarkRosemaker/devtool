@@ -3,7 +3,7 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20260917155344-c047bdcfd843
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20260918080330-25a61d15cf5d
 	github.com/MarkRosemaker/ghrepo v0.0.0-20260917220145-09dd68080a39
 	github.com/MarkRosemaker/golangci-json v0.0.0-20260917220140-48409a4c2e5f
 	github.com/MarkRosemaker/gorepo v0.0.0-20260917220326-fc066281bb76
@@ -14,6 +14,7 @@ require (
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/golangci/golangci-lint/v2 v2.13.2
 	github.com/spf13/afero v1.15.0
+	golang.org/x/mod v0.41.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -56,7 +57,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
-	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
