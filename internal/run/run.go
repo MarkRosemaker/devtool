@@ -93,6 +93,17 @@ func (s *Service) Run(ctx context.Context) error {
 
 	logProgress(ctx, config.Count(cfg))
 
+	// Announced before planning, not after. A Runner only ever sees one
+	// repository, so where a run begins and ends is the caller's to say — and
+	// saying it here rather than once there is a plan is the difference
+	// between a reader seeing the run immediately and seeing nothing for the
+	// three minutes it takes to open thirty-six repositories — which plan
+	// then reports its way through. The list is the configuration's own
+	// order, which is the order planning would have produced and the order
+	// the results come back in.
+	event.Emit(s.events, event.Event{Kind: event.RunStart, Repos: config.Keys(cfg)})
+	defer event.Emit(s.events, event.Event{Kind: event.RunDone})
+
 	plan, err := s.plan(ctx, cfg)
 	if err != nil {
 		return err
@@ -132,6 +143,11 @@ func (s *Service) RunOne(ctx context.Context, owner, name string) error {
 	}
 
 	repoCfg, org, known := lookupRepo(cfg, owner, name)
+
+	event.Emit(s.events, event.Event{
+		Kind: event.RunStart, Repos: []string{event.Key(owner, name)},
+	})
+	defer event.Emit(s.events, event.Event{Kind: event.RunDone})
 
 	if err := s.prefetch(ctx, owner, org); err != nil {
 		return err
@@ -229,6 +245,10 @@ type plan struct {
 	deps  map[string][]string // key → the keys it depends on
 }
 
+// openingPhase names the run-level phase plan reports as, for a reader with no
+// other way to know what a run is doing before its first repository event.
+const openingPhase = "opening"
+
 // plan opens every configured repository and works out which of them depend on
 // which others.
 //
@@ -240,11 +260,8 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 	// Module path → key, so a go.mod requirement can be recognised as one of
 	// the repositories in this run.
 	byModulePath := make(map[string]string, count)
-	for ownerName, owner := range cfg.ByIndex() {
-		for name := range owner.Repositories.ByIndex() {
-			key := event.Key(ownerName, name)
-			byModulePath["github.com/"+key] = key
-		}
+	for _, key := range config.Keys(cfg) {
+		byModulePath["github.com/"+key] = key
 	}
 
 	p := &plan{
@@ -263,6 +280,17 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 
 			p.keys = append(p.keys, u.key())
 			p.units[u.key()] = u
+
+			// Announced before the open rather than after, so the name on
+			// screen is the repository being waited on. A first run clones,
+			// and a clone is the slowest thing here by far.
+			event.Emit(s.events, event.Event{
+				Kind:      event.RunProgress,
+				Task:      openingPhase,
+				Repo:      u.key(),
+				TaskIndex: len(p.keys),
+				TaskCount: count,
+			})
 
 			s.open(ctx, u, byModulePath, p.deps)
 		}
@@ -328,6 +356,10 @@ func (s *Service) open(ctx context.Context, u *unit, byModulePath map[string]str
 
 // execute maintains every repository, in dependency order and as parallel as
 // that order allows, streaming progress as results arrive.
+//
+// The run-level pair is the caller's to emit rather than this function's,
+// because by the time there is a plan to execute the slowest part of the run
+// has already happened in silence.
 func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) []event.Result {
 	rows := make([]event.Result, len(p.keys))
 	for i, key := range p.keys {
@@ -344,13 +376,6 @@ func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) [
 		board.Apply(ev)
 		s.events.Emit(ev)
 	})
-
-	// The run-level pair is this side's to emit: a Runner only ever sees one
-	// repository, so only the caller knows where a run begins and ends. It
-	// names every repository it covers, because a reader in another process
-	// has no other way to know what rows its table should have.
-	event.Emit(events, event.Event{Kind: event.RunStart, Repos: p.keys})
-	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
 	depgraph.Run(ctx, graph,
 		func(ctx context.Context, key string) event.Result {

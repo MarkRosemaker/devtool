@@ -12,6 +12,7 @@ import (
 	"encoding/json/jsontext"
 	"fmt"
 
+	"github.com/MarkRosemaker/devtool-engine/event"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/jsonutil"
 	"github.com/MarkRosemaker/ordmap"
@@ -78,6 +79,23 @@ func Save(path string, cfg Config) error {
 	}
 
 	return nil
+}
+
+// Keys returns every repository the configuration covers, as "owner/name", in
+// the file's own order.
+//
+// That order is the one a reader expects to see a run's repositories in, and
+// it is fixed by the configuration rather than by anything a run discovers —
+// which is what lets a run name what it covers before it has opened anything.
+func Keys(cfg Config) []string {
+	keys := make([]string, 0, Count(cfg))
+	for ownerName, owner := range cfg.ByIndex() {
+		for name := range owner.Repositories.ByIndex() {
+			keys = append(keys, event.Key(ownerName, name))
+		}
+	}
+
+	return keys
 }
 
 // Count returns how many repositories the configuration covers.

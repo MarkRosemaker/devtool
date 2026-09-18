@@ -43,6 +43,21 @@ which means reading a file out of a worktree that `prepare` itself pulls. Worth
 a look when the fields leave `config.json`, because the ordering is the part
 that was always awkward — and it is a change to `devtool-engine`, not here.
 
+## Record how long each step took
+
+`devtool.json` already carries per-repository metadata, and a run now emits a
+step-by-step account of what it did. Writing each step's duration there would
+let a reader estimate progress from what this repository actually cost last
+time, rather than from a static weight — last-run-wins, per repository, no
+learning algorithm.
+
+The estimate needs it more than it looks. A repository's total work is not
+knowable in advance: `apply` runs the whole suite inside any task that changed
+a relevant file, so the number of test runs depends on how many tasks turn out
+to commit, which nobody knows until they do. A repository that committed three
+tasks last run will probably commit them again, and that is the whole
+prediction.
+
 ## Per-repository task sequences
 
 Every repository currently gets the same sequence. Some want more:
