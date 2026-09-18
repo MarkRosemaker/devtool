@@ -44,6 +44,10 @@ cost you something.
 - Stage before running it. `verify` reports through `git diff --exit-code`,
   so work you have not staged reads as drift and fails a run that was
   otherwise clean.
+- It regenerates while it checks, so a clean run can still leave changes of
+  its own. Stage those and run it again. Where they are drift you did not
+  cause — a generated file the last run left behind — commit them on their
+  own, so the diff of the work is the work.
 - `make` runs `ci` plus the checks that need the network. Prefer it where
   you have one; say which step you could not run where you do not.
 - One commit per piece of work, not one per session.
