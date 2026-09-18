@@ -31,7 +31,7 @@ all: ci vuln
 # ready, plus a stop on anything left unregenerated.
 ci: ready verify
 
-# Before every commit. Needs no network beyond the module cache.
+# After any code change. Needs no network beyond the module cache.
 ready: fix generate vet test-race build
 
 build:

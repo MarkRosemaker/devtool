@@ -161,7 +161,7 @@ func houseTargets(shape repoShape) []makeTarget {
 	// that what it changed is what the generators see.
 	ready := makeTarget{
 		Name:    "ready",
-		Comment: "Before every commit. Needs no network beyond the module cache.",
+		Comment: "After any code change. Needs no network beyond the module cache.",
 		Prereqs: []string{"fix", "generate", "vet", "test-race"},
 	}
 	ci := makeTarget{
