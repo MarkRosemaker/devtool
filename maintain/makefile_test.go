@@ -32,7 +32,8 @@ func TestGenerateMakefile(t *testing.T) {
 			".DEFAULT_GOAL := all",
 			".DELETE_ON_ERROR:",
 			"all: ci vuln",
-			"ci: fix verify vet test-race",
+			"ci: ready verify",
+			"ready: fix generate vet test-race",
 			"lint:", "golangci-lint run",
 			"test:", "go test ./...",
 			"generate:", "go generate ./...",
@@ -365,7 +366,8 @@ func TestGenerateMakefileCommand(t *testing.T) {
 					"PKG    := ./cmd/" + tc.cmds[0] + "/",
 					// all builds it, and the recipe goes through the
 					// variables so a fragment can repoint either.
-					"ci: fix verify vet test-race build",
+					"ci: ready verify",
+					"ready: fix generate vet test-race build",
 					"build:", "mkdir -p bin", "go build -o $(BINARY) $(PKG)",
 				})
 			}
@@ -666,7 +668,8 @@ func TestGenerateMakefileBundles(t *testing.T) {
 	// needs the network.
 	checkOrder(t, got, []string{
 		"all: ci vuln",
-		"ci: fix verify vet test-race",
+		"ci: ready verify",
+		"ready: fix generate vet test-race",
 	})
 
 	for _, want := range []string{
@@ -771,7 +774,7 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 // TestGenerateMakefilePassesPrivacyBack: the generate target invokes devtool
 // over this repository, and devtool has no other way to learn that the
 // repository is private. Without the flag the README is rebuilt as a public
-// one's, so "make ci" fails on drift the target itself produced.
+// one's, by the very target meant to keep it right.
 func TestGenerateMakefilePassesPrivacyBack(t *testing.T) {
 	for _, tc := range []struct {
 		private bool
