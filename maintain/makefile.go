@@ -133,8 +133,8 @@ type repoShape struct {
 
 	// Private is the repository's own visibility, which the generate target
 	// has to pass back to devtool: without it a private repository's README
-	// is rebuilt as a public one's, and "make ci" then fails on the drift it
-	// just created.
+	// is rebuilt as a public one's, by the very target meant to keep it
+	// right.
 	Private bool
 }
 
@@ -145,16 +145,29 @@ type repoShape struct {
 // this one is left out, since make warns about an overridden recipe on
 // every invocation.
 func houseTargets(shape repoShape) []makeTarget {
-	// Two bundles, one a superset of the other: ci is everything that runs
-	// wherever it is asked to, and all adds what needs the network. Both
+	// Three bundles, each a superset of the last. ready is what somebody
+	// about to commit runs, ci adds the check that suits a runner which did
+	// not just regenerate, and all adds what needs the network. All of them
 	// run the race detector; plain "make test" stays quick.
 	//
-	// fix rather than lint, since it lints as it goes, and before verify so
-	// that whatever it changed shows up as drift.
+	// ready and ci are separate because they answer different questions.
+	// ready puts the tree right and reports whether it is good: regenerating
+	// is the point of it, so the files it writes are its output, not a
+	// failure. ci asks whether a tree somebody else produced was left right,
+	// which is a gate, and a gate belongs where the work has already been
+	// done rather than in the middle of doing it.
+	//
+	// fix rather than lint, since it lints as it goes, and before generate so
+	// that what it changed is what the generators see.
+	ready := makeTarget{
+		Name:    "ready",
+		Comment: "Before every commit. Needs no network beyond the module cache.",
+		Prereqs: []string{"fix", "generate", "vet", "test-race"},
+	}
 	ci := makeTarget{
 		Name:    "ci",
-		Comment: "Before every commit. Needs no network beyond the module cache.",
-		Prereqs: []string{"fix", "verify", "vet", "test-race"},
+		Comment: "ready, plus a stop on anything left unregenerated.",
+		Prereqs: []string{"ready", "verify"},
 	}
 	all := makeTarget{
 		Name:    "all",
@@ -165,7 +178,7 @@ func houseTargets(shape repoShape) []makeTarget {
 	var build []makeTarget
 
 	if shape.Command != "" {
-		ci.Prereqs = append(ci.Prereqs, "build")
+		ready.Prereqs = append(ready.Prereqs, "build")
 
 		// Through BINARY and PKG, so a fragment can repoint either.
 		build = []makeTarget{{
@@ -194,7 +207,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		}}
 	}
 
-	return slices.Concat([]makeTarget{all, ci}, build, []makeTarget{
+	return slices.Concat([]makeTarget{all, ci, ready}, build, []makeTarget{
 		{Name: "lint", Recipe: []string{"golangci-lint run"}},
 		{Name: "vet", Recipe: []string{"go vet ./..."}},
 		{
@@ -235,8 +248,9 @@ func houseTargets(shape repoShape) []makeTarget {
 			Recipe: []string{"go generate ./...", updateCommand(shape.Private)},
 		},
 		{
-			Name:    "verify",
-			Comment: "Run on a commit: it reports through git, so your own edits look like drift.",
+			Name: "verify",
+			Comment: "For a runner that did not just regenerate: it reports through git, " +
+				"so your own uncommitted edits look like drift.",
 			Prereqs: []string{"generate"},
 			Recipe:  []string{"git diff --exit-code"},
 		},

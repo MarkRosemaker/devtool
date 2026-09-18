@@ -52,10 +52,12 @@ func TestGenerateAgents(t *testing.T) {
 			// and a second idea rides the open pull request or the roadmap.
 			"Not in a second branch.",
 			"Watching a pull request costs nothing",
-			"`make ci` passes before every commit",
-			// verify reports through git, so unstaged work reads as drift.
-			"Stage before running it.",
-			"`make` runs `ci` plus the checks that need the network",
+			"`make ready` passes before every commit",
+			// What ready regenerates is its output, not a failure to recover
+			// from, and ci is the gate for a runner rather than for you.
+			"Because it regenerates, it may leave changes of its own.",
+			"it is not yours to run",
+			"`make` on its own adds `govulncheck`",
 			"One commit per piece of work",
 			"Push each commit as soon as it is made",
 			"Open the pull request yourself",

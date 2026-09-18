@@ -5,13 +5,16 @@
 .NOTPARALLEL:
 MAKEFLAGS += --no-print-directory
 
-.PHONY: all ci vet vuln test test-race cover format fix tidy deps generate verify doc tools clean
+.PHONY: all ci lint vet vuln test test-race cover format fix tidy deps generate verify doc tools clean
 
 # ci, plus the checks that need the network.
 all: ci vuln
 
-# Before every commit. Needs no network beyond the module cache.
-ci: fix verify vet test-race
+# ready, plus a stop on anything left unregenerated.
+ci: ready verify
+
+lint:
+	golangci-lint run
 
 vet:
 	go vet ./...
@@ -50,7 +53,7 @@ generate:
 	go generate ./...
 	devtool update
 
-# Run on a commit: it reports through git, so your own edits look like drift.
+# For a runner that did not just regenerate: it reports through git, so your own uncommitted edits look like drift.
 verify: generate
 	git diff --exit-code
 
