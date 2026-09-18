@@ -1,7 +1,7 @@
 cloud.google.com/go v0.123.0 h1:2NAUJwPR47q+E35uaJeYoNhuNEM9kM8SjgRgdeOJUSE=
 cloud.google.com/go v0.123.0/go.mod h1:xBoMV08QcqUGuPW65Qfm1o9Y4zKZBpGS+7bImXLTAZU=
-github.com/MarkRosemaker/devtool-engine v0.0.0-20260918080330-25a61d15cf5d h1:bdFhX1mu9D5zFLsRqaZkNFprp9VLz8XWr+/kfSGZi6k=
-github.com/MarkRosemaker/devtool-engine v0.0.0-20260918080330-25a61d15cf5d/go.mod h1:7ou9JJI6tE3JA38NKGbq+xTM80qiXGW4YcLfl+uCxt8=
+github.com/MarkRosemaker/devtool-engine v0.0.0-20260918095711-005c7450cda6 h1:6ViM+oLLdinMlQ9FTOzWtrCIu3hPraq2C4cYFlOw/Hk=
+github.com/MarkRosemaker/devtool-engine v0.0.0-20260918095711-005c7450cda6/go.mod h1:7ou9JJI6tE3JA38NKGbq+xTM80qiXGW4YcLfl+uCxt8=
 github.com/MarkRosemaker/errpath v0.0.0-20260917220130-8eabc8b269d2 h1:VeES+PYaHICoo5XR31h4Rpn6HFyhKR+U7VJ/nXUi34A=
 github.com/MarkRosemaker/errpath v0.0.0-20260917220130-8eabc8b269d2/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
 github.com/MarkRosemaker/ghrepo v0.0.0-20260917220145-09dd68080a39 h1:a5WPurb6+C85kHVX+trsxh1gkVARGcLMpW9pOkCBZMQ=
