@@ -42,9 +42,10 @@ var lintConfig = config.Config{
 			"wsl_v5",
 			// check exhaustiveness of enum switch statements
 			"exhaustive",
+			// checks for unchecked errors in Go code (could be critical bugs)
+			"errcheck",
 
 			// TODO: possible additions:
-			// - errcheck # Errcheck is a program for checking for unchecked errors in Go code. These unchecked errors can be critical bugs in some cases.
 			// - forbidigo # Forbids fmt.Print* in service code — log via log.LoggerFromContext instead (doc/contributing/coding-conventions/logging.md).
 			// - govet # Vet examines Go source code and reports suspicious constructs. It is roughly the same as 'go vet' and uses its passes. [auto-fix]
 			// - ineffassign # Detects when assignments to existing variables are not used. [fast]
