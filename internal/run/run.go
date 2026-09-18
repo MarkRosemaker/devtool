@@ -97,9 +97,10 @@ func (s *Service) Run(ctx context.Context) error {
 	// repository, so where a run begins and ends is the caller's to say — and
 	// saying it here rather than once there is a plan is the difference
 	// between a reader seeing the run immediately and seeing nothing for the
-	// three minutes it takes to open thirty-six repositories. The list is the
-	// configuration's own order, which is the order planning would have
-	// produced and the order the results come back in.
+	// three minutes it takes to open thirty-six repositories — which plan
+	// then reports its way through. The list is the configuration's own
+	// order, which is the order planning would have produced and the order
+	// the results come back in.
 	event.Emit(s.events, event.Event{Kind: event.RunStart, Repos: config.Keys(cfg)})
 	defer event.Emit(s.events, event.Event{Kind: event.RunDone})
 
@@ -244,6 +245,10 @@ type plan struct {
 	deps  map[string][]string // key → the keys it depends on
 }
 
+// openingPhase names the run-level phase plan reports as, for a reader with no
+// other way to know what a run is doing before its first repository event.
+const openingPhase = "opening"
+
 // plan opens every configured repository and works out which of them depend on
 // which others.
 //
@@ -275,6 +280,17 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 
 			p.keys = append(p.keys, u.key())
 			p.units[u.key()] = u
+
+			// Announced before the open rather than after, so the name on
+			// screen is the repository being waited on. A first run clones,
+			// and a clone is the slowest thing here by far.
+			event.Emit(s.events, event.Event{
+				Kind:      event.RunProgress,
+				Task:      openingPhase,
+				Repo:      u.key(),
+				TaskIndex: len(p.keys),
+				TaskCount: count,
+			})
 
 			s.open(ctx, u, byModulePath, p.deps)
 		}
