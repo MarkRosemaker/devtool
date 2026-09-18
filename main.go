@@ -58,6 +58,7 @@ import (
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/devtool/internal/local"
 	"github.com/MarkRosemaker/devtool/internal/run"
+	"github.com/MarkRosemaker/devtool/maintain"
 )
 
 //go:generate go run ./internal/lintgen
@@ -147,6 +148,7 @@ flags:
   -commit     test, commit each change and push; off by default
   -verbose    report the outcome even when nothing changed
   -private    (no list) this repository is private
+  -check-latest  ask the proxy whether this build is the latest, and fail if not
 `, name)
 }
 
@@ -184,6 +186,10 @@ func update(ctx context.Context, args []string) error {
 	commit := fs.Bool("commit", false,
 		"test, commit each task that changed something, and push; without it "+
 			"nothing is committed and the worktree is left to read")
+	checkLatest := fs.Bool("check-latest", false,
+		"ask the module proxy whether this is the latest build and fail if it "+
+			"is not; a run already says so without the network where a "+
+			"repository has been maintained by a later one")
 
 	fs.Usage = func() { usage(fs.Output()) }
 
@@ -195,6 +201,12 @@ func update(ctx context.Context, args []string) error {
 	if len(positional) > 1 {
 		return fmt.Errorf("%s update takes one repository or %q, got %q",
 			name, allTarget, positional)
+	}
+
+	if *checkLatest {
+		if err := requireLatest(ctx); err != nil {
+			return err
+		}
 	}
 
 	events := emitter(*jsonl)
@@ -216,6 +228,7 @@ func update(ctx context.Context, args []string) error {
 			Holder:  licenseHolder,
 			Private: *private,
 			Commit:  *commit,
+			Version: selfupdate.Version(),
 		}, events)
 	}
 
@@ -226,6 +239,39 @@ func update(ctx context.Context, args []string) error {
 	}
 
 	return maintained(ctx, *cfgPath, target, *commit, *verbose, events)
+}
+
+// requireLatest fails the run where this is not the latest published build.
+//
+// The one place devtool asks the network about itself, and only when asked to:
+// a run already notices it is behind by reading what the repository records,
+// which costs nothing and needs nothing. This covers the gap that leaves — a
+// build published since the last run anywhere, which nothing has recorded yet.
+//
+// Direct, because the proxy's answer to "what is the latest" is cached for
+// minutes after a push, and a check that reports yesterday is worse than none.
+//
+// Only a definite answer is a failure. Where the question could not be put —
+// no toolchain, no network, no credentials for a private module — the run
+// carries on, since that is a fact about this machine rather than about this
+// build.
+func requireLatest(ctx context.Context) error {
+	current := selfupdate.Version()
+
+	latest, err := (&selfupdate.Updater{Module: modulePath, Direct: true}).Latest(ctx)
+	if err != nil {
+		slog.WarnContext(ctx, "could not ask which build is the latest",
+			"error", err, "running", current)
+
+		return nil
+	}
+
+	if !maintain.Newer(latest, current) {
+		return nil
+	}
+
+	return fmt.Errorf("%s %s is behind %s: run %s self-update",
+		name, current, latest, name)
 }
 
 // maintained is the unattended shape: a list, and everything in it or one of

@@ -11,6 +11,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,14 @@ type Options struct {
 	// maintained run does. Without it nothing is committed and the worktree
 	// is left for whoever ran it to read.
 	Commit bool
+
+	// Version is the build doing the work, as the toolchain reports it. It is
+	// recorded in the repository's definition and compared against what is
+	// already there, which is how a build that is behind gets told so.
+	//
+	// A parameter rather than a call to selfupdate.Version, because a test
+	// has to be able to be a build it is not.
+	Version string
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -64,6 +73,8 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 		private: opts.Private,
 		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
 	}
+
+	noticeIfBehind(ctx, r.fs, opts.Version)
 
 	if opts.Commit {
 		return commitRun(ctx, r, opts, events)
@@ -109,7 +120,35 @@ func tasks(r engine.Repo, opts Options) []engine.Task {
 		maintain.AgentsTask(r),
 		maintain.ClaudeTask(r),
 		maintain.GenLintfile(r),
+		maintain.VersionTask(r, opts.Version),
 	}
+}
+
+// noticeIfBehind says so when the repository has been maintained by a later
+// build than this one.
+//
+// No network and nothing to check: the comparison is against a version
+// already on disk, put there by whichever build last ran here — which, for a
+// repository in the portfolio, is a self-updating one every few hours. A run
+// that learns nothing says nothing.
+//
+// A notice rather than a refusal. Generated files written by a build that is
+// behind are corrected by the next run that is not, and stopping the work
+// would cost more than that.
+func noticeIfBehind(ctx context.Context, fs afero.Fs, current string) {
+	recorded, err := maintain.RecordedVersion(fs)
+	if err != nil {
+		slog.DebugContext(ctx, "could not read the repository's definition", "error", err)
+
+		return
+	}
+
+	if !maintain.Newer(recorded, current) {
+		return
+	}
+
+	slog.WarnContext(ctx, "this devtool is behind the one that last maintained this repository",
+		"running", current, "recorded", recorded, "fix", "devtool self-update")
 }
 
 // identify names the repository from its git remote, falling back to the
