@@ -56,7 +56,7 @@ func TestGenerateAgents(t *testing.T) {
 			// What ready regenerates is its output, not a failure to recover
 			// from.
 			"Because it regenerates, it may leave changes of its own.",
-			"`make` on its own adds `govulncheck`",
+			"`make all` adds `govulncheck`",
 			"One commit per piece of work",
 			"Push each commit as soon as it is made",
 			"Open the pull request yourself",

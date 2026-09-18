@@ -48,9 +48,8 @@ cost you something.
   output, not a failure: read them, and commit them with the work where they
   follow from it, or on their own where they are drift an earlier run left
   behind.
-- `make` on its own adds `govulncheck`, which reads the vulnerability
-  database over the network. Run it where you have one; say so where you do
-  not.
+- `make all` adds `govulncheck`, which reads the vulnerability database over
+  the network. Run it where you have one; say so where you do not.
 - One commit per piece of work, not one per session.
 - Push each commit as soon as it is made.
 - Open the pull request yourself once there is something to review. Do not
