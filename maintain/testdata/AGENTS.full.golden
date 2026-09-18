@@ -46,9 +46,6 @@ cost you something.
   output, not a failure: read them, and commit them with the work where they
   follow from it, or on their own where they are drift an earlier run left
   behind.
-- `make ci` is `ready` plus a stop on anything left unregenerated. It is for
-  a runner that did not just regenerate, so it is not yours to run — after
-  `ready` there is nothing left for it to catch.
 - `make` on its own adds `govulncheck`, which reads the vulnerability
   database over the network. Run it where you have one; say so where you do
   not.

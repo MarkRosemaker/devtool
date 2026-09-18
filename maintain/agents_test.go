@@ -54,9 +54,8 @@ func TestGenerateAgents(t *testing.T) {
 			"Watching a pull request costs nothing",
 			"`make ready` passes before every commit",
 			// What ready regenerates is its output, not a failure to recover
-			// from, and ci is the gate for a runner rather than for you.
+			// from.
 			"Because it regenerates, it may leave changes of its own.",
-			"it is not yours to run",
 			"`make` on its own adds `govulncheck`",
 			"One commit per piece of work",
 			"Push each commit as soon as it is made",
