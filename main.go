@@ -132,6 +132,7 @@ func topLevelFlags(ctx context.Context, args []string) error {
 
 // usage says what the tool takes, in the order somebody is likely to want it.
 func usage(w io.Writer) {
+	//nolint:errcheck
 	fmt.Fprintf(w, `usage:
   %[1]s                                rebuild this repository's generated files
   %[1]s update                         the same
@@ -149,7 +150,7 @@ flags:
   -verbose    report the outcome even when nothing changed
   -private    (no list) this repository is private
   -check-latest  ask the proxy whether this build is the latest, and fail if not
-`, name) //nolint:errcheck
+`, name)
 }
 
 // parseFlags parses args where a flag may follow a positional argument.
