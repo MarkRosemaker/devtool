@@ -185,7 +185,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	// golangci-json only marshals to JSON itself (see its README): converting to
 	// YAML, the format golangci-lint actually reads, is this command's job.
