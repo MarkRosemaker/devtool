@@ -61,8 +61,8 @@ var lintConfig = config.Config{
 			Errcheck: config.ErrcheckSettings{
 				ExcludeFunctions: []string{
 					"(*os.File).Close",
-					"io.Closer.Close",
-					"(*io.ReadCloser).Close",
+					"(io.Closer).Close",
+					"(io.ReadCloser).Close",
 					"(github.com/spf13/afero.File).Close",
 				},
 			},
