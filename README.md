@@ -13,4 +13,5 @@ is one owner's taste.
 
 ## Additional Information
 
+- [**Architecture**](docs/architecture.md): how the parts fit together.
 - [**Roadmap**](docs/roadmap.md): what is planned and not yet done.
