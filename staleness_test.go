@@ -9,18 +9,19 @@ import (
 	"testing"
 )
 
-// TestALocalBuildIsNobodysHighWaterMark drives the version record through the
-// real binary, over the case a test binary can actually be: a build nobody
-// could install.
+// TestAStaleLocalBuildIsRefused drives the version check through the real
+// binary, over the case a test binary can actually be: a build nobody could
+// install, behind the mark the repository carries.
 //
-// It is the property the notice rests on from the other side. A build that is
-// not published must not become the mark other machines are judged against,
-// and must not lower a mark that is already there — otherwise the first local
-// run in a repository stops every other machine being told it is behind.
+// That is not a contrived case. It is the one that happened — a "+dirty"
+// build a day old rewrote this repository's own generated files back to what
+// its older generators wanted — and the first version of the check missed it,
+// because the comparison exempted a local build in both directions rather
+// than only when raising the mark.
 //
-// The notice itself is asserted in internal/local, where a test can name a
-// version it is not; here it could only ever be a local build.
-func TestALocalBuildIsNobodysHighWaterMark(t *testing.T) {
+// The mark must survive either way: a build that is not published must never
+// become what other machines are judged against, nor lower what is there.
+func TestAStaleLocalBuildIsRefused(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a binary and runs git")
 	}
@@ -43,8 +44,14 @@ func TestALocalBuildIsNobodysHighWaterMark(t *testing.T) {
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("%v\n--- stderr ---\n%s", err, stderr)
+	if err := cmd.Run(); err == nil {
+		t.Fatalf("a build behind the mark was allowed to write\n--- stdout ---\n%s", stdout)
+	}
+
+	// Self-update cannot replace a build nobody published, so the refusal has
+	// to name the remedy that does.
+	if !strings.Contains(stderr.String(), "rebuild") {
+		t.Errorf("the refusal does not say how to fix it:\n%s", stderr)
 	}
 
 	after, err := os.ReadFile(definition)
@@ -54,11 +61,5 @@ func TestALocalBuildIsNobodysHighWaterMark(t *testing.T) {
 
 	if !strings.Contains(string(after), recorded) {
 		t.Errorf("the mark was lowered by a local build:\n%s", after)
-	}
-
-	// The run still did its work, and the stream is still only events: the
-	// version record is a task like any other.
-	if !strings.Contains(stdout.String(), `"kind":"run_done"`) {
-		t.Errorf("the run did not finish:\n%s", stdout)
 	}
 }

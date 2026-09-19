@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -56,6 +57,39 @@ func (r *repo) ExecCommand(ctx context.Context, name string, args ...string) ([]
 	cmd.Dir = r.dir
 
 	return cmd.CombinedOutput()
+}
+
+// head names the commit HEAD points at, empty where there is none yet — a
+// repository being bootstrapped has no commits, which is not an error here.
+func (r *repo) head(ctx context.Context) string {
+	out, err := r.git(ctx, "rev-parse", "HEAD")
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(out))
+}
+
+// state is what the repository looks like right now: the commit it is on and
+// the paths that differ from it. Compared against the same taken before the
+// run, it says whether the run changed anything — a commit the runner made,
+// or a file a task wrote that nothing committed. Both are needed, because a
+// commit run leaves a clean worktree and a plain rebuild leaves a dirty one,
+// and the worktree alone would count dirt an earlier run left behind.
+//
+// Paths rather than contents: a generator that rewrote a file it had already
+// left dirty, to something different, would not register. That would mean the
+// generators are not deterministic, which is a fault of its own and not one
+// this is the place to find.
+func (r *repo) state(ctx context.Context) (string, error) {
+	files, err := r.GetChangedFiles()
+	if err != nil {
+		return "", err
+	}
+
+	slices.Sort(files)
+
+	return r.head(ctx) + "\x00" + strings.Join(files, "\x00"), nil
 }
 
 // GetChangedFiles is what the runner reads to decide whether a task did

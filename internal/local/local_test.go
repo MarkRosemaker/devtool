@@ -2,6 +2,7 @@ package local
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/MarkRosemaker/devtool-engine/event"
+	"github.com/MarkRosemaker/devtool-engine/selfupdate"
 	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/spf13/afero"
 )
@@ -198,29 +200,46 @@ func TestUpdateRecordsTheVersion(t *testing.T) {
 	}
 }
 
-// TestUpdateDoesNotLowerTheMark is the property the whole notice rests on: a
-// build that is behind reads the mark and leaves it, so every other machine
-// goes on being told.
-func TestUpdateDoesNotLowerTheMark(t *testing.T) {
+// TestVersionRidesAlongWithRealWork is the guard against the record walking
+// itself forward. A run that changed nothing leaves the mark alone: the newer
+// build evidently has no different opinion about this repository, and writing
+// the mark anyway would be a commit whose only content is the mark — which in
+// devtool's own repository publishes a version for the next run to record,
+// and so on without end.
+func TestVersionRidesAlongWithRealWork(t *testing.T) {
 	const (
-		recorded = "v0.0.0-20260917155344-c047bdcfd843"
-		stale    = "v0.0.0-20260915161737-9e10ae8f485b"
+		first  = "v0.0.0-20260915161737-9e10ae8f485b"
+		second = "v0.0.0-20260917155344-c047bdcfd843"
 	)
 
 	dir := committedRepo(t)
-	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
+	fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
 
-	if err := Update(t.Context(), dir, Options{Version: stale}, nopEmitter{}); err != nil {
+	// The first run generates everything, so it has plainly done work.
+	if err := Update(t.Context(), dir, Options{Version: first}, nopEmitter{}); err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := maintain.RecordedVersion(afero.NewBasePathFs(afero.NewOsFs(), dir))
+	if got, err := maintain.RecordedVersion(fs); err != nil {
+		t.Fatal(err)
+	} else if got != first {
+		t.Fatalf("the first run recorded %q, want %q", got, first)
+	}
+
+	// The second finds every generated file already as it wants it, so there
+	// is nothing for the mark to ride along with.
+	if err := Update(t.Context(), dir, Options{Version: second}, nopEmitter{}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := maintain.RecordedVersion(fs)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got != recorded {
-		t.Errorf("the mark was lowered to %q, want %q left alone", got, recorded)
+	if got != first {
+		t.Errorf("a run that changed nothing moved the mark to %q, want %q left alone",
+			got, first)
 	}
 }
 
@@ -241,15 +260,85 @@ func committedRepo(t *testing.T) string {
 	return dir
 }
 
-// TestUpdateNoticesItIsBehind: the notice is what an agent actually sees, so
-// it is asserted on the log the run writes.
+// TestUpdateRefusesWhenBehind: a build that is behind does not write. Behind
+// is not a worse opinion but a different one, so its generators undo the
+// newer ones' work — which is what happened to this repository's own files
+// before the notice became a refusal.
 //
-// In-process rather than through the binary, because a binary a test builds is
-// never a published version — that is the whole reason a local build is exempt
-// — so only a caller that can name a version it is not can drive this.
-func TestUpdateNoticesItIsBehind(t *testing.T) {
+// In-process rather than through the binary, because a binary a test builds
+// is never a published version — that is the whole reason a local build is
+// exempt — so only a caller that can name a version it is not can drive this.
+func TestUpdateRefusesWhenBehind(t *testing.T) {
 	const (
 		recorded = "v0.0.0-20260917155344-c047bdcfd843"
+		running  = "v0.0.0-20260915161737-9e10ae8f485b"
+	)
+
+	dir := committedRepo(t)
+	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
+
+	err := Update(t.Context(), dir, Options{Version: running}, nopEmitter{})
+	if err == nil {
+		t.Fatal("a build that is behind was allowed to write")
+	}
+
+	for _, want := range []string{"behind", running, recorded, "self-update"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not mention %q: %v", want, err)
+		}
+	}
+
+	// Nothing was written: the refusal comes before the generators, so the
+	// repository is exactly as it was found.
+	if got := readFileString(t, filepath.Join(dir, "devtool.json")); !strings.Contains(got, recorded) {
+		t.Errorf("the definition was rewritten: %s", got)
+	}
+}
+
+// TestUpdateFetchesTheBuildItIsBehind: the refusal is not a dead end. It
+// tries the update first, so whoever runs next — a person or an agent — is
+// already carrying the build they were told to get.
+func TestUpdateFetchesTheBuildItIsBehind(t *testing.T) {
+	const (
+		recorded = "v0.0.0-20260917155344-c047bdcfd843"
+		running  = "v0.0.0-20260915161737-9e10ae8f485b"
+	)
+
+	dir := committedRepo(t)
+	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
+
+	called := 0
+	opts := Options{
+		Version: running,
+		SelfUpdate: func(context.Context) (selfupdate.Outcome, error) {
+			called++
+
+			return selfupdate.Outcome{Current: running, Latest: recorded, Updated: true}, nil
+		},
+	}
+
+	err := Update(t.Context(), dir, opts, nopEmitter{})
+	if err == nil {
+		t.Fatal("a build that is behind was allowed to write")
+	}
+
+	if called != 1 {
+		t.Errorf("the updater ran %d times, want 1", called)
+	}
+
+	// The process is still the old binary, so the run cannot simply carry on.
+	if !strings.Contains(err.Error(), "run the command again") {
+		t.Errorf("the refusal does not say what to do next: %v", err)
+	}
+}
+
+// TestUpdateRunsWhenTheRecordCannotBeInstalled is the guard against locking a
+// repository out of every machine. A version nobody published — a local build
+// that leaked into the file — must not refuse for ever, so once the update
+// reports there is nothing newer, the run goes ahead.
+func TestUpdateRunsWhenTheRecordCannotBeInstalled(t *testing.T) {
+	const (
+		recorded = "v9.0.0-20990101000000-ffffffffffff"
 		running  = "v0.0.0-20260915161737-9e10ae8f485b"
 	)
 
@@ -258,14 +347,19 @@ func TestUpdateNoticesItIsBehind(t *testing.T) {
 	dir := committedRepo(t)
 	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
 
-	if err := Update(t.Context(), dir, Options{Version: running}, nopEmitter{}); err != nil {
-		t.Fatalf("a behind build should still do the work: %v", err)
+	opts := Options{
+		Version: running,
+		SelfUpdate: func(context.Context) (selfupdate.Outcome, error) {
+			return selfupdate.Outcome{Current: running, Reason: "already the latest"}, nil
+		},
 	}
 
-	for _, want := range []string{"behind", running, recorded, "self-update"} {
-		if !strings.Contains(logged.String(), want) {
-			t.Errorf("the notice does not mention %q:\n%s", want, logged)
-		}
+	if err := Update(t.Context(), dir, opts, nopEmitter{}); err != nil {
+		t.Fatalf("a record nobody can install must not lock the repository: %v", err)
+	}
+
+	if !strings.Contains(logged.String(), "cannot be installed") {
+		t.Errorf("it went ahead without saying why:\n%s", logged)
 	}
 }
 
@@ -316,4 +410,16 @@ func captureLog(t *testing.T) *bytes.Buffer {
 	t.Cleanup(func() { slog.SetDefault(before) })
 
 	return buf
+}
+
+// readFileString reads a file the test wrote or a run produced.
+func readFileString(t *testing.T, path string) string {
+	t.Helper()
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return string(b)
 }
