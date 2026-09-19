@@ -230,6 +230,11 @@ func update(ctx context.Context, args []string) error {
 			Private: *private,
 			Commit:  *commit,
 			Version: selfupdate.Version(),
+			// Direct, for the same reason requireLatest is: the proxy's
+			// answer is cached for minutes after a push, and a repository
+			// recording a build published in that window would otherwise be
+			// told there is nothing to fetch.
+			SelfUpdate: (&selfupdate.Updater{Module: modulePath, Direct: true}).Update,
 		}, events)
 	}
 

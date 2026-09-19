@@ -58,6 +58,29 @@ to commit, which nobody knows until they do. A repository that committed three
 tasks last run will probably commit them again, and that is the whole
 prediction.
 
+## The tool PATH does not hold on make 3.81
+
+The generated Makefile exports `PATH` with `$(TOOL_BIN)` in front so a recipe
+runs the copy `make tools` installed rather than an older one earlier on
+somebody's PATH. That works for any recipe line reaching a shell, and not for
+one without shell metacharacters: GNU Make execs those directly, and 3.81 —
+what Apple ships as `/usr/bin/make` — resolves them against its own PATH
+instead of the exported one. `golangci-lint run` and `govulncheck ./...` are
+exactly that shape, so on a Mac `make lint` can silently run a linter the
+export was written to rule out.
+
+Proven rather than guessed: `command -v housetool` inside the same Makefile
+finds the installed copy while the bare recipe word runs the shadowed one.
+`TestGenerateMakefileToolPathUnderMake` now asserts only the half that holds
+everywhere, and says so.
+
+Two ways out, neither free. Calling the house tools by absolute path —
+`$(TOOL_BIN)/golangci-lint` — works on every make and says what it means, but
+a machine that never ran `make tools` gets "no such file" rather than falling
+back to its own copy. Requiring GNU Make 4.x pushes a setup step onto every
+machine and every agent. Left as it is until one of those costs less than the
+shadowing does.
+
 ## Per-repository task sequences
 
 Every repository currently gets the same sequence. Some want more:

@@ -41,7 +41,40 @@ func Newer(a, b string) bool {
 // the newest one to have maintained the repository, and every other machine
 // would be told it is behind something nobody can install.
 func usable(v string) bool {
-	return v != "" && v != devel && semver.IsValid(v) && semver.Build(v) == ""
+	return Installable(v) && comparable(v)
+}
+
+// comparable reports whether v says enough about a build to order it against
+// another, which a local build stamped "+dirty" still does: the commit it was
+// built from is right there, and semver ignores the metadata when comparing.
+func comparable(v string) bool {
+	return v != "" && v != devel && semver.IsValid(v)
+}
+
+// Installable reports whether v names a build somebody else could fetch.
+//
+// The two are not the same question, and conflating them is what let a stale
+// build through. A local one must never become the high-water mark, because
+// no other machine can install what it names — but it can perfectly well be
+// asked whether it is older than the mark, and the answer matters most
+// exactly then.
+func Installable(v string) bool {
+	return v != "" && v != devel && semver.Build(v) == ""
+}
+
+// Outdated reports whether current is an older build than recorded.
+//
+// The reading half of the comparison, and deliberately more permissive than
+// [Newer]: a build stamped "+dirty" is ordered by the commit it came from
+// rather than waved through. The build that reverted this repository's own
+// generated files was exactly that shape, and exempting it defeated the
+// check entirely.
+func Outdated(current, recorded string) bool {
+	if !comparable(current) || !comparable(recorded) {
+		return false
+	}
+
+	return semver.Compare(recorded, current) > 0
 }
 
 // RecordedVersion is the devtool build this repository's definition names, or
@@ -84,11 +117,23 @@ func RecordVersion(fs afero.Fs, current string) error {
 
 // VersionTask returns a task that records the devtool build maintaining this
 // repository, so a build that is behind can be told it is.
-func VersionTask(repo engine.Repo, current string) engine.Task {
+//
+// changed reports whether the run altered the repository, and the mark is a
+// passenger: a run that changed nothing leaves it alone. The newer build
+// evidently has no different opinion about this repository, so recording it
+// would produce a commit whose only content is the mark — and in devtool's
+// own repository that commit publishes a new version, which the next run then
+// has something to record, and so on without end.
+func VersionTask(repo engine.Repo, current string, changed func() (bool, error)) engine.Task {
 	return engine.Task{
 		Name:  "record the devtool version",
 		Short: "version",
 		Run: func(context.Context) error {
+			did, err := changed()
+			if err != nil || !did {
+				return err
+			}
+
 			return RecordVersion(repo.Fs(), current)
 		},
 	}

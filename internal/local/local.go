@@ -18,6 +18,7 @@ import (
 
 	"github.com/MarkRosemaker/devtool-engine/event"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/devtool-engine/selfupdate"
 	"github.com/MarkRosemaker/devtool/internal/remote"
 	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/spf13/afero"
@@ -51,6 +52,16 @@ type Options struct {
 	// A parameter rather than a call to selfupdate.Version, because a test
 	// has to be able to be a build it is not.
 	Version string
+
+	// SelfUpdate fetches the newest published build, and is called only when
+	// the run finds itself behind the one that last maintained the
+	// repository. Nil means not to try, and the refusal then says to update
+	// by hand.
+	//
+	// A function rather than the updater itself, so a test can be behind
+	// without a network, and so the caller keeps its own say over which
+	// module and whether to go direct.
+	SelfUpdate func(context.Context) (selfupdate.Outcome, error)
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -74,10 +85,19 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
 	}
 
-	noticeIfBehind(ctx, r.fs, opts.Version)
+	if err := refuseIfBehind(ctx, r.fs, opts); err != nil {
+		return err
+	}
+
+	// Captured before anything runs, so the version task can tell whether
+	// this run changed the repository at all.
+	before, err := r.state(ctx)
+	if err != nil {
+		return err
+	}
 
 	if opts.Commit {
-		return commitRun(ctx, r, opts, events)
+		return commitRun(ctx, r, opts, before, events)
 	}
 
 	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})
@@ -85,7 +105,7 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 
 	event.Emit(events, event.Event{Kind: event.RepoStart, Repo: r.String()})
 
-	for _, t := range tasks(r, opts) {
+	for _, t := range tasks(r, opts, before) {
 		event.Emit(events, event.Event{
 			Kind: event.TaskStart, Repo: r.String(), Task: t.Short,
 		})
@@ -111,7 +131,7 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 
 // tasks is what a local rebuild runs: the generators, and nothing that needs
 // the network or changes code.
-func tasks(r engine.Repo, opts Options) []engine.Task {
+func tasks(r *repo, opts Options, before string) []engine.Task {
 	return []engine.Task{
 		maintain.LicenseTask(r, opts.Holder),
 		maintain.ReadmeTask(r, opts.Coverage),
@@ -120,35 +140,89 @@ func tasks(r engine.Repo, opts Options) []engine.Task {
 		maintain.AgentsTask(r),
 		maintain.ClaudeTask(r),
 		maintain.GenLintfile(r),
-		maintain.VersionTask(r, opts.Version),
+		maintain.VersionTask(r, opts.Version, func() (bool, error) {
+			now, err := r.state(context.Background())
+
+			return now != before, err
+		}),
 	}
 }
 
-// noticeIfBehind says so when the repository has been maintained by a later
-// build than this one.
+// refuseIfBehind stops a run whose generators are older than the ones that
+// last maintained this repository, fetching the newer build on the way out.
 //
-// No network and nothing to check: the comparison is against a version
-// already on disk, put there by whichever build last ran here — which, for a
-// repository in the portfolio, is a self-updating one every few hours. A run
-// that learns nothing says nothing.
+// The comparison itself costs nothing: it is against a version already on
+// disk, put there by whichever build last ran here.
 //
-// A notice rather than a refusal. Generated files written by a build that is
-// behind are corrected by the next run that is not, and stopping the work
-// would cost more than that.
-func noticeIfBehind(ctx context.Context, fs afero.Fs, current string) {
+// This was a notice, on the reasoning that files written by a build which is
+// behind are corrected by the next run that is not. That reasoning was wrong.
+// Behind is not a worse opinion, it is a different one, so the older
+// generators rewrite what the newer ones wrote and the repository goes
+// backwards — which happened here: a stale devtool reverted twenty-five lines
+// of this repository's own generated files, and the warning in the log did
+// not stop it. Refusing does, and it puts the update in front of whoever runs
+// next rather than leaving it to them to notice.
+//
+// The one thing it must never do is refuse forever. A repository recording a
+// version nobody can install would be unusable on every machine, so a record
+// this build cannot catch up to goes back to being a notice.
+func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) error {
 	recorded, err := maintain.RecordedVersion(fs)
 	if err != nil {
 		slog.DebugContext(ctx, "could not read the repository's definition", "error", err)
 
-		return
+		return nil
 	}
 
-	if !maintain.Newer(recorded, current) {
-		return
+	if !maintain.Outdated(opts.Version, recorded) {
+		return nil
 	}
 
-	slog.WarnContext(ctx, "this devtool is behind the one that last maintained this repository",
-		"running", current, "recorded", recorded, "fix", "devtool self-update")
+	// A local build cannot be replaced by self-update — it refuses, rightly,
+	// to overwrite something nobody published — so the remedy is the other
+	// one. This is the case that actually bit: the binary that reverted this
+	// repository's generated files was a "+dirty" build a day behind.
+	if !maintain.Installable(opts.Version) {
+		return behind(opts.Version, recorded,
+			"it is a local build, so rebuild it from a current checkout")
+	}
+
+	if opts.SelfUpdate == nil {
+		return behind(opts.Version, recorded, "run "+updateHint)
+	}
+
+	slog.InfoContext(ctx, "behind the build that last maintained this repository, updating",
+		"running", opts.Version, "recorded", recorded)
+
+	out, err := opts.SelfUpdate(ctx)
+
+	switch {
+	case err != nil:
+		return behind(opts.Version, recorded, fmt.Sprintf("could not update: %v", err))
+	case out.Updated:
+		return behind(opts.Version, recorded,
+			fmt.Sprintf("updated to %s, so run the command again", out.Latest))
+	}
+
+	// There is nothing newer to fetch, so the record names a build that was
+	// never published — a local one that leaked into the file, most likely.
+	// Refusing on it would lock the repository for everybody.
+	slog.WarnContext(ctx, "this repository records a devtool build that cannot be installed",
+		"running", opts.Version, "recorded", recorded, "reason", out.Reason)
+
+	return nil
+}
+
+// updateHint is the command that fixes it, named once.
+const updateHint = "devtool self-update"
+
+// behind builds the refusal, saying what is wrong before what to do about it.
+func behind(current, recorded, remedy string) error {
+	return fmt.Errorf(
+		"devtool %s is behind %s, which last maintained this repository: "+
+			"its generators would write over the newer ones' output; %s",
+		current, recorded, remedy,
+	)
 }
 
 // identify names the repository from its git remote, falling back to the
@@ -170,7 +244,7 @@ func identify(ctx context.Context, dir string) (owner, name string) {
 // whatever it finds uncommitted, which is correct for a checkout it owns on a
 // server and catastrophic for the one somebody is working in.
 func commitRun(
-	ctx context.Context, r *repo, opts Options, events event.Emitter,
+	ctx context.Context, r *repo, opts Options, before string, events event.Emitter,
 ) error {
 	files, err := r.GetChangedFiles()
 	if err != nil {
@@ -191,7 +265,7 @@ func commitRun(
 	res := (&engine.Runner{Inert: maintain.Inert}).Update(ctx, r,
 		engine.Spec{Coverage: opts.Coverage},
 		func(*engine.Runner, engine.Repo, engine.Spec) []engine.Task {
-			return tasks(r, opts)
+			return tasks(r, opts, before)
 		}, events)
 
 	return res.Err

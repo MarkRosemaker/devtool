@@ -176,3 +176,50 @@ func TestRecordVersionIgnoresADirtyBuild(t *testing.T) {
 			readFile(t, fs, DefinitionPath))
 	}
 }
+
+// TestOutdatedReadsALocalBuild is the gap that let a stale build through.
+// Newer refuses to reason about a "+dirty" binary, which is right when the
+// question is whether to record it and wrong when the question is whether to
+// let it write: the commit it came from orders it perfectly well.
+func TestOutdatedReadsALocalBuild(t *testing.T) {
+	const (
+		// The build that reverted this repository's own generated files, and
+		// the mark it should have been stopped by.
+		dirty    = "v0.0.0-20260918065718-2314b2502699+dirty"
+		recorded = "v0.0.0-20260919111501-67d6619ce110"
+	)
+
+	if Newer(recorded, dirty) {
+		t.Error("Newer should go on exempting a local build, so it never becomes the mark")
+	}
+
+	if !Outdated(dirty, recorded) {
+		t.Error("a local build a day behind the mark was not reported as outdated")
+	}
+
+	if Installable(dirty) {
+		t.Error("a local build must not read as something another machine could fetch")
+	}
+
+	// And the other direction: a local build ahead of the mark is not behind
+	// it, so somebody working on devtool itself is not locked out.
+	if Outdated(recorded, dirty) {
+		t.Error("a build newer than the mark was reported as outdated")
+	}
+}
+
+// TestOutdatedSaysNothingWithoutAVersion: not knowing is not a reason to
+// refuse. A binary with no version information at all cannot be ordered.
+func TestOutdatedSaysNothingWithoutAVersion(t *testing.T) {
+	const recorded = "v0.0.0-20260919111501-67d6619ce110"
+
+	for _, current := range []string{"", devel, "not-a-version"} {
+		if Outdated(current, recorded) {
+			t.Errorf("Outdated(%q, recorded) = true, want false", current)
+		}
+	}
+
+	if Outdated(recorded, "nonsense") {
+		t.Error("an unreadable mark should not stop a run")
+	}
+}
