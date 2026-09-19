@@ -21,6 +21,56 @@ func TestVersionFlag(t *testing.T) {
 	}
 }
 
+// TestVersionIsASubcommand: "devtool version" is what anybody who has used
+// another tool tries first, and it has to reach the same answer as the flag
+// rather than the update that a bare word used to fall through to.
+func TestVersionIsASubcommand(t *testing.T) {
+	if err := dispatch(t.Context(), []string{"version"}); err != nil {
+		t.Errorf("version failed: %v", err)
+	}
+}
+
+// TestVersionTakesNoArguments: a word after it is a typo, not something to
+// ignore, and ignoring it would quietly answer a question nobody asked.
+func TestVersionTakesNoArguments(t *testing.T) {
+	err := dispatch(t.Context(), []string{"version", "all"})
+	if err == nil {
+		t.Fatal("an argument to version was accepted")
+	}
+
+	if !strings.Contains(err.Error(), "all") {
+		t.Errorf("the error does not name the argument: %v", err)
+	}
+}
+
+// TestSelfUpdaterKnowsItsCurrentVersion guards a mistake nothing else
+// notices. An Updater without Current declines every update it is asked for,
+// reporting that it has nothing to compare — so the staleness refusal, which
+// only refuses once it has tried to update, would wave through exactly the
+// builds it exists to stop. That shipped in #7.
+//
+// Here rather than against the binary: a "+dirty" build refuses before it
+// ever reaches the updater, so a test at that level passes vacuously on any
+// machine with an uncommitted change.
+func TestSelfUpdaterKnowsItsCurrentVersion(t *testing.T) {
+	const current = "v0.0.0-20260919121341-370d2bfa5f6b"
+
+	u := selfUpdater(current, true)
+
+	if u.Current != current {
+		t.Errorf("Current = %q, want %q: an updater not told its own version declines every update",
+			u.Current, current)
+	}
+
+	if u.Module == "" {
+		t.Error("Module is empty, so there is nothing to install from")
+	}
+
+	if !u.Direct {
+		t.Error("Direct is off, so a build published in the last few minutes reads as absent")
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	err := dispatch(t.Context(), []string{"frobnicate"})
 	if err == nil {

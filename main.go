@@ -95,6 +95,8 @@ func dispatch(ctx context.Context, args []string) error {
 			return update(ctx, args[1:])
 		case "test":
 			return runTests(ctx, args[1:])
+		case "version":
+			return printVersion(args[1:])
 		}
 	}
 
@@ -108,6 +110,22 @@ func dispatch(ctx context.Context, args []string) error {
 	}
 
 	return update(ctx, nil)
+}
+
+// printVersion reports which build this is.
+//
+// The same answer as the -version flag, which stays. A flag is what somebody
+// reaches for beside other flags; a subcommand is what they reach for beside
+// self-update, which is the question this usually follows — and it is what
+// anybody who has used another tool will try first.
+func printVersion(args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("version takes no arguments, got %q", args[0])
+	}
+
+	fmt.Println(buildVersion())
+
+	return nil
 }
 
 // topLevelFlags handles the flags that stand alone.
@@ -141,7 +159,8 @@ func usage(w io.Writer) {
   %[1]s update OWNER/NAME -commit --config=PATH  maintain one of them
   %[1]s test                          run the tests and record the coverage
   %[1]s self-update                    update this binary
-  %[1]s -version
+  %[1]s version                        report which build this is
+  %[1]s -version                       the same
 
 flags:
   -jsonl      write the run as JSON Lines on stdout
@@ -225,16 +244,14 @@ func update(ctx context.Context, args []string) error {
 
 		// "devtool update" with nothing after it is "devtool": rebuild the
 		// generated files of the repository you are standing in.
+		current := selfupdate.Version()
+
 		return local.Update(ctx, ".", local.Options{
-			Holder:  licenseHolder,
-			Private: *private,
-			Commit:  *commit,
-			Version: selfupdate.Version(),
-			// Direct, for the same reason requireLatest is: the proxy's
-			// answer is cached for minutes after a push, and a repository
-			// recording a build published in that window would otherwise be
-			// told there is nothing to fetch.
-			SelfUpdate: (&selfupdate.Updater{Module: modulePath, Direct: true}).Update,
+			Holder:     licenseHolder,
+			Private:    *private,
+			Commit:     *commit,
+			Version:    current,
+			SelfUpdate: selfUpdater(current, true).Update,
 		}, events)
 	}
 
@@ -334,6 +351,20 @@ func emitter(jsonl bool) event.Emitter {
 	return event.EmitterFunc(func(event.Event) {})
 }
 
+// selfUpdater builds the updater that fetches a newer build of this binary.
+//
+// One constructor, because an Updater is easy to build wrong in a way nothing
+// notices: without Current it declines every update it is asked for, saying
+// it has nothing to compare. That shipped once, and it made the staleness
+// refusal unreachable for exactly the builds that could have been replaced.
+//
+// direct asks the repository rather than the module proxy, whose answer to
+// "what is the latest version" is cached for minutes after a push — worth it
+// wherever a change is meant to take effect promptly.
+func selfUpdater(current string, direct bool) *selfupdate.Updater {
+	return &selfupdate.Updater{Module: modulePath, Current: current, Direct: direct}
+}
+
 // selfUpdate updates this binary, not any repository's dependencies. See the
 // package comment.
 func selfUpdate(ctx context.Context, args []string) error {
@@ -346,11 +377,7 @@ func selfUpdate(ctx context.Context, args []string) error {
 		return err
 	}
 
-	out, err := (&selfupdate.Updater{
-		Module:  modulePath,
-		Current: selfupdate.Version(),
-		Direct:  *direct,
-	}).Update(ctx)
+	out, err := selfUpdater(selfupdate.Version(), *direct).Update(ctx)
 	if err != nil {
 		return err
 	}

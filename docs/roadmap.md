@@ -58,6 +58,21 @@ to commit, which nobody knows until they do. A repository that committed three
 tasks last run will probably commit them again, and that is the whole
 prediction.
 
+## A build with no version at all is exempt from the staleness refusal
+
+A build stamped `(devel)` carries nothing to order against the mark — no
+commit, no time — so it is waved through. On a machine whose `go build`
+produces those, the refusal does nothing for a locally built binary, which is
+a good part of what it was written to prevent. `docs/architecture.md` has
+what the toolchain stamps and when.
+
+Refusing every unversioned build is the obvious answer and the wrong one: it
+would lock whoever is working on devtool itself out of every maintained
+repository, on exactly the machine where builds come out unstamped. Worth
+revisiting if the stamping turns out to be fixable at the source — `go build
+-buildvcs=true` names the reason it was omitted — since the exemption then
+stops mattering.
+
 ## The tool PATH does not hold on make 3.81
 
 The generated Makefile exports `PATH` with `$(TOOL_BIN)` in front so a recipe
