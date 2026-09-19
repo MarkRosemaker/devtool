@@ -95,6 +95,8 @@ func dispatch(ctx context.Context, args []string) error {
 			return update(ctx, args[1:])
 		case "test":
 			return runTests(ctx, args[1:])
+		case "version":
+			return printVersion(args[1:])
 		}
 	}
 
@@ -108,6 +110,22 @@ func dispatch(ctx context.Context, args []string) error {
 	}
 
 	return update(ctx, nil)
+}
+
+// printVersion reports which build this is.
+//
+// The same answer as the -version flag, which stays. A flag is what somebody
+// reaches for beside other flags; a subcommand is what they reach for beside
+// self-update, which is the question this usually follows — and it is what
+// anybody who has used another tool will try first.
+func printVersion(args []string) error {
+	if len(args) > 0 {
+		return fmt.Errorf("version takes no arguments, got %q", args[0])
+	}
+
+	fmt.Println(buildVersion())
+
+	return nil
 }
 
 // topLevelFlags handles the flags that stand alone.
@@ -141,7 +159,8 @@ func usage(w io.Writer) {
   %[1]s update OWNER/NAME -commit --config=PATH  maintain one of them
   %[1]s test                          run the tests and record the coverage
   %[1]s self-update                    update this binary
-  %[1]s -version
+  %[1]s version                        report which build this is
+  %[1]s -version                       the same
 
 flags:
   -jsonl      write the run as JSON Lines on stdout

@@ -21,6 +21,28 @@ func TestVersionFlag(t *testing.T) {
 	}
 }
 
+// TestVersionIsASubcommand: "devtool version" is what anybody who has used
+// another tool tries first, and it has to reach the same answer as the flag
+// rather than the update that a bare word used to fall through to.
+func TestVersionIsASubcommand(t *testing.T) {
+	if err := dispatch(t.Context(), []string{"version"}); err != nil {
+		t.Errorf("version failed: %v", err)
+	}
+}
+
+// TestVersionTakesNoArguments: a word after it is a typo, not something to
+// ignore, and ignoring it would quietly answer a question nobody asked.
+func TestVersionTakesNoArguments(t *testing.T) {
+	err := dispatch(t.Context(), []string{"version", "all"})
+	if err == nil {
+		t.Fatal("an argument to version was accepted")
+	}
+
+	if !strings.Contains(err.Error(), "all") {
+		t.Errorf("the error does not name the argument: %v", err)
+	}
+}
+
 func TestUnknownCommand(t *testing.T) {
 	err := dispatch(t.Context(), []string{"frobnicate"})
 	if err == nil {
