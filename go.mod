@@ -3,10 +3,10 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20260919112310-b1d2387ad6b1
-	github.com/MarkRosemaker/ghrepo v0.0.0-20260919112334-85ac6f802e36
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20260919132608-b05312bdc363
+	github.com/MarkRosemaker/ghrepo v0.0.0-20260919132616-b6a3e85d7506
 	github.com/MarkRosemaker/golangci-json v0.0.0-20260919112322-3abcd4c5ec17
-	github.com/MarkRosemaker/gorepo v0.0.0-20260919112512-43d91b5fa730
+	github.com/MarkRosemaker/gorepo v0.0.0-20260919132702-489323509ba7
 	github.com/MarkRosemaker/json2yaml v0.0.0-20260919112308-a1b4c0dc8893
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260919112309-1be2e4aee29f
 	github.com/MarkRosemaker/openapi v0.0.0-20260919112358-1dc07f1fec35
