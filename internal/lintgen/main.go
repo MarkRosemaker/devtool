@@ -53,19 +53,24 @@ var lintConfig = config.Config{
 			// - unused # Checks Go code for unused constants, variables, functions and types.
 			// - modernize # A suite of analyzers that suggest simplifications to Go code, using modern language and library features. [auto-fix]
 			// - errorlint # Find code that can cause problems with the error wrapping scheme introduced in Go 1.13. [auto-fix]
-			// - usetesting # Reports uses of functions with replacement inside the testing package. [auto-fix]
 			// - wastedassign # Finds wasted assignment statements.
 			// # - gocyclo # Computes and checks the cyclomatic complexity of functions. [fast]
 			// # - gosec # Inspects source code for security problems.
 		},
 		Settings: config.LintersSettings{
-			UseTesting: config.UseTestingSettings{
-				OSCreateTemp:      true,
-				OSMkdirTemp:       true,
-				OSSetenv:          true,
-				OSTempDir:         true,
-				OSChdir:           true,
-				ContextBackground: true,
+			Errcheck: config.ErrcheckSettings{
+				ExcludeFunctions: []string{
+					"(*os.File).Close",
+					"io.Closer.Close",
+					"(*io.ReadCloser).Close",
+					"(github.com/spf13/afero.File).Close",
+				},
+			},
+			Exhaustive: config.ExhaustiveSettings{
+				Check: []string{"switch", "map"},
+				// Presence of "default" case in switch statements satisfies exhaustiveness,
+				// even if all enum members are not listed.
+				DefaultSignifiesExhaustive: true,
 			},
 			TagAlign: config.TagAlignSettings{
 				Align: true,
@@ -89,6 +94,14 @@ var lintConfig = config.Config{
 					"float-compare",
 				},
 			},
+			UseTesting: config.UseTestingSettings{
+				OSCreateTemp:      true,
+				OSMkdirTemp:       true,
+				OSSetenv:          true,
+				OSTempDir:         true,
+				OSChdir:           true,
+				ContextBackground: true,
+			},
 			WSLv5: config.WSLv5Settings{
 				// Allow cuddling a variable if it's used first in the immediate following block,
 				// even if the statement with the block doesn't use the variable.
@@ -103,12 +116,6 @@ var lintConfig = config.Config{
 				// Every cuddled statement must have at least one variable used in the block.
 				// Respects allow-first-in-block and allow-whole-block.
 				CuddleMaxStatements: 2,
-			},
-			Exhaustive: config.ExhaustiveSettings{
-				Check: []string{"switch", "map"},
-				// Presence of "default" case in switch statements satisfies exhaustiveness,
-				// even if all enum members are not listed.
-				DefaultSignifiesExhaustive: true,
 			},
 			// TODO: possible settings:
 			// govet:
