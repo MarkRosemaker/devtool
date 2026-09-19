@@ -244,16 +244,14 @@ func update(ctx context.Context, args []string) error {
 
 		// "devtool update" with nothing after it is "devtool": rebuild the
 		// generated files of the repository you are standing in.
+		current := selfupdate.Version()
+
 		return local.Update(ctx, ".", local.Options{
-			Holder:  licenseHolder,
-			Private: *private,
-			Commit:  *commit,
-			Version: selfupdate.Version(),
-			// Direct, for the same reason requireLatest is: the proxy's
-			// answer is cached for minutes after a push, and a repository
-			// recording a build published in that window would otherwise be
-			// told there is nothing to fetch.
-			SelfUpdate: (&selfupdate.Updater{Module: modulePath, Direct: true}).Update,
+			Holder:     licenseHolder,
+			Private:    *private,
+			Commit:     *commit,
+			Version:    current,
+			SelfUpdate: selfUpdater(current, true).Update,
 		}, events)
 	}
 
@@ -353,6 +351,20 @@ func emitter(jsonl bool) event.Emitter {
 	return event.EmitterFunc(func(event.Event) {})
 }
 
+// selfUpdater builds the updater that fetches a newer build of this binary.
+//
+// One constructor, because an Updater is easy to build wrong in a way nothing
+// notices: without Current it declines every update it is asked for, saying
+// it has nothing to compare. That shipped once, and it made the staleness
+// refusal unreachable for exactly the builds that could have been replaced.
+//
+// direct asks the repository rather than the module proxy, whose answer to
+// "what is the latest version" is cached for minutes after a push — worth it
+// wherever a change is meant to take effect promptly.
+func selfUpdater(current string, direct bool) *selfupdate.Updater {
+	return &selfupdate.Updater{Module: modulePath, Current: current, Direct: direct}
+}
+
 // selfUpdate updates this binary, not any repository's dependencies. See the
 // package comment.
 func selfUpdate(ctx context.Context, args []string) error {
@@ -365,11 +377,7 @@ func selfUpdate(ctx context.Context, args []string) error {
 		return err
 	}
 
-	out, err := (&selfupdate.Updater{
-		Module:  modulePath,
-		Current: selfupdate.Version(),
-		Direct:  *direct,
-	}).Update(ctx)
+	out, err := selfUpdater(selfupdate.Version(), *direct).Update(ctx)
 	if err != nil {
 		return err
 	}
