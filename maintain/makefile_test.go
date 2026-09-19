@@ -747,28 +747,59 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 	}
 
 	// A fragment of the repository's own, since no house target shells out
-	// to something a test can install.
-	writeFile(t, fs, "mk/probe.mk", "which:\n\t@housetool\n")
+	// to something a test can install. The second target reports what the
+	// first resolved against, for the failure message below: this test
+	// depends on the machine's Go answering about GOBIN, and saying only
+	// which copy ran leaves nowhere to start.
+	writeFile(t, fs, "mk/probe.mk", "which:\n\t@housetool\n"+
+		"probe:\n\t@echo \"TOOL_BIN=$(TOOL_BIN)\"\n"+
+		"\t@echo \"go env GOBIN=$$(go env GOBIN)\"\n"+
+		"\t@echo \"go=$$(command -v go)\"\n"+
+		"\t@echo \"housetool=$$(command -v housetool)\"\n")
 
 	if err := generateMakefile(fs, false); err != nil {
 		t.Fatal(err)
 	}
 
-	cmd := exec.CommandContext(t.Context(), "make", "-s", "which")
-	cmd.Dir = dir
-	cmd.Env = append(os.Environ(),
-		"GOBIN="+filepath.Join(dir, "toolbin"),
+	gobin := filepath.Join(dir, "toolbin")
+	env := append(os.Environ(),
+		"GOBIN="+gobin,
 		"PATH="+filepath.Join(dir, "shadow")+string(os.PathListSeparator)+os.Getenv("PATH"),
 	)
 
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("make which: %v\n%s", err, out)
+	run := func(goal string) (stdout, stderr string, err error) {
+		cmd := exec.CommandContext(t.Context(), "make", "-s", goal)
+		cmd.Dir = dir
+		cmd.Env = env
+
+		var out, errs strings.Builder
+
+		cmd.Stdout, cmd.Stderr = &out, &errs
+
+		// Separate streams, so a warning from make cannot be mistaken for
+		// what the recipe printed.
+		err = cmd.Run()
+
+		return strings.TrimSpace(out.String()), strings.TrimSpace(errs.String()), err
 	}
 
-	if got := strings.TrimSpace(string(out)); got != "from-toolbin" {
-		t.Errorf("recipe ran %q, want the copy in GOBIN: the PATH export is not working", got)
+	out, errs, err := run("which")
+	if err != nil {
+		t.Fatalf("make which: %v\nstdout: %s\nstderr: %s", err, out, errs)
 	}
+
+	if out == "from-toolbin" {
+		return
+	}
+
+	probe, probeErrs, probeErr := run("probe")
+	if probeErr != nil {
+		probe = "could not probe: " + probeErr.Error()
+	}
+
+	t.Errorf("recipe ran %q, want the copy in GOBIN: the PATH export is not working.\n"+
+		"GOBIN given to make: %s\nmake stderr: %s\n%s\n%s",
+		out, gobin, errs, probe, probeErrs)
 }
 
 // TestGenerateMakefilePassesPrivacyBack: the generate target invokes devtool
