@@ -3,14 +3,14 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20260918183705-8fd01cb41c09
-	github.com/MarkRosemaker/ghrepo v0.0.0-20260918183718-de2cdbfdde2e
-	github.com/MarkRosemaker/golangci-json v0.0.0-20260918183717-f38e43f9491d
-	github.com/MarkRosemaker/gorepo v0.0.0-20260918183821-4c69e0d90a41
-	github.com/MarkRosemaker/json2yaml v0.0.0-20260918183702-8babfddb27e6
-	github.com/MarkRosemaker/jsonutil v0.0.0-20260918183702-d74628ea741c
-	github.com/MarkRosemaker/openapi v0.0.0-20260918183754-61d782b9e501
-	github.com/MarkRosemaker/ordmap v0.0.0-20260918183713-0f98fe00e878
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20260919112310-b1d2387ad6b1
+	github.com/MarkRosemaker/ghrepo v0.0.0-20260919112334-85ac6f802e36
+	github.com/MarkRosemaker/golangci-json v0.0.0-20260919112322-3abcd4c5ec17
+	github.com/MarkRosemaker/gorepo v0.0.0-20260919112512-43d91b5fa730
+	github.com/MarkRosemaker/json2yaml v0.0.0-20260919112308-a1b4c0dc8893
+	github.com/MarkRosemaker/jsonutil v0.0.0-20260919112309-1be2e4aee29f
+	github.com/MarkRosemaker/openapi v0.0.0-20260919112358-1dc07f1fec35
+	github.com/MarkRosemaker/ordmap v0.0.0-20260919112328-2dcdc20e6b15
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/golangci/golangci-lint/v2 v2.13.2
 	github.com/spf13/afero v1.15.0
@@ -20,9 +20,9 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	github.com/MarkRosemaker/errpath v0.0.0-20260918183659-a3e4c719fffe // indirect
-	github.com/MarkRosemaker/yaml v0.0.0-20260918183729-130fe5d54e0c // indirect
-	github.com/MarkRosemaker/yaml2json v0.0.0-20260918183701-ff522d78e637 // indirect
+	github.com/MarkRosemaker/errpath v0.0.0-20260919112307-d5c7994551ff // indirect
+	github.com/MarkRosemaker/yaml v0.0.0-20260919112332-c1f014ebc24b // indirect
+	github.com/MarkRosemaker/yaml2json v0.0.0-20260919112308-cbb7454d758e // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
