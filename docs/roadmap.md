@@ -58,6 +58,26 @@ to commit, which nobody knows until they do. A repository that committed three
 tasks last run will probably commit them again, and that is the whole
 prediction.
 
+## A build with no version at all is exempt from the staleness refusal
+
+`refuseIfBehind` orders the running build against what the repository
+records, and a build stamped `(devel)` carries nothing to order: no commit,
+no time. So it is waved through, and on a machine where local builds come out
+that way the refusal does nothing at all — which is most of what it was
+written to prevent.
+
+Whether a local build gets a version is the machine's to decide. The
+toolchain stamps the commit it built from and omits it silently wherever it
+cannot read git; `go build -buildvcs=true` names the reason rather than
+staying quiet. It stamps here and not on at least one Mac, which is why
+`TestAStaleLocalBuildIsRefused` skips rather than fails there.
+
+Refusing every unversioned build is the obvious answer and the wrong one: it
+would lock whoever is working on devtool itself out of every maintained
+repository, on exactly the machine where builds are unstamped. Worth
+revisiting if the stamping turns out to be fixable at the source, since then
+the exemption stops mattering.
+
 ## The tool PATH does not hold on make 3.81
 
 The generated Makefile exports `PATH` with `$(TOOL_BIN)` in front so a recipe

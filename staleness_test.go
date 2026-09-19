@@ -30,6 +30,21 @@ func TestAStaleLocalBuildIsRefused(t *testing.T) {
 	// does not expire.
 	const recorded = "v9.0.0-20990101000000-ffffffffffff"
 
+	bin := build(t)
+
+	// A binary carrying no version at all cannot be ordered against the mark,
+	// so on a machine that builds one there is nothing here to exercise.
+	//
+	// Whether there is a version is the machine's to decide, not this test's:
+	// the toolchain stamps the commit it built from, and silently omits it
+	// wherever it cannot read git — "go build -buildvcs=true" names the
+	// reason instead of staying quiet. Skipping beats failing for something
+	// the code under test did not do, and the comparison itself is covered in
+	// internal/local, where a test can name a version it is not.
+	if v := binVersion(t, bin); strings.Contains(v, "(devel)") {
+		t.Skipf("this build carries no version information (%s), so it is behind nothing", v)
+	}
+
 	dir := throwawayRepo(t)
 	definition := filepath.Join(dir, "devtool.json")
 
@@ -38,7 +53,7 @@ func TestAStaleLocalBuildIsRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.CommandContext(t.Context(), build(t), "update", "-jsonl")
+	cmd := exec.CommandContext(t.Context(), bin, "update", "-jsonl")
 	cmd.Dir = dir
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
@@ -62,4 +77,17 @@ func TestAStaleLocalBuildIsRefused(t *testing.T) {
 	if !strings.Contains(string(after), recorded) {
 		t.Errorf("the mark was lowered by a local build:\n%s", after)
 	}
+}
+
+// binVersion asks the binary what it is, which is the only thing that knows:
+// the version comes from the build info the toolchain stamped into it.
+func binVersion(t *testing.T, bin string) string {
+	t.Helper()
+
+	out, err := exec.CommandContext(t.Context(), bin, "-version").CombinedOutput()
+	if err != nil {
+		t.Fatalf("%s -version: %v\n%s", bin, err, out)
+	}
+
+	return strings.TrimSpace(string(out))
 }
