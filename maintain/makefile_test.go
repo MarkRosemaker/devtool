@@ -33,7 +33,7 @@ func TestGenerateMakefile(t *testing.T) {
 			".DELETE_ON_ERROR:",
 			"all: ci vuln",
 			"ci: ready verify",
-			"ready: fix generate vet test-race",
+			"ready: generate fix vet test-race",
 			"lint:", "golangci-lint run",
 			"test:", "go test ./...",
 			"generate:", "go generate ./...",
@@ -367,7 +367,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 					// all builds it, and the recipe goes through the
 					// variables so a fragment can repoint either.
 					"ci: ready verify",
-					"ready: fix generate vet test-race build",
+					"ready: generate fix vet test-race build",
 					"build:", "mkdir -p bin", "go build -o $(BINARY) $(PKG)",
 				})
 			}
@@ -669,7 +669,7 @@ func TestGenerateMakefileBundles(t *testing.T) {
 	checkOrder(t, got, []string{
 		"all: ci vuln",
 		"ci: ready verify",
-		"ready: fix generate vet test-race",
+		"ready: generate fix vet test-race",
 	})
 
 	for _, want := range []string{

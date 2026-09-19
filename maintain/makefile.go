@@ -162,7 +162,7 @@ func houseTargets(shape repoShape) []makeTarget {
 	ready := makeTarget{
 		Name:    "ready",
 		Comment: "After any code change. Needs no network beyond the module cache.",
-		Prereqs: []string{"fix", "generate", "vet", "test-race"},
+		Prereqs: []string{"generate", "fix", "vet", "test-race"},
 	}
 	ci := makeTarget{
 		Name:    "ci",
