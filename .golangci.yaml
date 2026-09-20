@@ -24,11 +24,10 @@ linters:
                 - map
             default-signifies-exhaustive: true
         govet:
-            enable-all: true
             disable:
-                # Find structs that would use less memory if their fields were sorted.
                 - fieldalignment
                 - shadow
+            enable-all: true
         tagalign:
             align: true
             sort: true
