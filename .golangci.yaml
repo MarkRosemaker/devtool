@@ -5,6 +5,7 @@ linters:
         - dupword
         - errcheck
         - exhaustive
+        - govet
         - noctx
         - tagalign
         - testifylint
@@ -22,6 +23,12 @@ linters:
                 - switch
                 - map
             default-signifies-exhaustive: true
+        govet:
+            enable-all: true
+            disable:
+                # Find structs that would use less memory if their fields were sorted.
+                - fieldalignment
+                - shadow
         tagalign:
             align: true
             sort: true
