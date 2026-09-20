@@ -7,7 +7,7 @@ github.com/MarkRosemaker/devtool-engine/depgraph
 github.com/MarkRosemaker/devtool-engine/event
 github.com/MarkRosemaker/devtool-engine/maintain
 github.com/MarkRosemaker/devtool-engine/selfupdate
-# github.com/MarkRosemaker/errpath v0.0.0-20260920105750-ecc3a0fa028d
+# github.com/MarkRosemaker/errpath v0.0.0-20260920114347-639d98dfaa6b
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/ghrepo v0.0.0-20260920105003-68233a01bd19
@@ -25,10 +25,10 @@ github.com/MarkRosemaker/json2yaml
 # github.com/MarkRosemaker/jsonutil v0.0.0-20260920104948-8e763fe0b771
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20260919112358-1dc07f1fec35
+# github.com/MarkRosemaker/openapi v0.0.0-20260920121510-a4df775dee2e
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20260920112340-841d22da417a
+# github.com/MarkRosemaker/ordmap v0.0.0-20260920121440-d962cf748b3e
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
 # github.com/MarkRosemaker/yaml v0.0.0-20260920105018-6263ee74cfdf
