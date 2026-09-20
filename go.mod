@@ -10,7 +10,7 @@ require (
 	github.com/MarkRosemaker/json2yaml v0.0.0-20260920104944-bbfc9b6648b0
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260920104948-8e763fe0b771
 	github.com/MarkRosemaker/openapi v0.0.0-20260919112358-1dc07f1fec35
-	github.com/MarkRosemaker/ordmap v0.0.0-20260920105004-95e6a702ad57
+	github.com/MarkRosemaker/ordmap v0.0.0-20260920112340-841d22da417a
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
 	github.com/golangci/golangci-lint/v2 v2.13.2
 	github.com/spf13/afero v1.15.0
@@ -20,7 +20,7 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	github.com/MarkRosemaker/errpath v0.0.0-20260920104944-9de8ba79be18 // indirect
+	github.com/MarkRosemaker/errpath v0.0.0-20260920105750-ecc3a0fa028d // indirect
 	github.com/MarkRosemaker/yaml v0.0.0-20260920105018-6263ee74cfdf // indirect
 	github.com/MarkRosemaker/yaml2json v0.0.0-20260920104951-dc9a2bf64fb4 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
