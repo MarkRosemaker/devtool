@@ -44,10 +44,10 @@ var lintConfig = config.Config{
 			"exhaustive",
 			// checks for unchecked errors in Go code (could be critical bugs)
 			"errcheck",
+			// examines Go source code and reports suspicious constructs, roughly the same as 'go vet'
+			"govet",
 
 			// TODO: possible additions:
-			// - forbidigo # Forbids fmt.Print* in service code — log via log.LoggerFromContext instead (doc/contributing/coding-conventions/logging.md).
-			// - govet # Vet examines Go source code and reports suspicious constructs. It is roughly the same as 'go vet' and uses its passes. [auto-fix]
 			// - ineffassign # Detects when assignments to existing variables are not used. [fast]
 			// - staticcheck # It's the set of rules from staticcheck. [auto-fix]
 			// - unused # Checks Go code for unused constants, variables, functions and types.
@@ -56,6 +56,7 @@ var lintConfig = config.Config{
 			// - wastedassign # Finds wasted assignment statements.
 			// # - gocyclo # Computes and checks the cyclomatic complexity of functions. [fast]
 			// # - gosec # Inspects source code for security problems.
+			// - forbidigo # Forbids fmt.Print* in service code — log via log.LoggerFromContext instead (doc/contributing/coding-conventions/logging.md).
 		},
 		Settings: config.LintersSettings{
 			Errcheck: config.ErrcheckSettings{
@@ -71,6 +72,12 @@ var lintConfig = config.Config{
 				// Presence of "default" case in switch statements satisfies exhaustiveness,
 				// even if all enum members are not listed.
 				DefaultSignifiesExhaustive: true,
+			},
+			Govet: config.GovetSettings{
+				EnableAll: true,
+				Settings: map[string]map[string]any{
+					"shadow": {"strict": true},
+				},
 			},
 			TagAlign: config.TagAlignSettings{
 				Align: true,
@@ -117,13 +124,6 @@ var lintConfig = config.Config{
 				// Respects allow-first-in-block and allow-whole-block.
 				CuddleMaxStatements: 2,
 			},
-			// TODO: possible settings:
-			// govet:
-			//   disable:
-			//     - shadow
-
-			// usetesting:
-			//   context-background: true
 		},
 		Exclusions: config.LinterExclusions{
 			// TODO: possible values
