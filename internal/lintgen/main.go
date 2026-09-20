@@ -80,6 +80,14 @@ var lintConfig = config.Config{
 			},
 			Govet: config.GovetSettings{
 				EnableAll: true,
+				Disable: []string{
+					// find structs that would use less memory if their fields were sorted
+					// why not: messes up structs, removes comments
+					"fieldalignment",
+					// check for possible unintended shadowing of variables
+					// why not: overeager, would force non-idiomatic code
+					"shadow",
+				},
 			},
 			TagAlign: config.TagAlignSettings{
 				Align: true,
