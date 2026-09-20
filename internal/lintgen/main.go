@@ -57,6 +57,11 @@ var lintConfig = config.Config{
 			// # - gocyclo # Computes and checks the cyclomatic complexity of functions. [fast]
 			// # - gosec # Inspects source code for security problems.
 			// - forbidigo # Forbids fmt.Print* in service code — log via log.LoggerFromContext instead (doc/contributing/coding-conventions/logging.md).
+			// - https://golangci-lint.run/docs/linters/configuration/#canonicalheadercanonicalheader
+			// - https://golangci-lint.run/docs/linters/configuration/#exptostd
+			// - https://golangci-lint.run/docs/linters/configuration/#gocritic
+			// - https://golangci-lint.run/docs/linters/configuration/#fatcontext
+			// - https://golangci-lint.run/docs/linters/configuration/#mirror
 		},
 		Settings: config.LintersSettings{
 			Errcheck: config.ErrcheckSettings{
@@ -75,9 +80,6 @@ var lintConfig = config.Config{
 			},
 			Govet: config.GovetSettings{
 				EnableAll: true,
-				Settings: map[string]map[string]any{
-					"shadow": {"strict": true},
-				},
 			},
 			TagAlign: config.TagAlignSettings{
 				Align: true,

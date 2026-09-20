@@ -25,9 +25,6 @@ linters:
             default-signifies-exhaustive: true
         govet:
             enable-all: true
-            settings:
-                shadow:
-                    strict: true
         tagalign:
             align: true
             sort: true
