@@ -3,6 +3,7 @@ package maintain
 import (
 	"bytes"
 	"flag"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -684,7 +685,17 @@ var readmeCases = []struct {
 	}},
 	{"openapi", readmeData{
 		Owner: "user", Name: "gorepo", Coverage: 88,
-		OpenAPI:     &openapi.Document{OpenAPI: "3.1.0"},
+		OpenAPI: &openapi.Document{
+			OpenAPI: "3.1.0",
+			ExternalDocs: &openapi.ExternalDocs{
+				Description: "Official Documentation",
+				URL: &url.URL{
+					Scheme: "https",
+					Host:   "engineering.toggl.com",
+					Path:   "/docs/",
+				},
+			},
+		},
 		Description: "A blurb.",
 	}},
 }

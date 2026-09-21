@@ -6,6 +6,8 @@ A blurb.
 ## Additional Information
 
 - [**Go Reference**](https://pkg.go.dev/github.com/user/gorepo): API documentation.
+- [**Official Documentation**](https://engineering.toggl.com/docs/): The official API documentation.
+- [**OpenAPI Specification**](./api/openapi.json): The OpenAPI 3.1.0 specification.
 
 ## Contributing
 

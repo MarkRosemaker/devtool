@@ -82,6 +82,12 @@
 {{ end -}}
 {{ range .Docs -}}
 - [**{{ .Title }}**]({{ .Path }}): {{ .Summary }}.
+{{ end -}}
+{{ with .OpenAPI -}}
+{{- with .ExternalDocs }}{{ if .URL -}}
+- [**{{ or .Description "Official Documentation" }}**]({{ .URL }}): The official API documentation.
+{{ end }}{{ end -}}
+- [**OpenAPI Specification**](./api/openapi.json): The OpenAPI {{ .OpenAPI }} specification.
 {{ end }}
 {{ end -}}
 {{ if not .Private -}}
