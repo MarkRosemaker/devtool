@@ -25,7 +25,7 @@ github.com/MarkRosemaker/json2yaml
 # github.com/MarkRosemaker/jsonutil v0.0.0-20260920172211-f6e22a1a8311
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20260922040130-e048f24d28df
+# github.com/MarkRosemaker/openapi v0.0.0-20260924204055-ab21ca1ec2da
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
 # github.com/MarkRosemaker/ordmap v0.0.0-20260920172223-2eab4db34adb
