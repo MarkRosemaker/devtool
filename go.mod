@@ -5,14 +5,14 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20260920172212-a05d1f9f5258
 	github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb
-	github.com/MarkRosemaker/golangci-json v0.0.0-20260920172216-e6787c7b9f77
-	github.com/MarkRosemaker/gorepo v0.0.0-20260923145304-6d1a032c521f
+	github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2
+	github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559
 	github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260920172211-f6e22a1a8311
 	github.com/MarkRosemaker/openapi v0.0.0-20260922040130-e048f24d28df
 	github.com/MarkRosemaker/ordmap v0.0.0-20260920172223-2eab4db34adb
 	github.com/go-git/go-git/v6 v6.0.0-alpha.5
-	github.com/golangci/golangci-lint/v2 v2.13.2
+	github.com/golangci/golangci-lint/v2 v2.14.0
 	github.com/spf13/afero v1.15.0
 	golang.org/x/mod v0.41.0
 	gopkg.in/yaml.v3 v3.0.1

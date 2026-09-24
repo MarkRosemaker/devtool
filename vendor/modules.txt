@@ -13,10 +13,10 @@ github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20260920172216-e6787c7b9f77
+# github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20260923145304-6d1a032c521f
+# github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9
@@ -207,7 +207,7 @@ github.com/go-git/go-git/v6/x/storage
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/golangci/golangci-lint/v2 v2.13.2
+# github.com/golangci/golangci-lint/v2 v2.14.0
 ## explicit; go 1.26.0
 github.com/golangci/golangci-lint/v2/pkg/config
 github.com/golangci/golangci-lint/v2/pkg/exitcodes

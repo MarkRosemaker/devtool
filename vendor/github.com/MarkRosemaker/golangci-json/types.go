@@ -177,14 +177,15 @@ type exhaustructSettings struct {
 }
 
 type exhaustructV5Settings struct {
-	EnforcePatterns        []string `json:"enforce-patterns,omitempty"`
-	IgnorePatterns         []string `json:"ignore-patterns,omitempty"`
-	OptionalPatterns       []string `json:"optional-patterns,omitempty"`
-	AllowEmpty             bool     `json:"allow-empty,omitzero"`
-	AllowEmptyPatterns     []string `json:"allow-empty-patterns,omitempty"`
-	AllowEmptyReturns      bool     `json:"allow-empty-returns,omitzero"`
-	AllowEmptyDeclarations bool     `json:"allow-empty-declarations,omitzero"`
-	ExplicitMode           bool     `json:"explicit-mode,omitzero"`
+	EnforcePatterns            []string `json:"enforce-patterns,omitempty"`
+	IgnorePatterns             []string `json:"ignore-patterns,omitempty"`
+	OptionalPatterns           []string `json:"optional-patterns,omitempty"`
+	AllowEmpty                 bool     `json:"allow-empty,omitzero"`
+	AllowEmptyPatterns         []string `json:"allow-empty-patterns,omitempty"`
+	AllowEmptyReturns          bool     `json:"allow-empty-returns,omitzero"`
+	AllowEmptyDeclarations     bool     `json:"allow-empty-declarations,omitzero"`
+	AllowEmptyBlankAssignments bool     `json:"allow-empty-blank-assignments,omitzero"`
+	ExplicitMode               bool     `json:"explicit-mode,omitzero"`
 }
 
 type fatcontextSettings struct {

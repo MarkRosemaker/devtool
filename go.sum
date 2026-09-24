@@ -6,10 +6,10 @@ github.com/MarkRosemaker/errpath v0.0.0-20260920172209-24fb928433b3 h1:e2sBMM98e
 github.com/MarkRosemaker/errpath v0.0.0-20260920172209-24fb928433b3/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
 github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb h1:WUBD99c7Xzhrilzx7STm6bTRj2FWIJL5YqXsj/SS9cY=
 github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb/go.mod h1:oCjT5mbZAZasr151JSL6ov8FBOp7d20Q1AZgnCxjSNY=
-github.com/MarkRosemaker/golangci-json v0.0.0-20260920172216-e6787c7b9f77 h1:QFTn/8DAuV2OXKnuEav/VNJq1nqCJmZdrW3S6wxLZb4=
-github.com/MarkRosemaker/golangci-json v0.0.0-20260920172216-e6787c7b9f77/go.mod h1:R2xhOXSpcKvfca3JW1DNVAphy0+0AS3Piq2W+AgkCA0=
-github.com/MarkRosemaker/gorepo v0.0.0-20260923145304-6d1a032c521f h1:oJCGkq5esl9q9j+GelrqHYozLxj/hunTQUdng/dSn/8=
-github.com/MarkRosemaker/gorepo v0.0.0-20260923145304-6d1a032c521f/go.mod h1:Vqy8+rhFj0ydsxtRkBFC27r8PHwLJh/g0/lcrKlYujE=
+github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2 h1:oAeXGsK/blep+6kt+Dcd5G8ElJLBJu24awDK+K4JAjo=
+github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2/go.mod h1:lryHq+ivM2dbOtGk7NhKlTwSiZJ7vVu4G+DAxSfez9w=
+github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559 h1:8Ol47F+0EBKDzrDL2L/hUTW6T+xjrw7VcXJcdCgBqYs=
+github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559/go.mod h1:3vzV/rEYe2iEzR7ExyEEqXH8WCeVDJjMbNDHiHL6Gn4=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9 h1:4vHBwurwkxbXwwuexoaHHRy2Qe+tgqsZOSHZUIXk8t8=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20260920172211-f6e22a1a8311 h1:HOfENEK9OQCK+6xGk2r3yZQ3evU7j21a55b0lMJnrXo=
@@ -58,8 +58,8 @@ github.com/go-git/go-git/v6 v6.0.0-alpha.5 h1:sE+OlkHgYWNMVmN1s9sR7uyFgsWLtxcNWs
 github.com/go-git/go-git/v6 v6.0.0-alpha.5/go.mod h1:3IjhiZnM+uBmUrOGSeqrJpsmi4Vd0H2NZO/uK2a7d0s=
 github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
 github.com/go-viper/mapstructure/v2 v2.5.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
-github.com/golangci/golangci-lint/v2 v2.13.2 h1:bCyq3E4vo9qwzifjpzJqYndEt7Ncva80qkk8G2B4TXU=
-github.com/golangci/golangci-lint/v2 v2.13.2/go.mod h1:5xaMd1kAxV7GSBPEyngw8gnnjoRocqW9UVKdBR6627w=
+github.com/golangci/golangci-lint/v2 v2.14.0 h1:ot8QffRa4LzAAEgtvNYrVs9esxQ7xoTwoAv6uhp4ngA=
+github.com/golangci/golangci-lint/v2 v2.14.0/go.mod h1:amHimCzNDP1GfVno3hIiNssjvqXmuW+CPZAHOdR4cIc=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
