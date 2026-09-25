@@ -25,7 +25,7 @@
 	.Info.Version and would say something else entirely.
 */ -}}
 {{ with .OpenAPI -}}
-![OpenAPI](https://img.shields.io/badge/OpenAPI-{{ .OpenAPI }}-blue) {{ end -}}
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-{{ .OpenAPI }}-blue)](./api/openapi.json) {{ end -}}
 {{ if not .Private -}}
 [![Go Reference](https://pkg.go.dev/badge/github.com/{{ .Owner }}/{{ .Name }}.svg)](https://pkg.go.dev/github.com/{{ .Owner }}/{{ .Name }}) {{ end -}}
 ![Code Coverage](https://img.shields.io/badge/coverage-{{ .Coverage }}%25-{{ .CoverageColor }})
