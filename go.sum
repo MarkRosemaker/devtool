@@ -4,12 +4,12 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20260920172212-a05d1f9f5258 h1:uv
 github.com/MarkRosemaker/devtool-engine v0.0.0-20260920172212-a05d1f9f5258/go.mod h1:7ou9JJI6tE3JA38NKGbq+xTM80qiXGW4YcLfl+uCxt8=
 github.com/MarkRosemaker/errpath v0.0.0-20260920172209-24fb928433b3 h1:e2sBMM98ezkNBZ3EVTfpj6aHdo3pjGtQGM4XTiBqS/A=
 github.com/MarkRosemaker/errpath v0.0.0-20260920172209-24fb928433b3/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb h1:WUBD99c7Xzhrilzx7STm6bTRj2FWIJL5YqXsj/SS9cY=
-github.com/MarkRosemaker/ghrepo v0.0.0-20260923145159-195595dac7cb/go.mod h1:oCjT5mbZAZasr151JSL6ov8FBOp7d20Q1AZgnCxjSNY=
+github.com/MarkRosemaker/ghrepo v0.0.0-20260925110747-a3700773cc47 h1:6ikdksOE0jLnGX2lpmAJ82LeYhrsSmAuZ0FQnM2vrwI=
+github.com/MarkRosemaker/ghrepo v0.0.0-20260925110747-a3700773cc47/go.mod h1:oCjT5mbZAZasr151JSL6ov8FBOp7d20Q1AZgnCxjSNY=
 github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2 h1:oAeXGsK/blep+6kt+Dcd5G8ElJLBJu24awDK+K4JAjo=
 github.com/MarkRosemaker/golangci-json v0.0.0-20260924202540-1e864f900ca2/go.mod h1:lryHq+ivM2dbOtGk7NhKlTwSiZJ7vVu4G+DAxSfez9w=
-github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559 h1:8Ol47F+0EBKDzrDL2L/hUTW6T+xjrw7VcXJcdCgBqYs=
-github.com/MarkRosemaker/gorepo v0.0.0-20260924160343-799e2c61a559/go.mod h1:3vzV/rEYe2iEzR7ExyEEqXH8WCeVDJjMbNDHiHL6Gn4=
+github.com/MarkRosemaker/gorepo v0.0.0-20260925124521-7f8b0e4cfb11 h1:LLGumITBXr6dckbkuwjQbWnHBMGeo2cMlOzaoYPlBTI=
+github.com/MarkRosemaker/gorepo v0.0.0-20260925124521-7f8b0e4cfb11/go.mod h1:boM38tWAwDxlzJK0axcZuhn8xHf0tL2HyoDD7gAoJS8=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9 h1:4vHBwurwkxbXwwuexoaHHRy2Qe+tgqsZOSHZUIXk8t8=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260920172209-522898d8cbe9/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20260920172211-f6e22a1a8311 h1:HOfENEK9OQCK+6xGk2r3yZQ3evU7j21a55b0lMJnrXo=

@@ -103,6 +103,8 @@ func (s *Service) NewRepository(ctx context.Context, owner, name string, opts ..
 				initOpts = append(initOpts, git.WithDefaultBranch(
 					plumbing.NewBranchReferenceName(defaultBranch),
 				))
+			} else {
+				initOpts = append(initOpts, git.WithDefaultBranch(plumbing.Main))
 			}
 
 			r.gitrepo, err = git.PlainInit(path, false, initOpts...)
