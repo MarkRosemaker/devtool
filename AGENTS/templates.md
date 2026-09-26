@@ -39,7 +39,12 @@ which is what made the fix's reach obvious.
 ## Testing against the wrong binary
 
 `make ready` and `make generate` shell out to the **installed** `devtool`,
-not to the source tree you just edited. A template change is invisible to
-both until `go install .` catches up — see
-[Versions](versions.md#before-running-it-on-anything) for the fuller version
-of this, since it bit twice in one session on two different problems.
+not to the source tree you just edited. A template change — any of it, not
+only the spacing kind above — is invisible to both until `go install .`
+catches up: this repository's own `AGENTS.md` silently failed to pick up a
+brand new section twice in one pull request, once for each edit to the
+template. See [Versions](versions.md#before-running-it-on-anything) for the
+fuller version of this trap.
+
+Run `go install .` immediately after saving a `.tmpl` edit, before running
+`make ready` even once — not after `make ready` looks wrong.

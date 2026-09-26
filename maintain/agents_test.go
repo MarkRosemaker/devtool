@@ -18,6 +18,7 @@ func TestGenerateAgents(t *testing.T) {
 		checkOrder(t, got, []string{
 			wantAgentsStamp,
 			"## Starting work",
+			"## Cross-repo dependencies",
 			"## Committing",
 			"## Generated files",
 			"`AGENTS.md` → `AGENTS/`",
@@ -51,6 +52,10 @@ func TestGenerateAgents(t *testing.T) {
 			// One thing at a time is per repository and per conversation,
 			// and a second idea rides the open pull request or the roadmap.
 			"Not in a second branch.",
+			// A fix ends at its own pull request; propagating it downstream
+			// is the owner's call, not something to do on their behalf.
+			"Never bump another repository's dependency on it",
+			"Report the fix as merged and",
 			"Watching a pull request costs nothing",
 			"`make ready` passes before every commit",
 			// What ready regenerates is its output, not a failure to recover
