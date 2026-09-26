@@ -57,9 +57,23 @@ cost you something.
 Edit the directory, never the file:
 
 - `AGENTS.md` → `AGENTS/`
-- `CLAUDE.md` → `AGENTS/`
-- `README.md` → `README/`
-- `Makefile` → `mk/`
+
+`api/openapi.json` is partly generated: `openapi-enrich` fills in types,
+formats and examples from `api/interactions.json` and writes them into
+the spec. What it writes is kept: a later run does not remove it, even
+once the interaction that caused it has changed. When an interaction
+contradicts your edit, it can also overwrite that edit.
+
+So change a type in both files, in the same commit. After `make ready`,
+read the diff of `api/openapi.json`. Put back any edit enrich reverted,
+and delete any example it inferred from an interaction that no longer
+exists.
+
+`api/interactions.json` is also the frontend's mock data. Claude Design
+copies it to `frontend/mocks.json`, and the generated `api.js` serves
+responses from that file in development. An interaction that is stale
+or missing means a mocked screen that is wrong or empty. Keep each one
+to what the handler actually returns.
 
 `.gitignore` is the exception: only the marked block at its head is
 generated. Your own rules go below that block, where they win — in a
@@ -99,10 +113,3 @@ generated. Your own rules go below that block, where they win — in a
 - Watching a pull request costs nothing, so do not spend a turn subscribing
   or unsubscribing and do not ask which is wanted. If it happens by itself,
   leave it. You will be told when there is a review to act on.
-
-## Particular to this repository
-
-Open one when the work touches it.
-
-- [Editing a generator's template](AGENTS/templates.md)
-- [Versions](AGENTS/versions.md)

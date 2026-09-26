@@ -365,6 +365,18 @@ func TestAgentsGolden(t *testing.T) {
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},
 			},
 		}},
+		// All three of OpenAPIEnrich, Frontend and Gitignore true at once,
+		// which is the case that caught the blank-line bug: each of the
+		// three transitions — list to enrich, enrich to frontend, frontend
+		// to gitignore, gitignore to the next heading — is a place two
+		// chained conditionals could stack a reserved blank line that
+		// neither one actually renders.
+		{"openapi", agentsData{
+			Generated:     generatedRootDirs[:1],
+			Gitignore:     true,
+			OpenAPIEnrich: true,
+			Frontend:      true,
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := renderAgents(tc.data)
