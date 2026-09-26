@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/spf13/afero"
@@ -38,6 +39,14 @@ type Definition struct {
 	// DevtoolVersion is the build that last maintained this repository, so a
 	// repository can say which generator produced what it holds.
 	DevtoolVersion string `json:"devtoolVersion,omitempty"`
+}
+
+// equal reports whether two definitions say the same thing.
+func (d Definition) equal(o Definition) bool {
+	return d.Description == o.Description &&
+		slices.Equal(d.Topics, o.Topics) &&
+		d.Coverage == o.Coverage &&
+		d.DevtoolVersion == o.DevtoolVersion
 }
 
 // LoadDefinition reads the repository's definition.

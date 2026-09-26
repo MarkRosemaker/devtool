@@ -46,10 +46,22 @@ row of a full run.
 
 ## The generators
 
-`maintain` holds them, one per file it owns, each an `engine.Task` with a
-short label the event stream carries. They are deterministic: running one
-twice produces the same bytes, which is what lets an unchanged worktree mean
-"nothing to commit".
+`maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
+all as a single `engine.Task` named `devtool update` — licence, README,
+Makefile, `.gitignore`, `AGENTS.md`, `CLAUDE.md`, the lint config, and
+`devtool.json` last. That one task is the whole of a local rebuild and the
+first task of a maintained run, so the two paths cannot disagree about what
+devtool owns, and a maintained run commits all of it as one commit.
+
+They are deterministic: running one twice produces the same bytes, which is
+what lets an unchanged worktree mean "nothing to commit".
+
+**Anything a run writes into a repository has to be written inside a task.**
+The engine commits a task's changes as it goes and pushes at the end; a file
+written after that is left in the worktree, and the next run's `prepare`
+discards it before pulling. `devtool.json` was written that way — by the
+service, after the engine returned — for every repository on every run, and
+not one of them ever landed. It is written inside `UpdateTask` now.
 
 Every generated file opens with a marker naming the generator, matched by a
 regular expression rather than an exact string, so the name can change
@@ -108,9 +120,18 @@ anyway would produce a commit whose only content is the mark — which in *this*
 repository publishes a version for the next run to record, and so on without
 end.
 
-"Changed anything" is a before-and-after of `HEAD` plus the paths that differ
-from it, which covers the commit run (clean worktree, `HEAD` moves) and the
-plain rebuild (dirty worktree, no commits) alike.
+"Changed anything" is the paths that differ from `HEAD`, read before and
+after the generators run inside `UpdateTask`. The engine commits only after
+the task returns, so within it `HEAD` never moves: a run that starts clean —
+every maintained run, and a local one with `-commit` — is judged exactly. A
+plain rebuild can start dirty, and there a generator rewriting a file it had
+already left dirty would not register; that would mean the generators are not
+deterministic, which is a fault of its own.
+
+Coverage is recorded alongside, and there the portfolio's list wins over the
+definition: the list holds what the last run measured, written back after
+every run, while `devtool.json` holds a copy. Preferring the copy would freeze
+every badge at the first figure recorded.
 
 ## What the toolchain stamps, and why it differs per machine
 

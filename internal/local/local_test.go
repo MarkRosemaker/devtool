@@ -423,3 +423,59 @@ func readFileString(t *testing.T, path string) string {
 
 	return string(b)
 }
+
+// TestACommitRunCommitsTheDefinition is the bug this task exists to fix.
+//
+// devtool.json used to be written after the engine had committed and pushed,
+// so it was left in the worktree, and the next run's prepare discarded it
+// before pulling. Every maintained run did that for every repository: not one
+// devtool.json in the portfolio came from a run. So this asserts the one thing
+// that was false — after a -commit run, the definition is in the commit that
+// reached the remote, and nothing is left behind in the worktree.
+func TestACommitRunCommitsTheDefinition(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs git and the Go toolchain")
+	}
+
+	const current = "v0.0.0-20260917155344-c047bdcfd843"
+
+	remote := t.TempDir()
+	git(t, remote, "init", "-q", "--bare")
+
+	dir := committedRepo(t)
+	write(t, dir, "thing.go", "package thing\n\nfunc Thing() int { return 1 }\n")
+	git(t, dir, "add", "-A")
+	git(t, dir, "commit", "-qm", "second")
+	git(t, dir, "remote", "add", "origin", remote)
+	git(t, dir, "push", "-q", "-u", "origin", "HEAD")
+
+	opts := Options{Holder: "T", Commit: true, Version: current}
+	if err := Update(t.Context(), dir, opts, nopEmitter{}); err != nil {
+		t.Fatal(err)
+	}
+
+	if left := gitOut(t, dir, "status", "--porcelain"); left != "" {
+		t.Errorf("the run left the worktree dirty, which the next run discards:\n%s", left)
+	}
+
+	pushed := gitOut(t, remote, "show", "HEAD:"+maintain.DefinitionPath)
+	if !strings.Contains(pushed, current) {
+		t.Errorf("the pushed %s does not record %s:\n%s",
+			maintain.DefinitionPath, current, pushed)
+	}
+}
+
+// gitOut runs git and returns what it printed, trimmed.
+func gitOut(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+
+	cmd := exec.CommandContext(t.Context(), "git", args...)
+	cmd.Dir = dir
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v: %s", args, err, out)
+	}
+
+	return strings.TrimSpace(string(out))
+}

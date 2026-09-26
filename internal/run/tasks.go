@@ -17,30 +17,31 @@ const licenseHolder = "Marco Rösler (MarkRosemaker)"
 //
 // The order is not arbitrary:
 //
-//   - The licence, README, Makefile and AGENTS.md come first, so a
-//     repository is properly licensed, documented and buildable even if a
-//     later task fails — and so the make targets AGENTS.md points an agent
-//     at exist before it is written.
-//   - .gitignore comes after the Makefile, whose targets settle what there
-//     is to ignore, and before AGENTS.md, which says so only once the block
-//     is really there.
+//   - Everything devtool owns comes first, as one task and so one commit —
+//     licence, README, Makefile, .gitignore, AGENTS.md, CLAUDE.md, the lint
+//     config and devtool.json. First, so a repository is licensed, documented
+//     and buildable even if a later task fails. One task, so devtool.json is
+//     committed with the rest instead of being written after the push and
+//     discarded by the next run, which is what happened before.
 //   - Dependencies and tools are updated before the code is reformatted, so the
 //     formatters see the code the new versions produce.
 //   - Formatting runs after the fixers, so anything they rewrote is left tidy.
 //   - The single-linter fixes come last, one task each, so every commit carries
 //     exactly one kind of change and is easy to read later.
-func tasks(r *engine.Runner, repo *repository, spec engine.Spec) []engine.Task {
+func tasks(
+	r *engine.Runner, repo *repository, spec engine.Spec, version string,
+) []engine.Task {
 	return []engine.Task{
-		maintain.LicenseTask(repo, licenseHolder),
-		maintain.ReadmeTask(repo, spec.Coverage),
-		maintain.MakefileTask(repo),
-		maintain.GitignoreTask(repo),
-		maintain.AgentsTask(repo),
-		maintain.ClaudeTask(repo),
+		maintain.UpdateTask(repo, maintain.UpdateOptions{
+			Holder:      licenseHolder,
+			Coverage:    spec.Coverage,
+			Version:     version,
+			Description: spec.Description,
+			Topics:      spec.Topics,
+		}),
 		{Name: "update dependencies", Short: "deps", Run: repo.UpdateDependencies},
 		{Name: "go fix", Short: "fix", Run: repo.GoFix},
 		{Name: "go vet", Short: "vet", Run: repo.GoVet},
-		maintain.GenLintfile(repo),
 		{Name: "golang-ci lint fix", Short: "lintfix", Run: func(ctx context.Context) error {
 			return r.Serialise(repo.GolangCILintFix)(ctx)
 		}},
@@ -49,13 +50,14 @@ func tasks(r *engine.Runner, repo *repository, spec engine.Spec) []engine.Task {
 	}
 }
 
-// sequence is the [engine.Sequence] the engine calls for this repository.
+// sequence is the [engine.Sequence] the engine calls for this repository,
+// carrying the build doing the work, which the repository cannot know.
 //
 // It ignores the [engine.Repo] the engine hands it, having the concrete
 // repository already: [tasks] reaches for gorepo operations that
 // engine.Repo deliberately does not name.
-func (repo *repository) sequence(
-	r *engine.Runner, _ engine.Repo, spec engine.Spec,
-) []engine.Task {
-	return tasks(r, repo, spec)
+func (repo *repository) sequence(version string) engine.Sequence {
+	return func(r *engine.Runner, _ engine.Repo, spec engine.Spec) []engine.Task {
+		return tasks(r, repo, spec, version)
+	}
 }

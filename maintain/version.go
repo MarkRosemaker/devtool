@@ -1,9 +1,6 @@
 package maintain
 
 import (
-	"context"
-
-	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/semver"
 )
@@ -113,28 +110,4 @@ func RecordVersion(fs afero.Fs, current string) error {
 	def.DevtoolVersion = current
 
 	return SaveDefinition(fs, def)
-}
-
-// VersionTask returns a task that records the devtool build maintaining this
-// repository, so a build that is behind can be told it is.
-//
-// changed reports whether the run altered the repository, and the mark is a
-// passenger: a run that changed nothing leaves it alone. The newer build
-// evidently has no different opinion about this repository, so recording it
-// would produce a commit whose only content is the mark — and in devtool's
-// own repository that commit publishes a new version, which the next run then
-// has something to record, and so on without end.
-func VersionTask(repo engine.Repo, current string, changed func() (bool, error)) engine.Task {
-	return engine.Task{
-		Name:  "record the devtool version",
-		Short: "version",
-		Run: func(context.Context) error {
-			did, err := changed()
-			if err != nil || !did {
-				return err
-			}
-
-			return RecordVersion(repo.Fs(), current)
-		},
-	}
 }
