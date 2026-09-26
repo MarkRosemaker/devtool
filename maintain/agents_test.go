@@ -152,6 +152,101 @@ func TestGenerateAgents(t *testing.T) {
 		}
 	})
 
+	// The go:generate directive is what makes this true rather than
+	// api/interactions.json on its own: a repository can have one without
+	// the other, and only the directive says openapi-enrich actually runs.
+	t.Run("openapi-enrich is mentioned only where it runs", func(t *testing.T) {
+		const paragraph = "openapi-enrich"
+
+		t.Run("no interactions file", func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "main.go",
+				"package main\n\n//go:generate go tool openapi-enrich\n\nfunc main() {}\n")
+
+			if got := generateAgentsAndRead(t, fs); strings.Contains(got, paragraph) {
+				t.Errorf("no interactions file to enrich from:\n%s", got)
+			}
+		})
+
+		t.Run("interactions file but no directive", func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "api/interactions.json", "{}\n")
+
+			if got := generateAgentsAndRead(t, fs); strings.Contains(got, paragraph) {
+				t.Errorf("nothing runs openapi-enrich:\n%s", got)
+			}
+		})
+
+		// go:generate is read from the file it is written in, so a
+		// directive elsewhere would not be the one editing the root
+		// api/openapi.json.
+		t.Run("directive outside the root", func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "api/interactions.json", "{}\n")
+			writeFile(t, fs, "cmd/tool/main.go",
+				"package main\n\n//go:generate go tool openapi-enrich\n\nfunc main() {}\n")
+
+			if got := generateAgentsAndRead(t, fs); strings.Contains(got, paragraph) {
+				t.Errorf("the directive is not in a root file:\n%s", got)
+			}
+		})
+
+		t.Run("both present", func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "api/interactions.json", "{}\n")
+			writeFile(t, fs, "main.go",
+				"package main\n\n//go:generate go tool openapi-enrich -out api/openapi.json\n\n"+
+					"func main() {}\n")
+
+			got := generateAgentsAndRead(t, fs)
+
+			for _, want := range []string{
+				"`api/openapi.json` is partly generated",
+				"read the diff of `api/openapi.json`",
+			} {
+				if !strings.Contains(got, want) {
+					t.Errorf("missing %q:\n%s", want, got)
+				}
+			}
+
+			// No frontend/ here, so nothing about mock data.
+			if strings.Contains(got, "mock data") {
+				t.Errorf("no frontend/, want no mention of it:\n%s", got)
+			}
+		})
+	})
+
+	// Condition B rides on condition A: a frontend/ directory says nothing
+	// on its own about interactions.json being anybody's mock data.
+	t.Run("the frontend paragraph needs openapi-enrich too", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, "frontend/mocks.json", "{}\n")
+
+		if got := generateAgentsAndRead(t, fs); strings.Contains(got, "mock data") {
+			t.Errorf("no openapi-enrich, want no mention of the frontend:\n%s", got)
+		}
+	})
+
+	t.Run("both conditions together get both paragraphs", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, "api/interactions.json", "{}\n")
+		writeFile(t, fs, "main.go",
+			"package main\n\n//go:generate go tool openapi-enrich\n\nfunc main() {}\n")
+		writeFile(t, fs, "frontend/mocks.json", "{}\n")
+
+		got := generateAgentsAndRead(t, fs)
+
+		for _, want := range []string{
+			"`api/openapi.json` is partly generated",
+			"is also the frontend's mock data",
+			"`frontend/mocks.json`",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("missing %q:\n%s", want, got)
+			}
+		}
+	})
+
 	t.Run("an existing AGENTS.md is adopted and linked, not overwritten", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 
@@ -294,6 +389,38 @@ func TestAgentsGolden(t *testing.T) {
 
 			if string(got) != string(want) {
 				t.Errorf("%s does not match:\n--- got ---\n%s\n--- want ---\n%s", golden, got, want)
+			}
+		})
+	}
+}
+
+// TestHasOpenAPIEnrichDirective: a suffix after the tool name, such as an
+// -out flag, must not disqualify the line — that is how the directive is
+// actually written, to name where it writes.
+func TestHasOpenAPIEnrichDirective(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		main string
+		want bool
+	}{
+		{"bare directive", "//go:generate go tool openapi-enrich\n", true},
+		{"with an -out flag", "//go:generate go tool openapi-enrich -out api/openapi.json\n", true},
+		{"indented, not a directive make would run", "\t//go:generate go tool openapi-enrich\n", false},
+		{"a different tool", "//go:generate go tool other-thing\n", false},
+		{"no directive at all", "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "api/interactions.json", "{}\n")
+			writeFile(t, fs, "main.go", "package main\n\n"+tc.main+"\nfunc main() {}\n")
+
+			got, err := hasOpenAPIEnrich(fs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got != tc.want {
+				t.Errorf("hasOpenAPIEnrich() = %v, want %v", got, tc.want)
 			}
 		})
 	}
