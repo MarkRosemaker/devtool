@@ -51,6 +51,17 @@ type agentsData struct {
 	// needs saying differently from the rest: the file is part-generated, so
 	// the instruction is where in it to write rather than not to.
 	Gitignore bool
+
+	// OpenAPIEnrich is true where api/openapi.json is partly generated from
+	// api/interactions.json, which needs saying: a plain edit to the spec
+	// can be overwritten by the next enrich run, or can itself overwrite
+	// what enrich already wrote.
+	OpenAPIEnrich bool
+
+	// Frontend is true where OpenAPIEnrich also holds and this repository's
+	// frontend uses api/interactions.json as its mock data, so a stale
+	// interaction means a wrong mock too.
+	Frontend bool
 }
 
 // generatedRoot is one generated root file and the directory it is built
@@ -168,11 +179,91 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
+	openAPIEnrich, err := hasOpenAPIEnrich(fs)
+	if err != nil {
+		return agentsData{}, err
+	}
+
+	// Only asked where it could matter: a frontend/ directory means nothing
+	// on its own, and asking regardless would say something true but
+	// pointless about a repository with no interactions.json at all.
+	var frontend bool
+
+	if openAPIEnrich {
+		frontend, err = hasFrontendDir(fs)
+		if err != nil {
+			return agentsData{}, err
+		}
+	}
+
 	return agentsData{
-		Generated: generated,
-		Fragments: fragments,
-		Gitignore: blocked,
+		Generated:     generated,
+		Fragments:     fragments,
+		Gitignore:     blocked,
+		OpenAPIEnrich: openAPIEnrich,
+		Frontend:      frontend,
 	}, nil
+}
+
+// interactionsPath is openapi-enrich's input, and Claude Design's mock data.
+const interactionsPath = "api/interactions.json"
+
+// openAPIEnrichDirective matches a go:generate line that runs openapi-enrich,
+// wherever the line goes on after the tool name — an -out flag or similar
+// does not disqualify it.
+var openAPIEnrichDirective = regexp.MustCompile(`(?m)^//go:generate go tool openapi-enrich\b`)
+
+// hasOpenAPIEnrich reports whether this repository's api/openapi.json is
+// partly generated: the interactions file exists, and some root Go file
+// carries a go:generate directive that runs openapi-enrich.
+//
+// Root only, because that is where go:generate itself looks — a directive
+// nested in a subpackage would not be the one editing api/openapi.json, so
+// finding one there would say this holds when it does not.
+func hasOpenAPIEnrich(fs afero.Fs) (bool, error) {
+	if ok, err := afero.Exists(fs, interactionsPath); err != nil {
+		return false, fmt.Errorf("checking for %s: %w", interactionsPath, err)
+	} else if !ok {
+		return false, nil
+	}
+
+	entries, err := afero.ReadDir(fs, ".")
+	if err != nil {
+		return false, fmt.Errorf("reading the root directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+			continue
+		}
+
+		b, err := afero.ReadFile(fs, entry.Name())
+		if err != nil {
+			return false, fmt.Errorf("%s: %w", entry.Name(), err)
+		}
+
+		if openAPIEnrichDirective.Match(b) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// frontendDir is where Claude Design's generated frontend lives, when this
+// repository has one.
+const frontendDir = "frontend"
+
+// hasFrontendDir reports whether this repository has a frontend/ directory.
+func hasFrontendDir(fs afero.Fs) (bool, error) {
+	info, err := fs.Stat(frontendDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("checking for %s: %w", frontendDir, err)
+	}
+
+	return info.IsDir(), nil
 }
 
 // hasGitignoreBlock reports whether .gitignore carries [GitignoreTask]'s
