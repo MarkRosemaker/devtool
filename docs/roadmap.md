@@ -98,6 +98,18 @@ back to its own copy. Requiring GNU Make 4.x pushes a setup step onto every
 machine and every agent. Left as it is until one of those costs less than the
 shadowing does.
 
+## Commands generated from commands.yaml
+
+A command's shape — its name, subcommands and flags — belongs in a
+`commands.yaml`, with devtool generating the `cobra.Command`s from it, the way
+`devtool-legacy` does. devtool itself would move from its root `main.go` to
+`cmd/`. Two things follow:
+
+- The command's name comes from the file. `repoShape` stops reading `cmd/` to
+  find it, which is the part the repository kind could not replace.
+- Kind inference no longer needs the root `main` package rule, which exists
+  only because devtool keeps its command at the root. That rule would go.
+
 ## Per-repository task sequences
 
 Every repository currently gets the same sequence. Some want more:
