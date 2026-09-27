@@ -1,4 +1,5 @@
 {
 	"coverage": 64.9,
-	"devtoolVersion": "v0.0.0-20260927002825-581fbd54c794"
+	"devtoolVersion": "v0.0.0-20260927105104-016049d867cb",
+	"kind": "cli"
 }
