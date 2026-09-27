@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
-	"github.com/spf13/afero"
 )
 
 // UpdateOptions are what the generators cannot work out from the repository.
@@ -28,6 +27,11 @@ type UpdateOptions struct {
 	// repository is where they live.
 	Description string
 	Topics      []string
+
+	// RecordPrivate says the repository's Private is an answer — GitHub's,
+	// on a maintained run — and so is recorded in devtool.json. Otherwise
+	// there was nobody to ask, and the recorded answer stands.
+	RecordPrivate bool
 }
 
 // UpdateTask returns the one task that brings everything devtool owns up to
@@ -58,14 +62,16 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 		return err
 	}
 
+	// Before the generators, which read what kind of repository this is
+	// from the definition rather than working it out again.
+	if err := recordDefinition(repo, opts); err != nil {
+		return err
+	}
+
 	for _, t := range generators(repo, opts) {
 		if err := t.Run(ctx); err != nil {
 			return fmt.Errorf("%s: %w", t.Name, err)
 		}
-	}
-
-	if err := recordDefinition(repo.Fs(), opts); err != nil {
-		return err
 	}
 
 	after, err := changedPaths(repo)
@@ -127,13 +133,25 @@ func changedPaths(repo engine.Repo) ([]string, error) {
 // recordDefinition writes what this run knows into devtool.json, leaving the
 // file untouched where nothing moved: a byte-identical file is what tells the
 // runner there is nothing to commit.
-func recordDefinition(fs afero.Fs, opts UpdateOptions) error {
+func recordDefinition(repo engine.Repo, opts UpdateOptions) error {
+	fs := repo.Fs()
+
 	def, _, err := LoadDefinition(fs)
 	if err != nil {
 		return err
 	}
 
 	next := def
+
+	if next.Kind == "" {
+		if next.Kind, err = inferKind(fs, repo.Owner()); err != nil {
+			return err
+		}
+	}
+
+	if opts.RecordPrivate {
+		next.Private = repo.Private()
+	}
 
 	if opts.Coverage != 0 {
 		next.Coverage = opts.Coverage

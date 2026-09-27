@@ -47,11 +47,22 @@ row of a full run.
 ## The generators
 
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
-all as a single `engine.Task` named `devtool update` — licence, README,
-Makefile, `.gitignore`, `AGENTS.md`, `CLAUDE.md`, the lint config, and
-`devtool.json` last. That one task is the whole of a local rebuild and the
+all as a single `engine.Task` named `devtool update` — `devtool.json` first,
+then licence, README, Makefile, `.gitignore`, `AGENTS.md`, `CLAUDE.md` and the
+lint config. That one task is the whole of a local rebuild and the
 first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
+
+`devtool.json` goes first because the generators read it. It says what kind of
+repository this is — `library`, `cli` (a command, library or not), `webapp` or
+`apilib` — inferred once from the owner `go-api-libs`, `frontend/`, `cmd/` or
+a root `main` package where it does not say yet, and authoritative from then
+on. It also says whether the repository is private: a maintained run records
+GitHub's answer, and a local run, which has nobody to ask, reads it back. That
+is why the generated Makefile runs plain `devtool update`; privacy once rode
+on it as `-private`, and a Makefile generated without the flag rebuilt a
+private repository's README as a public one's. The flag is still accepted, for
+the Makefiles that pass it, and recorded.
 
 They are deterministic: running one twice produces the same bytes, which is
 what lets an unchanged worktree mean "nothing to commit".

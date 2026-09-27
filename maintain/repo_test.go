@@ -15,6 +15,7 @@ import (
 // function that takes an afero.Fs.
 type fakeRepo struct {
 	fs      afero.Fs
+	owner   string
 	private bool
 
 	// dirty says the worktree has uncommitted changes. A test's task sets
@@ -28,7 +29,14 @@ type fakeRepo struct {
 	calls []string
 }
 
-func (r *fakeRepo) Owner() string  { return "user" }
+func (r *fakeRepo) Owner() string {
+	if r.owner == "" {
+		return "user"
+	}
+
+	return r.owner
+}
+
 func (r *fakeRepo) Name() string   { return "gorepo" }
 func (r *fakeRepo) String() string { return "user/gorepo" }
 func (r *fakeRepo) Private() bool  { return r.private }

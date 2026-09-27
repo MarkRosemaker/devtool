@@ -214,18 +214,18 @@ func TestGenerateAgents(t *testing.T) {
 				}
 			}
 
-			// No frontend/ here, so nothing about mock data.
+			// Not a web app, so nothing about mock data.
 			if strings.Contains(got, "mock data") {
-				t.Errorf("no frontend/, want no mention of it:\n%s", got)
+				t.Errorf("not a web app, want no mention of it:\n%s", got)
 			}
 		})
 	})
 
-	// Condition B rides on condition A: a frontend/ directory says nothing
-	// on its own about interactions.json being anybody's mock data.
+	// Condition B rides on condition A: being a web app says nothing on its
+	// own about interactions.json being anybody's mock data.
 	t.Run("the frontend paragraph needs openapi-enrich too", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
-		writeFile(t, fs, "frontend/mocks.json", "{}\n")
+		writeFile(t, fs, DefinitionPath, `{"kind": "webapp"}`)
 
 		if got := generateAgentsAndRead(t, fs); strings.Contains(got, "mock data") {
 			t.Errorf("no openapi-enrich, want no mention of the frontend:\n%s", got)
@@ -237,7 +237,7 @@ func TestGenerateAgents(t *testing.T) {
 		writeFile(t, fs, "api/interactions.json", "{}\n")
 		writeFile(t, fs, "main.go",
 			"package main\n\n//go:generate go tool openapi-enrich\n\nfunc main() {}\n")
-		writeFile(t, fs, "frontend/mocks.json", "{}\n")
+		writeFile(t, fs, DefinitionPath, `{"kind": "webapp"}`)
 
 		got := generateAgentsAndRead(t, fs)
 
@@ -249,6 +249,21 @@ func TestGenerateAgents(t *testing.T) {
 			if !strings.Contains(got, want) {
 				t.Errorf("missing %q:\n%s", want, got)
 			}
+		}
+	})
+
+	// The kind decides, not the directory: a frontend/ in a repository
+	// recorded as something else is not Claude Design's.
+	t.Run("a frontend directory alone is not a web app", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, "api/interactions.json", "{}\n")
+		writeFile(t, fs, "main.go",
+			"package main\n\n//go:generate go tool openapi-enrich\n\nfunc main() {}\n")
+		writeFile(t, fs, "frontend/mocks.json", "{}\n")
+		writeFile(t, fs, DefinitionPath, `{"kind": "cli"}`)
+
+		if got := generateAgentsAndRead(t, fs); strings.Contains(got, "mock data") {
+			t.Errorf("recorded as a cli, want no mention of the frontend:\n%s", got)
 		}
 	})
 

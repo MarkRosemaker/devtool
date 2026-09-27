@@ -39,6 +39,15 @@ type Definition struct {
 	// DevtoolVersion is the build that last maintained this repository, so a
 	// repository can say which generator produced what it holds.
 	DevtoolVersion string `json:"devtoolVersion,omitempty"`
+
+	// Kind is what sort of repository this is. Inferred once where the file
+	// has none, and authoritative from then on: a wrong guess is fixed by
+	// editing this line, not by rearranging directories.
+	Kind Kind `json:"kind,omitempty"`
+
+	// Private is the repository's visibility, as GitHub last reported it to a
+	// maintained run. A local run has no GitHub to ask, so it reads it here.
+	Private bool `json:"private,omitzero"`
 }
 
 // equal reports whether two definitions say the same thing.
@@ -46,7 +55,9 @@ func (d Definition) equal(o Definition) bool {
 	return d.Description == o.Description &&
 		slices.Equal(d.Topics, o.Topics) &&
 		d.Coverage == o.Coverage &&
-		d.DevtoolVersion == o.DevtoolVersion
+		d.DevtoolVersion == o.DevtoolVersion &&
+		d.Kind == o.Kind &&
+		d.Private == o.Private
 }
 
 // LoadDefinition reads the repository's definition.
@@ -64,6 +75,11 @@ func LoadDefinition(fs afero.Fs) (Definition, bool, error) {
 	var def Definition
 	if err := json.Unmarshal(b, &def); err != nil {
 		return Definition{}, false, fmt.Errorf("%s: %w", DefinitionPath, err)
+	}
+
+	if def.Kind != "" && !slices.Contains(kinds, def.Kind) {
+		return Definition{}, false, fmt.Errorf("%s: unknown kind %q, want one of %s",
+			DefinitionPath, def.Kind, kindList())
 	}
 
 	return def, true, nil
