@@ -407,17 +407,18 @@ func (s *Service) maintain(
 		return event.Result{Owner: u.owner, Name: u.name, Err: u.err}
 	}
 
-	spec, def := s.spec(ctx, u)
+	spec := s.spec(ctx, u)
 
-	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence, events)
+	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence(s.version), events)
 
 	// Write the measured coverage back so the next run can report the change.
 	// Each unit owns its own configuration entry, so concurrent runs do not
-	// contend here.
+	// contend here. Nothing is written into the repository at this point:
+	// the engine has committed and pushed, so a write now would be left
+	// uncommitted and discarded by the next run's prepare. devtool.json is
+	// written inside the sequence instead.
 	if res.Err == nil {
 		u.cfg.Coverage = res.Coverage
-
-		s.record(ctx, u, def, res.Coverage)
 	}
 
 	s.pruneOccasionally(ctx, u.repo)
@@ -430,28 +431,31 @@ func (s *Service) maintain(
 // matters over weeks, so it is spread thinly instead.
 const pruneRate = 0.05
 
-// spec is what the repository should look like, and the definition it came
-// from.
-//
-// devtool.json is the repository's own word on the subject and wins. A
-// repository without one falls back to the list, which is where all of this
-// used to live and where it stays until every repository has been given a
-// definition.
-func (s *Service) spec(ctx context.Context, u *unit) (engine.Spec, maintain.Definition) {
-	spec := u.cfg.Spec()
-
+// spec is what this run holds about the repository: the list's entry, merged
+// with the repository's own definition by [withDefinition].
+func (s *Service) spec(ctx context.Context, u *unit) engine.Spec {
 	def, found, err := maintain.LoadDefinition(u.repo.Fs())
 	if err != nil {
 		slog.WarnContext(ctx, "could not read the repository's definition",
 			"repo", u.repo.String(), "error", err)
 
-		return spec, maintain.Definition{}
+		found = false
 	}
 
+	return withDefinition(u.cfg.Spec(), def, found)
+}
+
+// withDefinition lets the repository's definition take over the list's entry
+// wherever it says something — except for coverage, which goes the other way.
+//
+// The list's coverage is what the last maintained run measured, written back
+// after every run, so it is the freshest figure there is; the definition's is
+// a copy of an earlier one. Preferring it would stop the badge following the
+// tests the moment devtool.json started actually landing. The definition only
+// fills in where the list has never recorded a measurement.
+func withDefinition(spec engine.Spec, def maintain.Definition, found bool) engine.Spec {
 	if !found {
-		// Nothing to migrate from yet beyond the list, which spec already
-		// holds. record writes the definition after the run.
-		return spec, maintain.Definition{}
+		return spec
 	}
 
 	if def.Description != "" {
@@ -462,39 +466,11 @@ func (s *Service) spec(ctx context.Context, u *unit) (engine.Spec, maintain.Defi
 		spec.Topics = def.Topics
 	}
 
-	if def.Coverage != 0 {
+	if spec.Coverage == 0 {
 		spec.Coverage = def.Coverage
 	}
 
-	return spec, def
-}
-
-// record writes what this run knows back into the repository's own
-// definition, which is how a repository that has never had one gets it: the
-// description and topics come off the list the first time, and stay in the
-// repository afterwards.
-//
-// A failure here is logged rather than returned. The repository was
-// maintained; not recording what it now is, is worth saying and not worth
-// undoing the run over.
-func (s *Service) record(
-	ctx context.Context, u *unit, def maintain.Definition, coverage float64,
-) {
-	def.Coverage = coverage
-	def.DevtoolVersion = s.version
-
-	if def.Description == "" {
-		def.Description = u.cfg.Description
-	}
-
-	if len(def.Topics) == 0 {
-		def.Topics = u.cfg.Topics
-	}
-
-	if err := maintain.SaveDefinition(u.repo.Fs(), def); err != nil {
-		slog.WarnContext(ctx, "could not record the repository's definition",
-			"repo", u.repo.String(), "error", err)
-	}
+	return spec
 }
 
 // pruneOccasionally compacts the repository's git objects now and then.

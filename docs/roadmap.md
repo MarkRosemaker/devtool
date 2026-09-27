@@ -33,15 +33,40 @@ pass over the repository.
 `devtool test` measures coverage and records it; the README badge reads it. The
 version is a high-water mark, and a run compares its own build against it to
 notice, without asking anything, that it is behind. A maintained run
-prefers the definition, falls back to `portfolio`'s `config.json` where a
-repository has none, and writes the definition afterwards with whatever it
-used — so one full run over the portfolio gives every repository one.
+prefers the definition for description and topics, falls back to
+`portfolio`'s `config.json` where a repository has none, and writes the
+definition inside its first task — so one full run over the portfolio gives
+every repository one. (Until that task existed the write came after the push
+and never landed; see `docs/architecture.md`.)
 
 What is left: the engine's `Runner.prepare` pushes `Description` and `Topics`
 before any task runs, and takes them from the definition where there is one,
 which means reading a file out of a worktree that `prepare` itself pulls. Worth
 a look when the fields leave `config.json`, because the ordering is the part
 that was always awkward — and it is a change to `devtool-engine`, not here.
+
+## What kind of repository this is, and whether it is private
+
+Agreed as the next change after `devtool update` became one task:
+`devtool.json` names the repository's kind rather than devtool inferring it
+from whatever files happen to be present.
+
+- **Kinds:** `library`, `cli` (which covers a repository that is both a
+  library and a command), `webapp` (a Go backend with an HTML/JS frontend
+  designed by Claude Design), `apilib` (an API library under go-api-libs).
+- **Where there is none yet** — every repository today — the first run infers
+  it once and records it: `cmd/` → `cli`, `frontend/` → `webapp`, owner
+  go-api-libs → `apilib`, otherwise `library`. From then on the file is
+  authoritative and inference never runs again, so a wrong guess is fixed by
+  editing one line.
+- **`private`** moves in too, written by a maintained run from GitHub's own
+  answer and read by `devtool update` in place of the `-private` flag each
+  generated Makefile passes back — the circular plumbing that once rebuilt a
+  private repository's README as a public one's.
+
+What replaces: the `frontend/` check behind the Claude Design paragraph in
+`AGENTS.md`, `repoShape`'s reading of `cmd/`, and the `-private` flag. It is
+also the natural input for **Per-repository task sequences** below.
 
 ## Record how long each step took
 

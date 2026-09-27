@@ -113,5 +113,6 @@ generated. Your own rules go below that block, where they win — in a
 
 Open one when the work touches it.
 
+- [What a maintained run commits](AGENTS/runs.md)
 - [Editing a generator's template](AGENTS/templates.md)
 - [Versions](AGENTS/versions.md)

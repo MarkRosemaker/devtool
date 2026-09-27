@@ -89,15 +89,8 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 		return err
 	}
 
-	// Captured before anything runs, so the version task can tell whether
-	// this run changed the repository at all.
-	before, err := r.state(ctx)
-	if err != nil {
-		return err
-	}
-
 	if opts.Commit {
-		return commitRun(ctx, r, opts, before, events)
+		return commitRun(ctx, r, opts, events)
 	}
 
 	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})
@@ -105,7 +98,7 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 
 	event.Emit(events, event.Event{Kind: event.RepoStart, Repo: r.String()})
 
-	for _, t := range tasks(r, opts, before) {
+	for _, t := range tasks(r, opts) {
 		event.Emit(events, event.Event{
 			Kind: event.TaskStart, Repo: r.String(), Task: t.Short,
 		})
@@ -129,21 +122,14 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 	return nil
 }
 
-// tasks is what a local rebuild runs: the generators, and nothing that needs
-// the network or changes code.
-func tasks(r *repo, opts Options, before string) []engine.Task {
+// tasks is what a local rebuild runs: the one task that writes everything
+// devtool owns, the same one a maintained run begins with.
+func tasks(r *repo, opts Options) []engine.Task {
 	return []engine.Task{
-		maintain.LicenseTask(r, opts.Holder),
-		maintain.ReadmeTask(r, opts.Coverage),
-		maintain.MakefileTask(r),
-		maintain.GitignoreTask(r),
-		maintain.AgentsTask(r),
-		maintain.ClaudeTask(r),
-		maintain.GenLintfile(r),
-		maintain.VersionTask(r, opts.Version, func() (bool, error) {
-			now, err := r.state(context.Background())
-
-			return now != before, err
+		maintain.UpdateTask(r, maintain.UpdateOptions{
+			Holder:   opts.Holder,
+			Coverage: opts.Coverage,
+			Version:  opts.Version,
 		}),
 	}
 }
@@ -244,7 +230,7 @@ func identify(ctx context.Context, dir string) (owner, name string) {
 // whatever it finds uncommitted, which is correct for a checkout it owns on a
 // server and catastrophic for the one somebody is working in.
 func commitRun(
-	ctx context.Context, r *repo, opts Options, before string, events event.Emitter,
+	ctx context.Context, r *repo, opts Options, events event.Emitter,
 ) error {
 	files, err := r.GetChangedFiles()
 	if err != nil {
@@ -265,7 +251,7 @@ func commitRun(
 	res := (&engine.Runner{Inert: maintain.Inert}).Update(ctx, r,
 		engine.Spec{Coverage: opts.Coverage},
 		func(*engine.Runner, engine.Repo, engine.Spec) []engine.Task {
-			return tasks(r, opts, before)
+			return tasks(r, opts)
 		}, events)
 
 	return res.Err
