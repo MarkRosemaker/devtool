@@ -3,7 +3,7 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20260926134123-5b542d8e16a8
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20260927000024-3ed564478af9
 	github.com/MarkRosemaker/ghrepo v0.0.0-20260926134131-d287321adb06
 	github.com/MarkRosemaker/golangci-json v0.0.0-20260926134128-a89164a8fde9
 	github.com/MarkRosemaker/gorepo v0.0.0-20260926134254-667e9c02f6b1
