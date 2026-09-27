@@ -31,7 +31,8 @@ type Options struct {
 
 	// Private marks a repository whose README should not carry the badges a
 	// public one gets. There is no way to ask git, and this runs without
-	// GitHub, so it is the caller's to say.
+	// GitHub, so devtool.json is where it is read from; this is for a
+	// repository whose file does not say so yet, and it is recorded there.
 	Private bool
 
 	// Coverage is the figure the README badge shows. Left at zero, the
@@ -75,14 +76,9 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 		return fmt.Errorf("%s is not a git repository", abs)
 	}
 
-	owner, name := identify(ctx, abs)
-
-	r := &repo{
-		dir:     abs,
-		owner:   owner,
-		name:    name,
-		private: opts.Private,
-		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
+	r, err := open(ctx, abs, opts)
+	if err != nil {
+		return err
 	}
 
 	if err := refuseIfBehind(ctx, r.fs, opts); err != nil {
@@ -122,6 +118,27 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 	return nil
 }
 
+// open is the repository at abs, private if the caller says so or its
+// definition does: a flag left off must not turn a private repository's
+// README into a public one's.
+func open(ctx context.Context, abs string, opts Options) (*repo, error) {
+	owner, name := identify(ctx, abs)
+	fs := afero.NewBasePathFs(afero.NewOsFs(), abs)
+
+	def, _, err := maintain.LoadDefinition(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &repo{
+		dir:     abs,
+		owner:   owner,
+		name:    name,
+		private: opts.Private || def.Private,
+		fs:      fs,
+	}, nil
+}
+
 // tasks is what a local rebuild runs: the one task that writes everything
 // devtool owns, the same one a maintained run begins with.
 func tasks(r *repo, opts Options) []engine.Task {
@@ -130,6 +147,9 @@ func tasks(r *repo, opts Options) []engine.Task {
 			Holder:   opts.Holder,
 			Coverage: opts.Coverage,
 			Version:  opts.Version,
+			// Set, the flag says the repository is private; left off, it
+			// says nothing, since no Makefile generated now passes it.
+			RecordPrivate: opts.Private,
 		}),
 	}
 }
@@ -269,14 +289,9 @@ func Test(ctx context.Context, dir string, opts Options, events event.Emitter) e
 		return fmt.Errorf("resolving %s: %w", dir, err)
 	}
 
-	owner, name := identify(ctx, abs)
-
-	r := &repo{
-		dir:     abs,
-		owner:   owner,
-		name:    name,
-		private: opts.Private,
-		fs:      afero.NewBasePathFs(afero.NewOsFs(), abs),
+	r, err := open(ctx, abs, opts)
+	if err != nil {
+		return err
 	}
 
 	event.Emit(events, event.Event{Kind: event.RunStart, Repos: []string{r.String()}})

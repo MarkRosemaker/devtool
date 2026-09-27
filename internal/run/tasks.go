@@ -33,11 +33,12 @@ func tasks(
 ) []engine.Task {
 	return []engine.Task{
 		maintain.UpdateTask(repo, maintain.UpdateOptions{
-			Holder:      licenseHolder,
-			Coverage:    spec.Coverage,
-			Version:     version,
-			Description: spec.Description,
-			Topics:      spec.Topics,
+			Holder:        licenseHolder,
+			Coverage:      spec.Coverage,
+			Version:       version,
+			Description:   spec.Description,
+			Topics:        spec.Topics,
+			RecordPrivate: true,
 		}),
 		{Name: "update dependencies", Short: "deps", Run: repo.UpdateDependencies},
 		{Name: "go fix", Short: "fix", Run: repo.GoFix},

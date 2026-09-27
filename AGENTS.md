@@ -113,6 +113,8 @@ generated. Your own rules go below that block, where they win — in a
 
 Open one when the work touches it.
 
+- [Changing devtool.json's schema](AGENTS/definition.md)
 - [What a maintained run commits](AGENTS/runs.md)
 - [Editing a generator's template](AGENTS/templates.md)
+- [Proving a test](AGENTS/testing.md)
 - [Versions](AGENTS/versions.md)

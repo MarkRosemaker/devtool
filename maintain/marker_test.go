@@ -103,7 +103,7 @@ func TestMakefileStampedByTheOldGeneratorIsNotAdopted(t *testing.T) {
 	writeFile(t, fs, makefilePath,
 		"# "+oldStamp+" — edit files in mk/ instead.\n.DEFAULT_GOAL := all\n\nall:\n\techo hi\n")
 
-	if err := generateMakefile(fs, true); err != nil {
+	if err := generateMakefile(fs); err != nil {
 		t.Fatal(err)
 	}
 

@@ -45,29 +45,6 @@ which means reading a file out of a worktree that `prepare` itself pulls. Worth
 a look when the fields leave `config.json`, because the ordering is the part
 that was always awkward — and it is a change to `devtool-engine`, not here.
 
-## What kind of repository this is, and whether it is private
-
-Agreed as the next change after `devtool update` became one task:
-`devtool.json` names the repository's kind rather than devtool inferring it
-from whatever files happen to be present.
-
-- **Kinds:** `library`, `cli` (which covers a repository that is both a
-  library and a command), `webapp` (a Go backend with an HTML/JS frontend
-  designed by Claude Design), `apilib` (an API library under go-api-libs).
-- **Where there is none yet** — every repository today — the first run infers
-  it once and records it: `cmd/` → `cli`, `frontend/` → `webapp`, owner
-  go-api-libs → `apilib`, otherwise `library`. From then on the file is
-  authoritative and inference never runs again, so a wrong guess is fixed by
-  editing one line.
-- **`private`** moves in too, written by a maintained run from GitHub's own
-  answer and read by `devtool update` in place of the `-private` flag each
-  generated Makefile passes back — the circular plumbing that once rebuilt a
-  private repository's README as a public one's.
-
-What replaces: the `frontend/` check behind the Claude Design paragraph in
-`AGENTS.md`, `repoShape`'s reading of `cmd/`, and the `-private` flag. It is
-also the natural input for **Per-repository task sequences** below.
-
 ## Record how long each step took
 
 `devtool.json` already carries per-repository metadata, and a run now emits a
@@ -121,6 +98,18 @@ back to its own copy. Requiring GNU Make 4.x pushes a setup step onto every
 machine and every agent. Left as it is until one of those costs less than the
 shadowing does.
 
+## Commands generated from commands.yaml
+
+A command's shape — its name, subcommands and flags — belongs in a
+`commands.yaml`, with devtool generating the `cobra.Command`s from it, the way
+`devtool-legacy` does. devtool itself would move from its root `main.go` to
+`cmd/`. Two things follow:
+
+- The command's name comes from the file. `repoShape` stops reading `cmd/` to
+  find it, which is the part the repository kind could not replace.
+- Kind inference no longer needs the root `main` package rule, which exists
+  only because devtool keeps its command at the root. That rule would go.
+
 ## Per-repository task sequences
 
 Every repository currently gets the same sequence. Some want more:
@@ -128,7 +117,8 @@ Every repository currently gets the same sequence. Some want more:
 
 The sequence is already a function of the repository, so this is a matter of
 letting a repository's definition carry an opt-in list rather than a schema
-change. `devtool-legacy`'s `required:` predicates — `repo.UsesGo`,
+change. `devtool.json` already names the repository's kind, which is the
+obvious first thing to choose a sequence by. `devtool-legacy`'s `required:` predicates — `repo.UsesGo`,
 `repo.IsMicroservice`, `always` — are the design for it.
 
 This is also the prerequisite for maintaining a repository that is not a Go

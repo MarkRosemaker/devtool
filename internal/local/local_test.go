@@ -243,6 +243,53 @@ func TestVersionRidesAlongWithRealWork(t *testing.T) {
 	}
 }
 
+// TestPrivacyIsReadFromTheDefinition: a local run has no GitHub to ask, and
+// the Makefile no longer passes -private, so devtool.json is the only thing
+// standing between a private repository and a licence it must not carry.
+func TestPrivacyIsReadFromTheDefinition(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		definition string
+		flag       bool
+		private    bool
+	}{
+		{"recorded private", `{"private": true}`, false, true},
+		{"not recorded", `{}`, false, false},
+		// An old Makefile still passes the flag; it is taken and kept.
+		{"flag on an old Makefile", `{}`, true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := committedRepo(t)
+			write(t, dir, maintain.DefinitionPath, tc.definition)
+
+			if err := Update(t.Context(), dir, Options{Private: tc.flag}, nopEmitter{}); err != nil {
+				t.Fatal(err)
+			}
+
+			fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
+
+			licensed, err := afero.Exists(fs, "LICENSE")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if licensed == tc.private {
+				t.Errorf("LICENSE written = %v for a repository whose privacy is %v",
+					licensed, tc.private)
+			}
+
+			def, _, err := maintain.LoadDefinition(fs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if def.Private != tc.private {
+				t.Errorf("recorded private = %v, want %v", def.Private, tc.private)
+			}
+		})
+	}
+}
+
 // committedRepo is a repository a local run will work on: the license task
 // dates the copyright from the first commit, so there has to be one.
 func committedRepo(t *testing.T) string {

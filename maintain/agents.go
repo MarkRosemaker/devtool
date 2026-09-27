@@ -58,8 +58,8 @@ type agentsData struct {
 	// what enrich already wrote.
 	OpenAPIEnrich bool
 
-	// Frontend is true where OpenAPIEnrich also holds and this repository's
-	// frontend uses api/interactions.json as its mock data, so a stale
+	// Frontend is true where OpenAPIEnrich also holds and devtool.json says
+	// this is a web app, whose frontend uses api/interactions.json as its mock data, so a stale
 	// interaction means a wrong mock too.
 	Frontend bool
 }
@@ -184,16 +184,9 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
-	// Only asked where it could matter: a frontend/ directory means nothing
-	// on its own, and asking regardless would say something true but
-	// pointless about a repository with no interactions.json at all.
-	var frontend bool
-
-	if openAPIEnrich {
-		frontend, err = hasFrontendDir(fs)
-		if err != nil {
-			return agentsData{}, err
-		}
+	def, _, err := LoadDefinition(fs)
+	if err != nil {
+		return agentsData{}, err
 	}
 
 	return agentsData{
@@ -201,7 +194,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		Fragments:     fragments,
 		Gitignore:     blocked,
 		OpenAPIEnrich: openAPIEnrich,
-		Frontend:      frontend,
+		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
 	}, nil
 }
 
@@ -248,22 +241,6 @@ func hasOpenAPIEnrich(fs afero.Fs) (bool, error) {
 	}
 
 	return false, nil
-}
-
-// frontendDir is where Claude Design's generated frontend lives, when this
-// repository has one.
-const frontendDir = "frontend"
-
-// hasFrontendDir reports whether this repository has a frontend/ directory.
-func hasFrontendDir(fs afero.Fs) (bool, error) {
-	info, err := fs.Stat(frontendDir)
-	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
-	} else if err != nil {
-		return false, fmt.Errorf("checking for %s: %w", frontendDir, err)
-	}
-
-	return info.IsDir(), nil
 }
 
 // hasGitignoreBlock reports whether .gitignore carries [GitignoreTask]'s

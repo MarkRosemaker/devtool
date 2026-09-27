@@ -167,7 +167,8 @@ flags:
   -config     the list of repositories to maintain
   -commit     test, commit each change and push; off by default
   -verbose    report the outcome even when nothing changed
-  -private    (no list) this repository is private
+  -private    (no list) this repository is private, where devtool.json
+              does not say so yet; it is recorded there
   -check-latest  ask the proxy whether this build is the latest, and fail if not
 `, name)
 }
@@ -202,7 +203,8 @@ func update(ctx context.Context, args []string) error {
 		"the list of repositories to maintain; without it, this repository alone")
 	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
 	verbose := fs.Bool("verbose", false, "report the outcome even when nothing changed")
-	private := fs.Bool("private", false, "this repository is private (no list only)")
+	private := fs.Bool("private", false,
+		"this repository is private, where devtool.json does not say so yet (no list only)")
 	commit := fs.Bool("commit", false,
 		"test, commit each task that changed something, and push; without it "+
 			"nothing is committed and the worktree is left to read")
@@ -393,7 +395,8 @@ func selfUpdate(ctx context.Context, args []string) error {
 func runTests(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name+" test", flag.ContinueOnError)
 	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
-	private := fs.Bool("private", false, "this repository is private")
+	private := fs.Bool("private", false,
+		"this repository is private, where devtool.json does not say so yet")
 
 	fs.Usage = func() { usage(fs.Output()) }
 
