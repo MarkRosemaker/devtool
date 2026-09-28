@@ -64,6 +64,12 @@ on it as `-private`, and a Makefile generated without the flag rebuilt a
 private repository's README as a public one's. The flag is still accepted, for
 the Makefiles that pass it, and recorded.
 
+One commit, but not one name. The task tells the runner which of its parts a
+commit came from, by the files it changed, so a run's table reads
+`definition, readme → pushed` rather than `update → pushed`. The map is
+`owners` in `maintain/update.go`: a generator that writes a new file needs an
+entry there, or its changes are reported only as `update`.
+
 They are deterministic: running one twice produces the same bytes, which is
 what lets an unchanged worktree mean "nothing to commit".
 

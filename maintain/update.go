@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 )
@@ -53,7 +54,68 @@ func UpdateTask(repo engine.Repo, opts UpdateOptions) engine.Task {
 		Run: func(ctx context.Context) error {
 			return runUpdate(ctx, repo, opts)
 		},
+		Describe: describeUpdate,
 	}
+}
+
+// owners maps what devtool writes to the name of the part that writes it, in
+// the order the parts run. A path ending in "/" covers what is beneath it.
+var owners = []struct{ path, part string }{
+	{DefinitionPath, "definition"},
+	{licensePath, "license"},
+	{readmePath, "readme"},
+	{readmeDir + "/", "readme"},
+	{makefilePath, "makefile"},
+	{makefileDir + "/", "makefile"},
+	{gitignorePath, "gitignore"},
+	{agentsPath, "agents"},
+	{agentsDir + "/", "agents"},
+	{claudePath, "claude"},
+	{lintfilePath, "lintgen"},
+}
+
+// describeUpdate names the parts of [UpdateTask] a commit's files came from,
+// so a run reports "readme, makefile" rather than only that the task ran. A
+// file no part claims is reported as "update", so nothing goes unmentioned.
+func describeUpdate(files []string) []string {
+	touched := map[string]bool{}
+	unclaimed := false
+
+	for _, f := range files {
+		part, ok := ownerOf(f)
+		if !ok {
+			unclaimed = true
+
+			continue
+		}
+
+		touched[part] = true
+	}
+
+	var parts []string
+
+	for _, o := range owners {
+		if touched[o.part] {
+			parts = append(parts, o.part)
+			delete(touched, o.part)
+		}
+	}
+
+	if unclaimed {
+		parts = append(parts, "update")
+	}
+
+	return parts
+}
+
+func ownerOf(file string) (string, bool) {
+	for _, o := range owners {
+		if file == o.path || (strings.HasSuffix(o.path, "/") && strings.HasPrefix(file, o.path)) {
+			return o.part, true
+		}
+	}
+
+	return "", false
 }
 
 func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error {
