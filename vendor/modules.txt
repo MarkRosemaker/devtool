@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20260927120109-a8204594eddb
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20260927120122-4f70c9451a23
+# github.com/MarkRosemaker/ghrepo v0.0.0-20260928160254-4ace7c0de77c
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20260927120116-adf02b990188
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20260927120232-5a9508354fc2
+# github.com/MarkRosemaker/gorepo v0.0.0-20260928160421-9081018f4556
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20260927120109-7dfc8e17a848
