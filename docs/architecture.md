@@ -7,8 +7,8 @@ somebody out.
 
 `devtool` brings Go repositories up to a standard and keeps them there. It
 writes the files an owner would otherwise write by hand — `LICENSE`,
-`README.md`, `Makefile`, `.gitignore`, `AGENTS.md`, `CLAUDE.md`, the
-golangci-lint config — and, when asked to, tests, commits and pushes them.
+`README.md`, `Makefile`, `.gitignore`, `AGENTS.md`, the golangci-lint config
+— and, when asked to, tests, commits and pushes them.
 
 It is one of three:
 
@@ -48,8 +48,8 @@ row of a full run.
 
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
-then licence, README, Makefile, `.gitignore`, `AGENTS.md`, `CLAUDE.md` and the
-lint config. That one task is the whole of a local rebuild and the
+then licence, README, Makefile, `.gitignore`, `AGENTS.md` and the lint config,
+with the `CLAUDE.md` link to `AGENTS.md` it used to make removed. That one task is the whole of a local rebuild and the
 first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
 

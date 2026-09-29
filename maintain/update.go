@@ -36,8 +36,8 @@ type UpdateOptions struct {
 }
 
 // UpdateTask returns the one task that brings everything devtool owns up to
-// date — LICENSE, README.md, the Makefile, .gitignore, AGENTS.md, CLAUDE.md,
-// the lint config and devtool.json — as one commit.
+// date — LICENSE, README.md, the Makefile, .gitignore, AGENTS.md, the lint
+// config and devtool.json — as one commit.
 //
 // devtool.json is written inside the task, and that is the point of it being
 // one. A maintained run commits a task's changes and pushes; a definition

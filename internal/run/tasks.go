@@ -18,8 +18,8 @@ const licenseHolder = "Marco Rösler (MarkRosemaker)"
 // The order is not arbitrary:
 //
 //   - Everything devtool owns comes first, as one task and so one commit —
-//     licence, README, Makefile, .gitignore, AGENTS.md, CLAUDE.md, the lint
-//     config and devtool.json. First, so a repository is licensed, documented
+//     licence, README, Makefile, .gitignore, AGENTS.md, the lint config and
+//     devtool.json. First, so a repository is licensed, documented
 //     and buildable even if a later task fails. One task, so devtool.json is
 //     committed with the rest instead of being written after the push and
 //     discarded by the next run, which is what happened before.
