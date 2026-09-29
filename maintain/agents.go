@@ -320,7 +320,6 @@ func fragmentTitle(name string, content []byte) string {
 // the directory it is built from.
 var generatedRootDirs = []generatedRoot{
 	{File: agentsPath, Dir: agentsDir + "/"},
-	{File: claudePath, Dir: agentsDir + "/"},
 	{File: readmePath, Dir: readmeDir + "/"},
 	{File: makefilePath, Dir: makefileDir + "/"},
 }

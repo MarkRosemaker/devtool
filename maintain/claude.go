@@ -3,7 +3,6 @@ package maintain
 import (
 	"context"
 	"fmt"
-	"os"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/spf13/afero"
@@ -11,97 +10,39 @@ import (
 
 const claudePath = "CLAUDE.md"
 
-// realPather is what a filesystem has to offer for this task to work: the
-// real path behind a name.
+// ClaudeTask returns a task that removes the CLAUDE.md link this tool used to
+// make to AGENTS.md. Claude reads AGENTS.md itself now, so the link is a
+// second name for one file that nothing needs.
 //
-// afero's own SymlinkIfPossible resolves the target as well as the link, so
-// asking it for "AGENTS.md" writes an absolute path into the link — which
-// is machine-specific, and wrong the moment it is committed.
-type realPather interface {
-	RealPath(name string) (string, error)
-}
-
-// ClaudeTask returns a task that points CLAUDE.md at AGENTS.md, so a tool
-// looking for the Claude-specific name reads the same file as everything
-// else.
-//
-// A symlink rather than a copy: a copy is a second thing to keep true, and
-// the whole point of AGENTS.md being generated is that there is one of it.
-//
-// Anything already at CLAUDE.md is left alone, whether it is a file
-// somebody wrote or a link somewhere else of their choosing. Nor is a link
-// made before AGENTS.md exists, a dangling one being worse than none.
-// The filesystem it works on is the one a Repo embeds, not the Repo: a Repo
-// is an afero.Fs only by embedding that interface, and Go promotes an
-// embedded interface's own method set and nothing else. So a Repo reads and
-// writes files perfectly well while carrying none of the methods the
-// concrete filesystem underneath has — RealPath among them, which this task
-// needs. Handing it the Repo asked every repository in the portfolio
-// whether it could make a symlink and was told no.
+// Only that link goes. A CLAUDE.md somebody wrote, or a link of their own to
+// somewhere else, is theirs, and is left where it is.
 func ClaudeTask(repo engine.Repo) engine.Task {
 	return engine.Task{
-		Name:  "link CLAUDE.md to AGENTS.md",
+		Name:  "remove the CLAUDE.md link",
 		Short: "claude",
 		Run: func(context.Context) error {
-			return linkClaude(repo.Fs())
+			return unlinkClaude(repo.Fs())
 		},
 	}
 }
 
-// linkClaude is [ClaudeTask]'s work, factored out so a test can hand it a
+// unlinkClaude is [ClaudeTask]'s work, factored out so a test can hand it a
 // filesystem of its own.
-func linkClaude(fs afero.Fs) error {
-	if exists, err := afero.Exists(fs, agentsPath); err != nil {
-		return fmt.Errorf("checking for %s: %w", agentsPath, err)
-	} else if !exists {
-		return nil
-	}
-
-	if taken, err := claudeTaken(fs); err != nil {
-		return err
-	} else if taken {
-		return nil
-	}
-
-	paths, ok := fs.(realPather)
+func unlinkClaude(fs afero.Fs) error {
+	links, ok := fs.(afero.LinkReader)
 	if !ok {
-		// Naming the type, because the last time this fired it was not the
-		// filesystem's fault: it was a wrapper that had dropped the method.
-		return fmt.Errorf(
-			"%s: %T cannot say where it keeps its files, so no symlink can be made",
-			claudePath, fs,
-		)
+		// A filesystem that cannot read a link cannot hold one either.
+		return nil
 	}
 
-	link, err := paths.RealPath(claudePath)
-	if err != nil {
-		return fmt.Errorf("%s: %w", claudePath, err)
+	target, err := links.ReadlinkIfPossible(claudePath)
+	if err != nil || target != agentsPath {
+		return nil //nolint:nilerr // not a link, or not ours: either way nothing to remove
 	}
 
-	// os.Symlink, not the filesystem's own, so the target stays the
-	// relative "AGENTS.md" that gets committed.
-	if err := os.Symlink(agentsPath, link); err != nil {
-		return fmt.Errorf("linking %s to %s: %w", claudePath, agentsPath, err)
+	if err := fs.Remove(claudePath); err != nil {
+		return fmt.Errorf("removing %s: %w", claudePath, err)
 	}
 
 	return nil
-}
-
-// claudeTaken reports whether something is at CLAUDE.md already.
-//
-// A link is read rather than followed, so one left dangling still counts as
-// somebody's: afero.Exists follows it and would call it absent.
-func claudeTaken(fs afero.Fs) (bool, error) {
-	if links, ok := fs.(afero.LinkReader); ok {
-		if _, err := links.ReadlinkIfPossible(claudePath); err == nil {
-			return true, nil
-		}
-	}
-
-	exists, err := afero.Exists(fs, claudePath)
-	if err != nil {
-		return false, fmt.Errorf("checking for %s: %w", claudePath, err)
-	}
-
-	return exists, nil
 }
