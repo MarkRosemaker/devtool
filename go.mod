@@ -4,9 +4,9 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20260929233337-b964dfab2a48
-	github.com/MarkRosemaker/ghrepo v0.0.0-20260929233343-123c7f7ce804
+	github.com/MarkRosemaker/ghrepo v0.0.0-20260930160208-bbf6988bdbfa
 	github.com/MarkRosemaker/golangci-json v0.0.0-20260929233340-f999848d3318
-	github.com/MarkRosemaker/gorepo v0.0.0-20260929233452-818f2fd19c29
+	github.com/MarkRosemaker/gorepo v0.0.0-20260930160339-15fb5755648d
 	github.com/MarkRosemaker/json2yaml v0.0.0-20260929233333-5bd09fe72975
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260929233335-a0222d53b745
 	github.com/MarkRosemaker/openapi v0.0.0-20260929233434-4906b8f820e0
@@ -38,13 +38,12 @@ require (
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/ldez/grignotin v0.10.1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
-	github.com/pjbgf/sha1cd v0.6.0 // indirect
+	github.com/pjbgf/sha1cd v0.7.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect

@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20260929233333-1f3585d128eb
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20260929233343-123c7f7ce804
+# github.com/MarkRosemaker/ghrepo v0.0.0-20260930160208-bbf6988bdbfa
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20260929233340-f999848d3318
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20260929233452-818f2fd19c29
+# github.com/MarkRosemaker/gorepo v0.0.0-20260930160339-15fb5755648d
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20260929233333-5bd09fe72975
@@ -226,9 +226,6 @@ github.com/hashicorp/go-version
 # github.com/kevinburke/ssh_config v1.6.0
 ## explicit; go 1.18
 github.com/kevinburke/ssh_config
-# github.com/klauspost/cpuid/v2 v2.4.0
-## explicit; go 1.24.0
-github.com/klauspost/cpuid/v2
 # github.com/ldez/grignotin v0.10.1
 ## explicit; go 1.24.0
 github.com/ldez/grignotin/goenv
@@ -248,10 +245,11 @@ github.com/pelletier/go-toml/v2
 github.com/pelletier/go-toml/v2/internal/parserbridge
 github.com/pelletier/go-toml/v2/internal/tracker
 github.com/pelletier/go-toml/v2/unstable
-# github.com/pjbgf/sha1cd v0.6.0
-## explicit; go 1.22
+# github.com/pjbgf/sha1cd v0.7.0
+## explicit; go 1.24.0
 github.com/pjbgf/sha1cd
 github.com/pjbgf/sha1cd/internal
+github.com/pjbgf/sha1cd/internal/cpu
 github.com/pjbgf/sha1cd/ubc
 # github.com/sagikazarmark/locafero v0.12.0
 ## explicit; go 1.23.0

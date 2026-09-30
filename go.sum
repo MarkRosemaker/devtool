@@ -4,12 +4,12 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20260929233337-b964dfab2a48 h1:LV
 github.com/MarkRosemaker/devtool-engine v0.0.0-20260929233337-b964dfab2a48/go.mod h1:7ou9JJI6tE3JA38NKGbq+xTM80qiXGW4YcLfl+uCxt8=
 github.com/MarkRosemaker/errpath v0.0.0-20260929233333-1f3585d128eb h1:ci8sbb/I1UhM2JusWfGTIfnm2cUhhsV5m/+pBmYFMXA=
 github.com/MarkRosemaker/errpath v0.0.0-20260929233333-1f3585d128eb/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20260929233343-123c7f7ce804 h1:bRayIuq6EJC/nLieTkRqc0tKrsZgKwIrNmZjCUzJqmQ=
-github.com/MarkRosemaker/ghrepo v0.0.0-20260929233343-123c7f7ce804/go.mod h1:uNLZnWu4ca0oRhiYddar8acsM7GhVEBIitMZTvgFJmw=
+github.com/MarkRosemaker/ghrepo v0.0.0-20260930160208-bbf6988bdbfa h1:klk17yHSHBqRMkEZYVtnKyXh0QmhdjndV8ok52CTa7Q=
+github.com/MarkRosemaker/ghrepo v0.0.0-20260930160208-bbf6988bdbfa/go.mod h1:Nj1cMQYKwHEMb0m50UDAQ+2B5mJoO0PFtg1s7bTPvMo=
 github.com/MarkRosemaker/golangci-json v0.0.0-20260929233340-f999848d3318 h1:JFkjFgwWZd7Nq2SngBtFBIu9cJeYf255vuGOkj9V/0A=
 github.com/MarkRosemaker/golangci-json v0.0.0-20260929233340-f999848d3318/go.mod h1:lryHq+ivM2dbOtGk7NhKlTwSiZJ7vVu4G+DAxSfez9w=
-github.com/MarkRosemaker/gorepo v0.0.0-20260929233452-818f2fd19c29 h1:RRU2tqs7Lna3L1ITI9pDKjXdWuE7TfLyND85wLHsHck=
-github.com/MarkRosemaker/gorepo v0.0.0-20260929233452-818f2fd19c29/go.mod h1:SR+wIYktLK4J+5q2z5TYcVMsq8i15SG+dFYD9f7S4u8=
+github.com/MarkRosemaker/gorepo v0.0.0-20260930160339-15fb5755648d h1:f+0uLbGrhH738yqf/udh+cNDI+wIHqDS+c7zod61wCg=
+github.com/MarkRosemaker/gorepo v0.0.0-20260930160339-15fb5755648d/go.mod h1:lAjmhd9cW3UmXE4S+ewaHmpOwJaX0lJyo7ifu78j+z8=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260929233333-5bd09fe72975 h1:uqKI7+3OGnj6OeOO6LXNEeE2m6s86pTkKuqVIo5AgAM=
 github.com/MarkRosemaker/json2yaml v0.0.0-20260929233333-5bd09fe72975/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20260929233335-a0222d53b745 h1:qG4hKD15m53YUPrE5VbkX62HXyfOcPDmWEpUngICh58=
@@ -71,8 +71,6 @@ github.com/hashicorp/go-version v1.9.0 h1:CeOIz6k+LoN3qX9Z0tyQrPtiB1DFYRPfCIBtaX
 github.com/hashicorp/go-version v1.9.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/kevinburke/ssh_config v1.6.0 h1:J1FBfmuVosPHf5GRdltRLhPJtJpTlMdKTBjRgTaQBFY=
 github.com/kevinburke/ssh_config v1.6.0/go.mod h1:q2RIzfka+BXARoNexmF9gkxEX7DmvbW9P4hIVx2Kg4M=
-github.com/klauspost/cpuid/v2 v2.4.0 h1:S6Hrbc7+ywsr0r+RLapfGBHfyefhCTwEh3A0tV913Dw=
-github.com/klauspost/cpuid/v2 v2.4.0/go.mod h1:19jmZ9mjzoF//ddRSUsv0zfBTJWh3QJh9FNxZTMrGxU=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
@@ -90,8 +88,8 @@ github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/pelletier/go-toml/v2 v2.4.3 h1:GTRvJQutkOSftxIFD5xw9aepkYNuPWmVJpffdDPYVpY=
 github.com/pelletier/go-toml/v2 v2.4.3/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
-github.com/pjbgf/sha1cd v0.6.0 h1:3WJ8Wz8gvDz29quX1OcEmkAlUg9diU4GxJHqs0/XiwU=
-github.com/pjbgf/sha1cd v0.6.0/go.mod h1:lhpGlyHLpQZoxMv8HcgXvZEhcGs0PG/vsZnEJ7H0iCM=
+github.com/pjbgf/sha1cd v0.7.0 h1:ZRNPKHj+gfkLBf0KJv/p1Hmz+7bqCT5o311YX0nq+DA=
+github.com/pjbgf/sha1cd v0.7.0/go.mod h1:pKR5Li+qTCo+ebqITZfwPlJGoCFCvSO00qxjbNtTUFQ=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
