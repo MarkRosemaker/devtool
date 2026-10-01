@@ -38,11 +38,14 @@ catastrophic for the one somebody is working in.
 **`internal/run`** is the list. It opens every repository named in
 `config.json`, reads each `go.mod` to work out which of them depend on which
 others, orders them with the engine's dependency graph, and maintains them as
-parallel as that order allows. It reports as events rather than to a person,
-because whatever is watching is a separate process.
+parallel as that order allows.
 
 Both emit the same event stream, so one repository reports exactly like one
-row of a full run.
+row of a full run. Who reads it is the caller's choice. By default
+`internal/console` renders it for a person — a line per change, push and
+failure, with plain-text logs at warning and above. With `-json` it goes onto
+stdout as JSON Lines and the logs to stderr as JSON, which is what `patchpal`
+asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 
 ## The generators
 
