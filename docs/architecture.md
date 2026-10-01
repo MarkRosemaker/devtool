@@ -45,8 +45,7 @@ row of a full run. Who reads it is the caller's choice. By default
 `internal/console` renders it for a person — a line per change, push and
 failure, with plain-text logs at warning and above. With `-json` it goes onto
 stdout as JSON Lines and the logs to stderr as JSON, which is what `patchpal`
-asks for. `-jsonl` is the old name for `-json`, still accepted for a
-`patchpal` built before the rename.
+asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 
 ## The generators
 

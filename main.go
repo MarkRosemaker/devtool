@@ -351,13 +351,12 @@ func maintained(
 	return svc.RunOne(ctx, owner, repoName)
 }
 
-// jsonFlag registers -json, and -jsonl, its old name, which a patchpal built
-// before the rename still passes.
+// jsonFlag registers -json and its alias -jsonl; a caller can use either.
 func jsonFlag(fs *flag.FlagSet) *bool {
 	asJSON := new(bool)
 
 	fs.BoolVar(asJSON, "json", false, "write the run as JSON Lines on stdout, for patchpal")
-	fs.BoolVar(asJSON, "jsonl", false, "the old name for -json")
+	fs.BoolVar(asJSON, "jsonl", false, "the same as -json")
 
 	return asJSON
 }

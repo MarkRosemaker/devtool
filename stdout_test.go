@@ -28,7 +28,7 @@ func TestStdoutCarriesOnlyEvents(t *testing.T) {
 
 	bin := build(t)
 
-	// -jsonl is the name a patchpal built before -json still passes.
+	// -jsonl is an alias, and a caller can use either.
 	for _, flag := range []string{"-json", "-jsonl"} {
 		t.Run(flag, func(t *testing.T) {
 			stdoutCarriesOnlyEvents(t, bin, flag)
