@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/MarkRosemaker/devtool-engine/event"
@@ -99,6 +100,11 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 			Kind: event.TaskStart, Repo: r.String(), Task: t.Short,
 		})
 
+		before, err := r.GetChangedFiles()
+		if err != nil {
+			return err
+		}
+
 		if err := t.Run(ctx); err != nil {
 			event.Emit(events, event.Event{
 				Kind: event.RepoDone, Repo: r.String(),
@@ -108,14 +114,34 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 			return fmt.Errorf("%s: %w", t.Name, err)
 		}
 
+		after, err := r.GetChangedFiles()
+		if err != nil {
+			return err
+		}
+
 		event.Emit(events, event.Event{
 			Kind: event.TaskDone, Repo: r.String(), Task: t.Short,
+			Files: newlyChanged(before, after),
 		})
 	}
 
 	event.Emit(events, event.Event{Kind: event.RepoDone, Repo: r.String()})
 
 	return nil
+}
+
+// newlyChanged is what a step left changed that was not already, which on a
+// worktree somebody is working in is the part that is this run's doing.
+func newlyChanged(before, after []string) []string {
+	var files []string
+
+	for _, f := range after {
+		if !slices.Contains(before, f) {
+			files = append(files, f)
+		}
+	}
+
+	return files
 }
 
 // open is the repository at abs, private if the caller says so or its

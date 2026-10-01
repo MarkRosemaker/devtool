@@ -27,9 +27,21 @@ func TestStdoutCarriesOnlyEvents(t *testing.T) {
 	}
 
 	bin := build(t)
+
+	// -jsonl is the name a patchpal built before -json still passes.
+	for _, flag := range []string{"-json", "-jsonl"} {
+		t.Run(flag, func(t *testing.T) {
+			stdoutCarriesOnlyEvents(t, bin, flag)
+		})
+	}
+}
+
+func stdoutCarriesOnlyEvents(t *testing.T, bin, flag string) {
+	t.Helper()
+
 	dir := throwawayRepo(t)
 
-	cmd := exec.CommandContext(t.Context(), bin, "update", "-jsonl")
+	cmd := exec.CommandContext(t.Context(), bin, "update", flag)
 	cmd.Dir = dir
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
@@ -70,28 +82,70 @@ func TestStdoutCarriesOnlyEvents(t *testing.T) {
 // handler this change replaces: a run that said nothing anywhere would pass
 // the purity check above for the wrong reason.
 //
-// A failing run is the shape that logs on the shortest path — main logs what
-// went wrong before returning — so it is what this drives.
+// A failing run is the shape that logs on the shortest path — main reports
+// what went wrong before returning — so it is what this drives, in each of
+// the two forms a caller can ask for.
 func TestLogsGoToStderr(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds a binary")
 	}
 
-	cmd := exec.CommandContext(t.Context(), build(t), "update", "MarkRosemaker/openapi")
+	bin := build(t)
+
+	for _, tc := range []struct {
+		flags []string
+		want  string
+	}{
+		{nil, "❌ devtool: naming a repository needs -config"},
+		{[]string{"-json"}, `"level":"ERROR"`},
+	} {
+		t.Run(strings.Join(append([]string{"update"}, tc.flags...), " "), func(t *testing.T) {
+			args := append([]string{"update", "MarkRosemaker/openapi"}, tc.flags...)
+			cmd := exec.CommandContext(t.Context(), bin, args...)
+
+			stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+			cmd.Stdout, cmd.Stderr = stdout, stderr
+
+			if err := cmd.Run(); err == nil {
+				t.Fatal("naming a repository without -config should fail")
+			}
+
+			if !strings.Contains(stderr.String(), tc.want) {
+				t.Errorf("stderr does not say %q:\n%s", tc.want, stderr)
+			}
+
+			if stdout.Len() != 0 {
+				t.Errorf("a run that emitted nothing still wrote to stdout:\n%s", stdout)
+			}
+		})
+	}
+}
+
+// TestALocalRunSaysWhatItDid: without -json, a person gets words — what was
+// changed and that it finished — and no JSON anywhere.
+func TestALocalRunSaysWhatItDid(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds a binary and runs git")
+	}
+
+	cmd := exec.CommandContext(t.Context(), build(t), "update")
+	cmd.Dir = throwawayRepo(t)
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 
-	if err := cmd.Run(); err == nil {
-		t.Fatal("naming a repository without -config should fail")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("%v\n--- stderr ---\n%s", err, stderr)
 	}
 
-	if !strings.Contains(stderr.String(), `"level":"ERROR"`) {
-		t.Errorf("the failure was not logged to stderr:\n%s", stderr)
+	for _, want := range []string{"📦 ", "✏️  update: ", "README.md", "🏁 done in "} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("stdout does not say %q:\n%s", want, stdout)
+		}
 	}
 
-	if stdout.Len() != 0 {
-		t.Errorf("a run that emitted nothing still wrote to stdout:\n%s", stdout)
+	if strings.Contains(stdout.String()+stderr.String(), `{"`) {
+		t.Errorf("a run for a person wrote JSON:\n%s\n%s", stdout, stderr)
 	}
 }
 

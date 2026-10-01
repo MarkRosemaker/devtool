@@ -24,9 +24,9 @@
 //	devtool update all --config=../portfolio/config.json
 //	devtool update MarkRosemaker/openapi --config=../portfolio/config.json
 //
-// -jsonl on any of them writes the run as JSON Lines on stdout instead of
-// leaving it to the log, which is how patchpal follows a run it did not
-// perform.
+// Each says what it did in plain words. -json on any of them writes the run as
+// JSON Lines on stdout instead, and logs as JSON, which is how patchpal follows
+// a run it did not perform.
 //
 // # Two different updates
 //
@@ -56,6 +56,7 @@ import (
 	"github.com/MarkRosemaker/devtool-engine/event"
 	"github.com/MarkRosemaker/devtool-engine/selfupdate"
 	"github.com/MarkRosemaker/devtool/internal/config"
+	"github.com/MarkRosemaker/devtool/internal/console"
 	"github.com/MarkRosemaker/devtool/internal/local"
 	"github.com/MarkRosemaker/devtool/internal/run"
 	"github.com/MarkRosemaker/devtool/maintain"
@@ -78,7 +79,12 @@ func main() {
 	defer stop()
 
 	if err := dispatch(ctx, os.Args[1:]); err != nil {
-		slog.ErrorContext(ctx, name+" failed", "error", err)
+		if jsonLogs {
+			slog.ErrorContext(ctx, name+" failed", "error", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "❌ %s: %v\n", name, err)
+		}
+
 		os.Exit(1)
 	}
 }
@@ -163,7 +169,7 @@ func usage(w io.Writer) {
   %[1]s -version                       the same
 
 flags:
-  -jsonl      write the run as JSON Lines on stdout
+  -json       write the run as JSON Lines on stdout, for patchpal
   -config     the list of repositories to maintain
   -commit     test, commit each change and push; off by default
   -verbose    report the outcome even when nothing changed
@@ -201,7 +207,7 @@ func update(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name+" update", flag.ContinueOnError)
 	cfgPath := fs.String("config", "",
 		"the list of repositories to maintain; without it, this repository alone")
-	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
+	asJSON := jsonFlag(fs)
 	verbose := fs.Bool("verbose", false, "report the outcome even when nothing changed")
 	private := fs.Bool("private", false,
 		"this repository is private, where devtool.json does not say so yet (no list only)")
@@ -220,6 +226,10 @@ func update(ctx context.Context, args []string) error {
 		return err
 	}
 
+	// Settled first, so a command line refused below is reported the way the
+	// caller asked to read it.
+	events := emitter(*asJSON)
+
 	if len(positional) > 1 {
 		return fmt.Errorf("%s update takes one repository or %q, got %q",
 			name, allTarget, positional)
@@ -230,8 +240,6 @@ func update(ctx context.Context, args []string) error {
 			return err
 		}
 	}
-
-	events := emitter(*jsonl)
 
 	var target string
 	if len(positional) == 1 {
@@ -343,14 +351,27 @@ func maintained(
 	return svc.RunOne(ctx, owner, repoName)
 }
 
+// jsonFlag registers -json, and -jsonl, its old name, which a patchpal built
+// before the rename still passes.
+func jsonFlag(fs *flag.FlagSet) *bool {
+	asJSON := new(bool)
+
+	fs.BoolVar(asJSON, "json", false, "write the run as JSON Lines on stdout, for patchpal")
+	fs.BoolVar(asJSON, "jsonl", false, "the old name for -json")
+
+	return asJSON
+}
+
 // emitter is where a run's events go: onto stdout as JSON Lines for something
-// parsing them, and otherwise nowhere, the log having said it already.
-func emitter(jsonl bool) event.Emitter {
-	if jsonl {
+// parsing them, and otherwise onto stdout in words, for whoever ran it.
+func emitter(asJSON bool) event.Emitter {
+	if asJSON {
+		useJSONLogs()
+
 		return event.Write(os.Stdout)
 	}
 
-	return event.EmitterFunc(func(event.Event) {})
+	return console.New(os.Stdout)
 }
 
 // selfUpdater builds the updater that fetches a newer build of this binary.
@@ -394,7 +415,7 @@ func selfUpdate(ctx context.Context, args []string) error {
 // package with tests of its own would read as one.
 func runTests(ctx context.Context, args []string) error {
 	fs := flag.NewFlagSet(name+" test", flag.ContinueOnError)
-	jsonl := fs.Bool("jsonl", false, "write the run as JSON Lines on stdout")
+	asJSON := jsonFlag(fs)
 	private := fs.Bool("private", false,
 		"this repository is private, where devtool.json does not say so yet")
 
@@ -412,5 +433,5 @@ func runTests(ctx context.Context, args []string) error {
 	return local.Test(ctx, ".", local.Options{
 		Holder:  licenseHolder,
 		Private: *private,
-	}, emitter(*jsonl))
+	}, emitter(*asJSON))
 }

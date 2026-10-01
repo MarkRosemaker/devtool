@@ -149,7 +149,7 @@ func TestMaintainedNeedsCommit(t *testing.T) {
 
 // TestParseFlagsAfterAPositional is the bug this exists to prevent. Go's flag
 // package stops at the first argument that is not a flag, so
-// "update all -config=... -commit -jsonl" parsed "all" and silently ignored
+// "update all -config=... -commit -json" parsed "all" and silently ignored
 // every flag after it — which is exactly how a person, and patchpal, type it.
 func TestParseFlagsAfterAPositional(t *testing.T) {
 	for _, tc := range []struct {
@@ -216,7 +216,7 @@ func TestParseFlagsAfterAPositional(t *testing.T) {
 // survived them.
 func TestUpdateAllReachesTheList(t *testing.T) {
 	err := dispatch(t.Context(),
-		[]string{"update", "all", "-config=does-not-exist.json", "-commit", "-jsonl"})
+		[]string{"update", "all", "-config=does-not-exist.json", "-commit", "-json"})
 	if err == nil {
 		t.Fatal("expected a failure about the list, not success")
 	}

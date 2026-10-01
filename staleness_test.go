@@ -41,7 +41,7 @@ func TestAStaleBuildLeavesTheMarkAndAsksForAnUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.CommandContext(t.Context(), build(t), "update", "-jsonl")
+	cmd := exec.CommandContext(t.Context(), build(t), "update", "-json")
 	cmd.Dir = dir
 
 	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
