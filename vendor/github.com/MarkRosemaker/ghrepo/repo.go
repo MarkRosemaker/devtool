@@ -279,12 +279,19 @@ func hasChanges(initial, update *github.Repository) bool {
 			continue // skip nil fields in update
 		}
 
+		uVal := reflect.Indirect(uField)
+
+		// GitHub reports an unset field as null, so setting it to its zero
+		// value — an empty description, say — changes nothing.
 		iField := iv.Field(i)
 		if iField.IsNil() {
-			return true // update sets a value where initial is nil
+			if isEmpty(uVal) {
+				continue
+			}
+
+			return true
 		}
 
-		uVal := reflect.Indirect(uField)
 		iVal := reflect.Indirect(iField)
 		if !reflect.DeepEqual(uVal.Interface(), iVal.Interface()) {
 			return true
@@ -292,6 +299,17 @@ func hasChanges(initial, update *github.Repository) bool {
 	}
 
 	return false
+}
+
+// isEmpty reports whether v is its type's zero value, counting an empty slice
+// or map as empty however it was made.
+func isEmpty(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Slice, reflect.Map:
+		return v.Len() == 0
+	default:
+		return v.IsZero()
+	}
 }
 
 // SetDescription changes the repository description on GitHub.
