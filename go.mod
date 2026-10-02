@@ -4,9 +4,9 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261002160236-d33c2e4b3a79
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261001213833-6fbb6b6a9ab8
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261002220201-5c9abc662e00
 	github.com/MarkRosemaker/golangci-json v0.0.0-20260929233340-f999848d3318
-	github.com/MarkRosemaker/gorepo v0.0.0-20261001213934-d9e09832df9c
+	github.com/MarkRosemaker/gorepo v0.0.0-20261002220256-f2170efe8ea1
 	github.com/MarkRosemaker/json2yaml v0.0.0-20260929233333-5bd09fe72975
 	github.com/MarkRosemaker/jsonutil v0.0.0-20260929233335-a0222d53b745
 	github.com/MarkRosemaker/openapi v0.0.0-20261001203346-42d50de94f07
@@ -32,7 +32,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-api-libs/types v0.0.0-20260821232109-0cf45378823e // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
-	github.com/go-git/go-billy/v6 v6.0.0-alpha.2 // indirect
+	github.com/go-git/go-billy/v6 v6.0.0-beta.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/google/go-github/v80 v80.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
