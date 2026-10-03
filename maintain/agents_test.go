@@ -52,10 +52,10 @@ func TestGenerateAgents(t *testing.T) {
 			// One thing at a time is per repository and per conversation,
 			// and a second idea rides the open pull request or the roadmap.
 			"Not in a second branch.",
-			// A fix ends at its own pull request; propagating it downstream
-			// is the owner's call, not something to do on their behalf.
-			"Never bump another repository's dependency on it",
-			"Report the fix as merged and",
+			// The scheduled run passes a fix on; an agent bumps only where
+			// its own work cannot go on without it.
+			"A scheduled run bumps every repository's dependencies",
+			"the work in hand cannot go on without the fix.",
 			"Watching a pull request costs nothing",
 			"`make ready` passes before every commit",
 			// What ready regenerates is its output, not a failure to recover
