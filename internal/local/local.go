@@ -64,6 +64,13 @@ type Options struct {
 	// without a network, and so the caller keeps its own say over which
 	// module and whether to go direct.
 	SelfUpdate func(context.Context) (selfupdate.Outcome, error)
+
+	// Restart runs the command again as binary, the build SelfUpdate just
+	// installed, and reports how that run ended, which becomes Update's
+	// result: this process does no work of its own once it has handed over.
+	// Nil means not to, and an update then ends in a refusal that says to run
+	// the command again.
+	Restart func(ctx context.Context, binary string) error
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -82,7 +89,7 @@ func Update(ctx context.Context, dir string, opts Options, events event.Emitter)
 		return err
 	}
 
-	if err := refuseIfBehind(ctx, r.fs, opts); err != nil {
+	if done, err := refuseIfBehind(ctx, r.fs, opts); done || err != nil {
 		return err
 	}
 
@@ -181,7 +188,9 @@ func tasks(r *repo, opts Options) []engine.Task {
 }
 
 // refuseIfBehind stops a run whose generators are older than the ones that
-// last maintained this repository, fetching the newer build on the way out.
+// last maintained this repository. Where it can fetch the newer build, it
+// hands the run over to it instead, and done says the work has been done
+// there.
 //
 // The comparison itself costs nothing: it is against a version already on
 // disk, put there by whichever build last ran here.
@@ -192,22 +201,21 @@ func tasks(r *repo, opts Options) []engine.Task {
 // generators rewrite what the newer ones wrote and the repository goes
 // backwards — which happened here: a stale devtool reverted twenty-five lines
 // of this repository's own generated files, and the warning in the log did
-// not stop it. Refusing does, and it puts the update in front of whoever runs
-// next rather than leaving it to them to notice.
+// not stop it.
 //
 // The one thing it must never do is refuse forever. A repository recording a
 // version nobody can install would be unusable on every machine, so a record
 // this build cannot catch up to goes back to being a notice.
-func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) error {
+func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) (done bool, err error) {
 	recorded, err := maintain.RecordedVersion(fs)
 	if err != nil {
 		slog.DebugContext(ctx, "could not read the repository's definition", "error", err)
 
-		return nil
+		return false, nil
 	}
 
 	if !maintain.Outdated(opts.Version, recorded) {
-		return nil
+		return false, nil
 	}
 
 	// A local build cannot be replaced by self-update — it refuses, rightly,
@@ -215,12 +223,12 @@ func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) error {
 	// one. This is the case that actually bit: the binary that reverted this
 	// repository's generated files was a "+dirty" build a day behind.
 	if !maintain.Installable(opts.Version) {
-		return behind(opts.Version, recorded,
+		return false, behind(opts.Version, recorded,
 			"it is a local build, so rebuild it from a current checkout")
 	}
 
 	if opts.SelfUpdate == nil {
-		return behind(opts.Version, recorded, "run "+updateHint)
+		return false, behind(opts.Version, recorded, "run "+updateHint)
 	}
 
 	slog.InfoContext(ctx, "behind the build that last maintained this repository, updating",
@@ -230,9 +238,11 @@ func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) error {
 
 	switch {
 	case err != nil:
-		return behind(opts.Version, recorded, fmt.Sprintf("could not update: %v", err))
+		return false, behind(opts.Version, recorded, fmt.Sprintf("could not update: %v", err))
+	case out.Updated && out.Installed != "" && opts.Restart != nil:
+		return true, opts.Restart(ctx, out.Installed)
 	case out.Updated:
-		return behind(opts.Version, recorded,
+		return false, behind(opts.Version, recorded,
 			fmt.Sprintf("updated to %s, so run the command again", out.Latest))
 	}
 
@@ -242,7 +252,7 @@ func refuseIfBehind(ctx context.Context, fs afero.Fs, opts Options) error {
 	slog.WarnContext(ctx, "this repository records a devtool build that cannot be installed",
 		"running", opts.Version, "recorded", recorded, "reason", out.Reason)
 
-	return nil
+	return false, nil
 }
 
 // updateHint is the command that fixes it, named once.

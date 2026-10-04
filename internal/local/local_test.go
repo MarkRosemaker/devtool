@@ -3,10 +3,12 @@ package local
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -376,6 +378,92 @@ func TestUpdateFetchesTheBuildItIsBehind(t *testing.T) {
 	// The process is still the old binary, so the run cannot simply carry on.
 	if !strings.Contains(err.Error(), "run the command again") {
 		t.Errorf("the refusal does not say what to do next: %v", err)
+	}
+}
+
+// TestUpdateHandsOverToTheBuildItInstalled: with somewhere to restart, the
+// update is not a refusal but a handover. The new build does the work, its
+// result is the run's, and this one writes nothing.
+func TestUpdateHandsOverToTheBuildItInstalled(t *testing.T) {
+	const (
+		recorded  = "v0.0.0-20260917155344-c047bdcfd843"
+		running   = "v0.0.0-20260915161737-9e10ae8f485b"
+		installed = "/gobin/devtool"
+	)
+
+	dir := committedRepo(t)
+	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
+
+	errNew := errors.New("the new build's own result")
+
+	var restarted []string
+
+	opts := Options{
+		Version: running,
+		SelfUpdate: func(context.Context) (selfupdate.Outcome, error) {
+			return selfupdate.Outcome{
+				Current: running, Latest: recorded, Updated: true, Installed: installed,
+			}, nil
+		},
+		Restart: func(_ context.Context, binary string) error {
+			restarted = append(restarted, binary)
+
+			return errNew
+		},
+	}
+
+	if err := Update(t.Context(), dir, opts, nopEmitter{}); !errors.Is(err, errNew) {
+		t.Errorf("the run's result is %v, not the new build's", err)
+	}
+
+	if !slices.Equal(restarted, []string{installed}) {
+		t.Errorf("restarted as %q, want once as %q", restarted, installed)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "LICENSE")); err == nil {
+		t.Error("the old build wrote files after handing over")
+	}
+
+	// A handover that succeeded is a run that succeeded, and still not one
+	// this process repeats.
+	opts.Restart = func(context.Context, string) error { return nil }
+
+	if err := Update(t.Context(), dir, opts, nopEmitter{}); err != nil {
+		t.Errorf("a successful handover failed the run: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "LICENSE")); err == nil {
+		t.Error("the old build wrote files after a successful handover")
+	}
+}
+
+// TestUpdateRefusesWithoutAnInstalledPath: an update that cannot say where it
+// installed has nothing to hand over to, so it is the refusal again rather
+// than a guess at whatever PATH finds.
+func TestUpdateRefusesWithoutAnInstalledPath(t *testing.T) {
+	const (
+		recorded = "v0.0.0-20260917155344-c047bdcfd843"
+		running  = "v0.0.0-20260915161737-9e10ae8f485b"
+	)
+
+	dir := committedRepo(t)
+	write(t, dir, "devtool.json", `{"devtoolVersion":"`+recorded+`"}`+"\n")
+
+	opts := Options{
+		Version: running,
+		SelfUpdate: func(context.Context) (selfupdate.Outcome, error) {
+			return selfupdate.Outcome{Current: running, Latest: recorded, Updated: true}, nil
+		},
+		Restart: func(context.Context, string) error {
+			t.Error("restarted without knowing as what")
+
+			return nil
+		},
+	}
+
+	err := Update(t.Context(), dir, opts, nopEmitter{})
+	if err == nil || !strings.Contains(err.Error(), "run the command again") {
+		t.Errorf("want the refusal that says to run again, got %v", err)
 	}
 }
 
