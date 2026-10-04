@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261004011221-c377b54f9305
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261004160115-b16501f1f603
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20261004011219-d60532c930cb
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261004011322-4aee1d8d1097
+# github.com/MarkRosemaker/gorepo v0.0.0-20261004160220-2c2cf997179c
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118
@@ -139,8 +139,8 @@ github.com/go-git/go-billy/v6/helper/polyfill
 github.com/go-git/go-billy/v6/memfs
 github.com/go-git/go-billy/v6/osfs
 github.com/go-git/go-billy/v6/util
-# github.com/go-git/go-git/v6 v6.0.0-alpha.5
-## explicit; go 1.25.0
+# github.com/go-git/go-git/v6 v6.0.0-beta.1
+## explicit; go 1.26.0
 github.com/go-git/go-git/v6
 github.com/go-git/go-git/v6/config
 github.com/go-git/go-git/v6/internal/archive
