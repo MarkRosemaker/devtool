@@ -380,19 +380,7 @@ func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) [
 	depgraph.Run(ctx, graph,
 		func(ctx context.Context, key string) event.Result {
 			return s.maintain(ctx, p.units[key], events)
-		},
-		func(res event.Result) {
-			// A repository the engine never saw emits nothing, so its row is
-			// filled in here: it failed before there was anything to run.
-			if res.Err != nil {
-				board.Set(res)
-				event.Emit(events, event.Event{
-					Kind: event.RepoDone,
-					Repo: res.Key(),
-					Err:  res.ErrorMessage(),
-				})
-			}
-		})
+		}, nil)
 
 	// The board holds the results in configuration order, which is the order
 	// the reader expects, rather than the order they happened to finish in.
@@ -403,7 +391,13 @@ func (s *Service) execute(ctx context.Context, graph *depgraph.Graph, p *plan) [
 func (s *Service) maintain(
 	ctx context.Context, u *unit, events event.Emitter,
 ) event.Result {
+	// A repository that could not be opened never reaches the engine, which
+	// is what reports every other repository, failures included. So its one
+	// repo_done is sent from here — and only here: sending one for every
+	// failed result, as this used to, sent the engine's failures twice.
 	if u.err != nil {
+		event.Emit(events, event.Event{Kind: event.RepoDone, Repo: u.key(), Err: u.err.Error()})
+
 		return event.Result{Owner: u.owner, Name: u.name, Err: u.err}
 	}
 

@@ -1,9 +1,12 @@
 package run
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/MarkRosemaker/devtool-engine/depgraph"
+	"github.com/MarkRosemaker/devtool-engine/event"
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/ordmap"
 )
@@ -165,4 +168,44 @@ func orderedKeys[V any](m ordmap.OrderedMap[string, V]) []string {
 	}
 
 	return keys
+}
+
+// TestAFailureIsReportedOnce: patchpal sends a failure to the chat for every
+// repo_done that carries one, so a failure reported twice reached the reader
+// twice. The run used to report every failed result itself, on top of the
+// engine's own repo_done; now only a repository the engine never saw — one
+// that could not be opened — is reported here, and as text, not as the HTML
+// a chat message is rendered in.
+func TestAFailureIsReportedOnce(t *testing.T) {
+	u := &unit{owner: "user", name: "gone", err: errors.New("opening repository: not found")}
+
+	graph, err := depgraph.New([]string{u.key()}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var done []event.Event
+
+	s := &Service{events: event.EmitterFunc(func(ev event.Event) {
+		if ev.Kind == event.RepoDone {
+			done = append(done, ev)
+		}
+	})}
+
+	results := s.execute(t.Context(), graph, &plan{
+		keys:  []string{u.key()},
+		units: map[string]*unit{u.key(): u},
+	})
+
+	if len(done) != 1 {
+		t.Fatalf("reported %d times, want once: %+v", len(done), done)
+	}
+
+	if done[0].Err != "opening repository: not found" {
+		t.Errorf("Err = %q, want the error as text", done[0].Err)
+	}
+
+	if len(results) != 1 || results[0].Err == nil {
+		t.Errorf("results = %+v, want the failure recorded", results)
+	}
 }
