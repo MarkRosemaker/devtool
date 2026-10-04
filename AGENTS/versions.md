@@ -7,7 +7,10 @@ you cannot work around it — install what it asks for.
 
 ## If a run refuses
 
-Read which remedy it named. They are not interchangeable.
+A published build that is behind does not refuse: it installs the newer
+one and runs the same command again as it, once. So a refusal means
+that could not happen. Read which remedy it named. They are not
+interchangeable.
 
 - **"run devtool self-update"** — a published build, which self-update can
   replace.

@@ -97,6 +97,14 @@ Each repository's `devtool.json` records the newest devtool build known to
 have maintained it. A run compares itself against that mark and **refuses**
 if it is behind.
 
+Where the build is a published one, the refusal comes after an attempt to
+put it right. The run installs the newer build and starts it as a child
+with the same arguments and streams, and that child's exit status becomes
+the run's. It is marked by `DEVTOOL_RESTARTED`, so a build still behind
+after one handover refuses instead of updating again. `-check-latest` hands
+over the same way. Only a local build, a failed update, or one that cannot
+say where it installed ends in "run the command again".
+
 This is a refusal rather than a warning because behind is not a worse
 opinion, it is a different one: the older generators rewrite what the newer
 ones wrote and the repository goes backwards. It has happened — a stale build

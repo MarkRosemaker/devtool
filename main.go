@@ -79,6 +79,11 @@ func main() {
 	defer stop()
 
 	if err := dispatch(ctx, os.Args[1:]); err != nil {
+		// The build this one handed over to has reported for itself.
+		if status, ok := errors.AsType[exitStatus](err); ok {
+			os.Exit(int(status))
+		}
+
 		if jsonLogs {
 			slog.ErrorContext(ctx, name+" failed", "error", err)
 		} else {
@@ -236,7 +241,7 @@ func update(ctx context.Context, args []string) error {
 	}
 
 	if *checkLatest {
-		if err := requireLatest(ctx); err != nil {
+		if done, err := requireLatest(ctx); done || err != nil {
 			return err
 		}
 	}
@@ -262,6 +267,7 @@ func update(ctx context.Context, args []string) error {
 			Commit:     *commit,
 			Version:    current,
 			SelfUpdate: selfUpdater(current, true).Update,
+			Restart:    restarter(),
 		}, events)
 	}
 
@@ -274,7 +280,9 @@ func update(ctx context.Context, args []string) error {
 	return maintained(ctx, *cfgPath, target, *commit, *verbose, events)
 }
 
-// requireLatest fails the run where this is not the latest published build.
+// requireLatest hands the run to the latest published build where this is not
+// it, installing it first, and fails the run where it cannot; done says the
+// run has happened there.
 //
 // The one place devtool asks the network about itself, and only when asked to:
 // a run already notices it is behind by reading what the repository records,
@@ -288,7 +296,7 @@ func update(ctx context.Context, args []string) error {
 // no toolchain, no network, no credentials for a private module — the run
 // carries on, since that is a fact about this machine rather than about this
 // build.
-func requireLatest(ctx context.Context) error {
+func requireLatest(ctx context.Context) (done bool, err error) {
 	current := selfupdate.Version()
 
 	latest, err := (&selfupdate.Updater{Module: modulePath, Direct: true}).Latest(ctx)
@@ -296,15 +304,30 @@ func requireLatest(ctx context.Context) error {
 		slog.WarnContext(ctx, "could not ask which build is the latest",
 			"error", err, "running", current)
 
-		return nil
+		return false, nil
 	}
 
 	if !maintain.Newer(latest, current) {
-		return nil
+		return false, nil
 	}
 
-	return fmt.Errorf("%s %s is behind %s: run %s self-update",
-		name, current, latest, name)
+	restart := restarter()
+	if restart == nil || !maintain.Installable(current) {
+		return false, fmt.Errorf("%s %s is behind %s: run %s self-update",
+			name, current, latest, name)
+	}
+
+	out, err := selfUpdater(current, true).Update(ctx)
+	if err != nil {
+		return false, fmt.Errorf("%s %s is behind %s, and could not update: %w",
+			name, current, latest, err)
+	}
+
+	if !out.Updated || out.Installed == "" {
+		return false, fmt.Errorf("%s %s is behind %s: %s", name, current, latest, out)
+	}
+
+	return true, restart(ctx, out.Installed)
 }
 
 // maintained is the unattended shape: a list, and everything in it or one of
