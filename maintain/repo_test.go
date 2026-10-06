@@ -25,6 +25,9 @@ type fakeRepo struct {
 
 	coverage float64
 
+	// output is what every command it is asked to run prints.
+	output []byte
+
 	// calls records every method with an effect, in the order it was called.
 	calls []string
 }
@@ -54,7 +57,7 @@ func (r *fakeRepo) record(name string) { r.calls = append(r.calls, name) }
 func (r *fakeRepo) ExecCommand(_ context.Context, name string, _ ...string) ([]byte, error) {
 	r.record("exec " + name)
 
-	return nil, nil
+	return r.output, nil
 }
 
 func (r *fakeRepo) Pull(context.Context) error { r.record("pull"); return nil }

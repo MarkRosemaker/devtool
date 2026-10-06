@@ -5,6 +5,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -62,7 +64,7 @@ func LicenseTask(repo engine.Repo, holder string) engine.Task {
 	}
 }
 
-// copyrightYears returns the range covered by the repository's commits:
+// copyrightYears returns the range covered by the repository's work:
 // "2025-2026" while it spans years, or a single "2026" while it does not.
 func copyrightYears(ctx context.Context, repo engine.Repo) (string, error) {
 	first, err := firstCommitYear(ctx, repo)
@@ -70,7 +72,33 @@ func copyrightYears(ctx context.Context, repo engine.Repo) (string, error) {
 		return "", err
 	}
 
-	return yearRange(first, time.Now().Year()), nil
+	existing, err := afero.ReadFile(repo.Fs(), licensePath)
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+
+	return yearRange(startYear(first, existing), time.Now().Year()), nil
+}
+
+// licenseStart matches the first year on an existing copyright line.
+var licenseStart = regexp.MustCompile(`(?m)^\s*Copyright (\d{4})\b`)
+
+// startYear is the earlier of the first commit's year and the year the
+// existing licence already starts from. History can only move the start
+// earlier: a shallow clone reports its cut-off commit as the root, and a
+// squashed or imported history forgets years the licence still remembers.
+func startYear(firstCommit int, existing []byte) int {
+	m := licenseStart.FindSubmatch(existing)
+	if m == nil {
+		return firstCommit
+	}
+
+	recorded, err := strconv.Atoi(string(m[1]))
+	if err != nil {
+		return firstCommit
+	}
+
+	return min(firstCommit, recorded)
 }
 
 // yearRange renders the copyright years: a range while the work spans more than
