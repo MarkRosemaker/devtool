@@ -5,8 +5,8 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261004220116-25eebe3b36a4
 	github.com/MarkRosemaker/ghrepo v0.0.0-20261004160115-b16501f1f603
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261004011219-d60532c930cb
-	github.com/MarkRosemaker/gorepo v0.0.0-20261004160220-2c2cf997179c
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261006100118-8a4661b68248
+	github.com/MarkRosemaker/gorepo v0.0.0-20261006100159-df2d398c59b5
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261004011215-c1eff28436f6
 	github.com/MarkRosemaker/openapi v0.0.0-20261005183413-2a3bd56f42a1
@@ -39,7 +39,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/ldez/grignotin v0.10.1 // indirect
-	github.com/mattn/go-colorable v0.1.15 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
