@@ -2,8 +2,11 @@ package maintain
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestYearRange(t *testing.T) {
@@ -100,5 +103,48 @@ func TestLicenseTemplate(t *testing.T) {
 		if strings.Contains(got, field) {
 			t.Errorf("rendered licence mentions the template field %q", field)
 		}
+	}
+}
+
+func TestStartYear(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		first    int
+		existing string
+		want     int
+	}{
+		{"no licence yet", 2026, "", 2026},
+		// A shallow clone's cut-off commit reads as the root.
+		{"licence older than the history", 2026, "   Copyright 2024-2026 Ada\n", 2024},
+		{"licence older, single year", 2026, "   Copyright 2024 Ada\n", 2024},
+		{"history older than the licence", 2023, "   Copyright 2024-2026 Ada\n", 2023},
+		{"no copyright line", 2026, "MIT License\n", 2026},
+		// The grant clause says Copyright too, but not as a copyright line.
+		{"grant clause only", 2026, "   2. Grant of Copyright License. Subject\n", 2026},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := startYear(tc.first, []byte(tc.existing)); got != tc.want {
+				t.Errorf("startYear(%d, %q) = %d, want %d", tc.first, tc.existing, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestLicenseKeepsTheYearItStartedIn is the case that bit: in a shallow clone
+// git dates the root this year, and the licence lost the year the repository
+// began.
+func TestLicenseKeepsTheYearItStartedIn(t *testing.T) {
+	now := time.Now().Year()
+
+	repo := &fakeRepo{output: []byte(strconv.Itoa(now) + "\n")}
+	writeFile(t, repo.Fs(), licensePath, fmt.Sprintf("   Copyright 2024-%d Ada\n", now-1))
+
+	if err := LicenseTask(repo, "Ada").Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	want := fmt.Sprintf("   Copyright 2024-%d Ada\n", now)
+	if got := readFile(t, repo.Fs(), licensePath); !strings.Contains(got, want) {
+		t.Errorf("the licence no longer carries %q", want)
 	}
 }
