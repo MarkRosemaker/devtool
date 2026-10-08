@@ -4,9 +4,9 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261004220116-25eebe3b36a4
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261004160115-b16501f1f603
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261008184648-7027a25ab231
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261006100118-8a4661b68248
-	github.com/MarkRosemaker/gorepo v0.0.0-20261006100159-df2d398c59b5
+	github.com/MarkRosemaker/gorepo v0.0.0-20261008184741-d7121e6f4b8f
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261004011215-c1eff28436f6
 	github.com/MarkRosemaker/openapi v0.0.0-20261008160205-6fa860efe36e
@@ -56,7 +56,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20261007192929-f45ad48fbe92 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
