@@ -3,18 +3,18 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20261009163258-6a3ca9432920
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261009163308-fd4d317bcfd8
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261009163304-3dfe2b3460bc
-	github.com/MarkRosemaker/gorepo v0.0.0-20261009163448-ca077aea88f0
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20261009220134-4a1742776da7
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261009220231-245724ca4ba9
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261009220147-73069cfe01aa
+	github.com/MarkRosemaker/gorepo v0.0.0-20261009220428-4bdd81b9f790
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261009163255-8bb84916580b
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261009163256-63143e59ef10
-	github.com/MarkRosemaker/openapi v0.0.0-20261009163327-1d4ffdc7ddea
-	github.com/MarkRosemaker/ordmap v0.0.0-20261009163305-fc252a982e0c
+	github.com/MarkRosemaker/openapi v0.0.0-20261009220216-37f4a6ce811f
+	github.com/MarkRosemaker/ordmap v0.0.0-20261009220143-681d018b7a2f
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.14.0
 	github.com/spf13/afero v1.15.0
-	golang.org/x/mod v0.41.0
+	golang.org/x/mod v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -54,9 +54,9 @@ require (
 	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/exp v0.0.0-20261007192929-f45ad48fbe92 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/exp v0.0.0-20261009195045-ca0d7ba23607 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
