@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261008184648-7027a25ab231
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261009040152-d7714a702e36
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20261006100118-8a4661b68248
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261008184741-d7121e6f4b8f
+# github.com/MarkRosemaker/gorepo v0.0.0-20261009040301-d5e5d9551c35
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118
@@ -40,8 +40,8 @@ github.com/MarkRosemaker/yaml2json
 # github.com/Masterminds/semver/v3 v3.5.0
 ## explicit; go 1.21
 github.com/Masterminds/semver/v3
-# github.com/Microsoft/go-winio v0.6.2
-## explicit; go 1.21
+# github.com/Microsoft/go-winio v0.6.3
+## explicit; go 1.26.0
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/internal/fs
 github.com/Microsoft/go-winio/internal/socket

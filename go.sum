@@ -4,12 +4,12 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20261004220116-25eebe3b36a4 h1:9E
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261004220116-25eebe3b36a4/go.mod h1:7ou9JJI6tE3JA38NKGbq+xTM80qiXGW4YcLfl+uCxt8=
 github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4 h1:LfdmULH+N5sLixn6UOQ3+OkWwCCwyvFKpqT0MY/anhM=
 github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261008184648-7027a25ab231 h1:kcG/gZ+H8OEB1RmDN3JnD5YEN6Ztki11PBwm3Tlgbf4=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261008184648-7027a25ab231/go.mod h1:auLKAFMM0UqmQBhH98epcBhgL25+fpDAErBh10BKcAI=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261009040152-d7714a702e36 h1:kOF0SZorWtIuBRNPT3miIVsudU/nQu8J2f+CTKBXWGI=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261009040152-d7714a702e36/go.mod h1:a7i6ZKDLSsgFgfyGW6jxYDd8UK1Dsw5ak7uvuX6yrY0=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261006100118-8a4661b68248 h1:T1eczDyrNGVa5qCw69DEb/21T4/aJL72NmqvddGU5+0=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261006100118-8a4661b68248/go.mod h1:SVbu2XDZEu7/of9Hvfg2DDYBZBCvnjoKOUXRmxrE1nY=
-github.com/MarkRosemaker/gorepo v0.0.0-20261008184741-d7121e6f4b8f h1:y2mGC7Hbqlnn6ve3r7OVG4USy7l89OKnFFHY6JTKCpI=
-github.com/MarkRosemaker/gorepo v0.0.0-20261008184741-d7121e6f4b8f/go.mod h1:4e8gpIfrok4BAjqNr4BQSQSV8GJyKasZpacuF4MMVfo=
+github.com/MarkRosemaker/gorepo v0.0.0-20261009040301-d5e5d9551c35 h1:ZJ28MaxxL9AReQvR0aUtHSNH6/uU2tbSMVamdUXMybo=
+github.com/MarkRosemaker/gorepo v0.0.0-20261009040301-d5e5d9551c35/go.mod h1:44egMFjz6YTJAmxywyAKT2J95LBgGWSQrpDR8WXbEhk=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118 h1:DCh3n2UTl1iQfEiifmYPFCetkFLOnen/vVP1lsS6RGM=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261004011213-3850e046f118/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261004011215-c1eff28436f6 h1:vXJlOaN8dwqXWEzAlOomoXSJY66JJXPtkpsPf+juAQ8=
@@ -24,8 +24,8 @@ github.com/MarkRosemaker/yaml2json v0.0.0-20261004011213-bbdd737b26f4 h1:vpzT7Zu
 github.com/MarkRosemaker/yaml2json v0.0.0-20261004011213-bbdd737b26f4/go.mod h1:DxNA9SDFrzw+RHsnxjIxjUzHy0I4+3hZg7R13u3SBvE=
 github.com/Masterminds/semver/v3 v3.5.0 h1:kQceYJfbupGfZOKZQg0kou0DgAKhzDg2NZPAwZ/2OOE=
 github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lprf4nC11bSS5beM=
-github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
-github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+github.com/Microsoft/go-winio v0.6.3 h1:M/52tsoyTfwaxajLnXZm7PqkbMGRH8iSWP+8fcg9MQ4=
+github.com/Microsoft/go-winio v0.6.3/go.mod h1:ma0QpxizD4fyyzJ1C7MIblymTD2Nxz5Mho/3CepwIZg=
 github.com/ProtonMail/go-crypto v1.5.2 h1:cucYnvqcY7UOXVD//mSyjeaPY0SSN3v5cDkYPxumINk=
 github.com/ProtonMail/go-crypto v1.5.2/go.mod h1:/RaSu30DaKO4RY+XdV/ACcCcZkGr7AhUIduq5sjzzCo=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFIImctFaOjnTIavg87rW78vTPkQqLI8=
