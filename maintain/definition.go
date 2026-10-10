@@ -48,6 +48,21 @@ type Definition struct {
 	// Private is the repository's visibility, as GitHub last reported it to a
 	// maintained run. A local run has no GitHub to ask, so it reads it here.
 	Private bool `json:"private,omitzero"`
+
+	// Resources are what the repository's code is built around, and devtool
+	// generates the code that goes with them.
+	Resources Resources `json:"resources,omitzero"`
+}
+
+// Resources are a repository's declared resources.
+type Resources struct {
+	// Databases are laid out as described in [DatabasesTask].
+	Databases []Database `json:"databases,omitempty"`
+}
+
+// Database is one SQLite database, which lives in databases/<Name>.
+type Database struct {
+	Name string `json:"name"`
 }
 
 // equal reports whether two definitions say the same thing.
@@ -57,7 +72,8 @@ func (d Definition) equal(o Definition) bool {
 		d.Coverage == o.Coverage &&
 		d.DevtoolVersion == o.DevtoolVersion &&
 		d.Kind == o.Kind &&
-		d.Private == o.Private
+		d.Private == o.Private &&
+		slices.Equal(d.Resources.Databases, o.Resources.Databases)
 }
 
 // LoadDefinition reads the repository's definition.

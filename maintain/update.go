@@ -33,6 +33,10 @@ type UpdateOptions struct {
 	// on a maintained run — and so is recorded in devtool.json. Otherwise
 	// there was nobody to ask, and the recorded answer stands.
 	RecordPrivate bool
+
+	// SQLC runs sqlc over one of the repository's databases. Nil is
+	// [RunSQLC], which starts this devtool again.
+	SQLC SQLC
 }
 
 // UpdateTask returns the one task that brings everything devtool owns up to
@@ -72,6 +76,7 @@ var owners = []struct{ path, part string }{
 	{agentsDir + "/", "agents"},
 	{claudePath, "claude"},
 	{lintfilePath, "lintgen"},
+	{databasesDir + "/", "databases"},
 }
 
 // describeUpdate names the parts of [UpdateTask] a commit's files came from,
@@ -162,7 +167,14 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //   - .gitignore after the Makefile, whose targets settle what there is to
 //     ignore, and before AGENTS.md, which says so only once the block is
 //     really there.
+//   - The databases last: they are the one part that runs a tool, and the
+//     files above are worth having even where it fails.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
+	sqlc := opts.SQLC
+	if sqlc == nil {
+		sqlc = RunSQLC
+	}
+
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
 		ReadmeTask(repo, opts.Coverage),
@@ -171,6 +183,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		AgentsTask(repo),
 		ClaudeTask(repo),
 		GenLintfile(repo),
+		DatabasesTask(repo, sqlc),
 	}
 }
 
