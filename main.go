@@ -108,6 +108,8 @@ func dispatch(ctx context.Context, args []string) error {
 			return runTests(ctx, args[1:])
 		case "version":
 			return printVersion(args[1:])
+		case "sqlc":
+			return runSQLC(args[1:])
 		}
 	}
 
@@ -456,4 +458,24 @@ func runTests(ctx context.Context, args []string) error {
 		Holder:  licenseHolder,
 		Private: *private,
 	}, emitter(*asJSON))
+}
+
+// runSQLC is "devtool sqlc <database>", which a run starts in a repository's
+// directory to generate that database's code: see [maintain.RunSQLC]. Not
+// for typing.
+func runSQLC(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("%s sqlc takes one database, got %q", name, args)
+	}
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if code := maintain.GenerateQueries(dir, args[0]); code != 0 {
+		return exitStatus(code)
+	}
+
+	return nil
 }
