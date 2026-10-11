@@ -130,7 +130,7 @@ query file that is still there.
 `schema_migrations(version, dirty)`. A database that golang-migrate brought
 to some version carries on from there.
 
-`Open` uses the driver the repository's `go.mod` already requires,
+`Open` uses the driver the repository's `go.mod` requires directly,
 `modernc.org/sqlite` or ncruces. That way it adds no dependency, and devtool
 refuses to write it where there is neither. Tests open a real database in
 `t.TempDir()`, so a test and production differ only in where the file is.

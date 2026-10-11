@@ -222,3 +222,21 @@ func snapshot(t *testing.T, fs afero.Fs) map[string]string {
 
 	return files
 }
+
+// TestSQLiteDriverIgnoresAnIndirectOne: a driver some dependency requires is
+// not the one the repository opens its databases with.
+func TestSQLiteDriverIgnoresAnIndirectOne(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeFile(t, fs, "go.mod", "module example.com/app\n\ngo 1.27\n\n"+
+		"require github.com/ncruces/go-sqlite3 v0.35.5\n\n"+
+		"require modernc.org/sqlite v1.59.0 // indirect\n")
+
+	driver, _, err := sqliteDriver(fs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if driver != "sqlite3" {
+		t.Errorf("picked %q, the indirect modernc driver, over the direct ncruces one", driver)
+	}
+}

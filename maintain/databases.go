@@ -194,7 +194,7 @@ var sqliteDrivers = []struct {
 	}},
 }
 
-// sqliteDriver picks the driver the repository already requires, so open.go
+// sqliteDriver picks the driver the repository requires directly, so open.go
 // adds no dependency of its own.
 func sqliteDriver(fs afero.Fs) (string, []string, error) {
 	b, err := afero.ReadFile(fs, "go.mod")
@@ -209,7 +209,8 @@ func sqliteDriver(fs afero.Fs) (string, []string, error) {
 
 	for _, d := range sqliteDrivers {
 		for _, r := range mod.Require {
-			if r.Mod.Path == d.module {
+			// Indirect is what some dependency uses, not this repository.
+			if r.Mod.Path == d.module && !r.Indirect {
 				return d.driver, d.imports, nil
 			}
 		}
