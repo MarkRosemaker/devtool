@@ -161,6 +161,42 @@ definition: the list holds what the last run measured, written back after
 every run, while `devtool.json` holds a copy. Preferring the copy would freeze
 every badge at the first figure recorded.
 
+## Tool versions are pinned too
+
+`devtool.json`'s `tools` pins each tool the Makefile shells out to:
+golangci-lint, govulncheck and pkgsite. devtool is not among them, because
+it pins itself as `devtoolVersion`. `make tools` installs exactly the pinned
+versions. Pinning means every machine lints by the same rules, and a new
+release arrives as a commit that can be read and reverted. Before, it
+arrived as a failure that nobody had changed anything to cause.
+
+A pin moves the way the mark does, only forward. `pinTools` in
+`maintain/tools.go` compares each pin with the binary on `PATH`, using the
+version `go install` stamped into it:
+
+- **Installed version newer than the pin:** the pin moves up.
+- **Installed version older, or missing:** the pinned version is installed.
+- **Equal:** nothing happens and no network is needed, so a sandboxed
+  `make ci` passes on a current machine.
+- **Maintained run:** it also asks the proxy for each latest release (a local
+  run asks only with `-check-latest`), so a newer release gets installed and
+  pinned.
+
+Two details are easy to get wrong:
+
+- **`PATH`.** devtool puts the directory `go install` writes to at the front
+  of its own `PATH`, as the Makefile does for itself. Otherwise an older copy
+  elsewhere on `PATH` would be the one that runs, and the one that gets
+  pinned. An install that still does not reach `PATH` is an error, not a
+  silent pin of the old copy.
+- **The proxy query.** `go list -m …@latest` refuses to query versions inside
+  a module that has a `vendor/` directory, which devtool itself does. So it
+  runs from outside any module.
+
+A run maintains repositories side by side, so they share one `SharedTools`.
+It asks for each latest release once and installs one tool at a time, so two
+repositories never write the same binary at once.
+
 ## What the toolchain stamps, and why it differs per machine
 
 Everything above rests on a binary knowing what it is, and that is decided by

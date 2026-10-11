@@ -130,6 +130,10 @@ type repoShape struct {
 	// Benchmarks is true where some test file defines one, so a bench
 	// target is worth having.
 	Benchmarks bool
+
+	// Tools are what the tools target installs, at the versions the
+	// definition pins.
+	Tools []pinnedTool
 }
 
 // houseTargets are the targets every repository gets, so anything — a
@@ -256,7 +260,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		{
 			Name:    "tools",
 			Comment: "Installs what the targets above shell out to, into $(go env GOPATH)/bin.",
-			Recipe:  toolInstalls(),
+			Recipe:  toolInstalls(shape.Tools),
 		},
 		{
 			Name:    "clean",
@@ -266,20 +270,9 @@ func houseTargets(shape repoShape) []makeTarget {
 	})
 }
 
-// houseTools are installed globally, latest of each, rather than pinned as
-// module dependencies: pinning one means vendoring it into every
-// repository, and the version worth running is the current one — a new
-// finding is worth hearing about the day it lands.
-var houseTools = []string{
-	"github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-	"golang.org/x/vuln/cmd/govulncheck",
-	"golang.org/x/pkgsite/cmd/pkgsite",
-	// The generator itself, installed like any other tool rather than
-	// vendored into every repository it writes.
-	"github.com/MarkRosemaker/devtool",
-}
-
-// toolInstalls is the recipe that installs [houseTools].
+// toolInstalls is the recipe that installs the pinned tools, and devtool —
+// the generator itself, installed like any other tool rather than vendored
+// into every repository it writes. It pins itself, so it goes at latest.
 //
 // Through GOTOOLCHAIN, because a tool that analyses this module has to be
 // built with a Go at least as new as the one the module targets, and
@@ -292,14 +285,17 @@ var houseTools = []string{
 // the one that runs — which is the same failure, arriving by a different
 // route. GOBIN is where "go install" writes when it is set, so the PATH line
 // reads that first and falls back to GOPATH/bin rather than assuming.
-func toolInstalls() []string {
-	installs := make([]string, 0, len(houseTools))
-	for _, tool := range houseTools {
-		installs = append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+tool+"@latest")
+func toolInstalls(tools []pinnedTool) []string {
+	installs := make([]string, 0, len(tools)+1)
+	for _, t := range tools {
+		installs = append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+t.Package+"@"+t.Version)
 	}
 
-	return installs
+	return append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+devtoolModule+"@latest")
 }
+
+// devtoolModule is this generator, which the tools target also installs.
+const devtoolModule = "github.com/MarkRosemaker/devtool"
 
 // defaultGoal is what plain "make" runs where nothing says otherwise. It is
 // always defined, since houseTargets defines it.
@@ -477,7 +473,12 @@ func readRepoShape(fs afero.Fs) (repoShape, error) {
 		return repoShape{}, err
 	}
 
-	return repoShape{Command: command, Benchmarks: benchmarks}, nil
+	def, _, err := LoadDefinition(fs)
+	if err != nil {
+		return repoShape{}, err
+	}
+
+	return repoShape{Command: command, Benchmarks: benchmarks, Tools: pinnedTools(def)}, nil
 }
 
 // errBenchmarkFound stops the walk in [hasBenchmarks] at the first

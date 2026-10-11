@@ -288,18 +288,18 @@ func TestMakefileGolden(t *testing.T) {
 			DefaultGoal: defaultGoal,
 			CleanFiles:  coverProfile,
 			Tools:       true,
-			Targets:     houseTargets(repoShape{}),
+			Targets:     houseTargets(repoShape{Tools: goldenTools}),
 		}},
 		{"adopted", makefileData{
 			DefaultGoal: "build",
-			Targets:     slices.Delete(houseTargets(repoShape{}), 2, 3),
+			Targets:     slices.Delete(houseTargets(repoShape{Tools: goldenTools}), 2, 3),
 		}},
 		{"binary", makefileData{
 			DefaultGoal: defaultGoal,
 			Command:     "worldweaver",
 			CleanFiles:  "bin cover.out",
 			Tools:       true,
-			Targets:     houseTargets(repoShape{Command: "worldweaver", Benchmarks: true}),
+			Targets:     houseTargets(repoShape{Command: "worldweaver", Benchmarks: true, Tools: goldenTools}),
 			Flags:       "mk/flags.mk",
 			Includes:    []string{"mk/legacy.mk", "mk/sprites.mk"},
 		}},
@@ -831,3 +831,10 @@ func TestGenerateMakefileRunsPlainUpdate(t *testing.T) {
 		t.Errorf("the generate target does not run plain devtool update:\n%s", got)
 	}
 }
+
+// goldenTools pins two tools and leaves one to be installed at latest, as a
+// repository looks before its first run pins everything.
+var goldenTools = pinnedTools(Definition{Tools: map[string]string{
+	"golangci-lint": "v2.5.0",
+	"govulncheck":   "v1.1.4",
+}})

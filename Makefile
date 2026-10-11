@@ -79,9 +79,9 @@ doc:
 
 # Installs what the targets above shell out to, into $(go env GOPATH)/bin.
 tools:
-	GOTOOLCHAIN=$(TOOL_GO) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/vuln/cmd/govulncheck@latest
-	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/pkgsite/cmd/pkgsite@latest
+	GOTOOLCHAIN=$(TOOL_GO) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
+	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/pkgsite/cmd/pkgsite@v0.5.0
 	GOTOOLCHAIN=$(TOOL_GO) go install github.com/MarkRosemaker/devtool@latest
 
 # A fragment adds its own with CLEAN_FILES += dist.
