@@ -1,40 +1,40 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
-# github.com/MarkRosemaker/devtool-engine v0.0.0-20261009220134-4a1742776da7
+# github.com/MarkRosemaker/devtool-engine v0.0.0-20261011020209-c4b2306a17e9
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/devtool-engine/depgraph
 github.com/MarkRosemaker/devtool-engine/event
 github.com/MarkRosemaker/devtool-engine/maintain
 github.com/MarkRosemaker/devtool-engine/selfupdate
-# github.com/MarkRosemaker/errpath v0.0.0-20261004011213-d39d7f96c8f4
+# github.com/MarkRosemaker/errpath v0.0.0-20261011020208-f8e59e480181
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261009220231-245724ca4ba9
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261011020210-29e62aea6976
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261009220147-73069cfe01aa
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261011020212-d3ec25fb29d3
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261009220428-4bdd81b9f790
+# github.com/MarkRosemaker/gorepo v0.0.0-20261011020410-7e523cb92da0
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
-# github.com/MarkRosemaker/json2yaml v0.0.0-20261009163255-8bb84916580b
+# github.com/MarkRosemaker/json2yaml v0.0.0-20261011020208-8cc101278eb5
 ## explicit; go 1.27
 github.com/MarkRosemaker/json2yaml
-# github.com/MarkRosemaker/jsonutil v0.0.0-20261009163256-63143e59ef10
+# github.com/MarkRosemaker/jsonutil v0.0.0-20261011020208-ff52d385d3c8
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261009220216-37f4a6ce811f
+# github.com/MarkRosemaker/openapi v0.0.0-20261011020241-8962b2e591ba
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20261009220143-681d018b7a2f
+# github.com/MarkRosemaker/ordmap v0.0.0-20261011020221-a054ebac895d
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
-# github.com/MarkRosemaker/yaml v0.0.0-20261009163313-a4483f4cc7d4
+# github.com/MarkRosemaker/yaml v0.0.0-20261011020224-4c099f72bcd6
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml
-# github.com/MarkRosemaker/yaml2json v0.0.0-20261004011213-bbdd737b26f4
+# github.com/MarkRosemaker/yaml2json v0.0.0-20261011020208-0ec4c35ef945
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml2json
 # github.com/Masterminds/semver/v3 v3.5.0
