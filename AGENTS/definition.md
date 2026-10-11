@@ -12,3 +12,10 @@ field leaves the file as it was.
 `kind` is inferred once and never again, so a change to `inferKind` reaches
 only repositories that have no `kind` yet. Every repository maintained since
 it existed has one.
+
+`resources.databases` names the repository's SQLite databases, which are
+laid out as `docs/architecture.md` describes. Each name is also its
+package's name, so it is lower-case letters and digits. `tools` pins the
+Makefile's tools. A run moves the pins itself and only forward, so a pin
+lowered by hand is raised again by the next run on a machine with a newer
+copy installed.

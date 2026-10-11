@@ -380,6 +380,7 @@ func TestAgentsGolden(t *testing.T) {
 		{"full", agentsData{
 			Generated: generatedRootDirs,
 			Gitignore: true,
+			Databases: []string{"world", "user"},
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},

@@ -71,6 +71,32 @@ Edit the directory, never the file:
 generated. Your own rules go below that block, where they win — in a
 `.gitignore` the last matching pattern decides.
 
+## Databases
+
+`devtool.json` declares this repository's SQLite databases, each a package
+under `databases/`: `databases/world`, `databases/user`. Two parts of
+each are written by hand:
+
+- **The schema, as migrations:** `migrations/<version>_<title>.up.sql`,
+  numbered on from the last. The first is the initial state. Never edit a
+  migration that has been merged, since a database already past it will not
+  see the change. Add the next one instead.
+- **The queries:** `queries/*.sql`, in sqlc's syntax (`-- name: Foo :one`).
+
+Everything else in the package is generated, and `make generate` rewrites
+it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
+`db.go`, `models.go` and `*.sql.go` by sqlc. Code of your own goes in a
+file of your own beside them.
+
+`Open(ctx, path)` creates the database where it does not exist and
+migrates it, and `Path()` is where it lives on this machine. A test opens a
+real one of its own, rather than mocking it:
+`Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
+
+To add a database, add `{"name": "…"}` to `resources.databases` in
+`devtool.json`, write `databases/<name>/migrations/001_initial.up.sql`, and
+run `make generate`.
+
 ## Keeping the documents true
 
 - `README/*.md` is the README. If it no longer describes this repository,
@@ -91,8 +117,9 @@ generated. Your own rules go below that block, where they win — in a
 
 - Comments are one line, and only where the code would otherwise puzzle a
   reader. Never a restatement of what it already says.
-- Linters and scanners are installed at their latest by `make tools`. Do not
-  vendor one or add it to `go.mod` to run it.
+- Linters, scanners and generators are installed by `make tools`, at the
+  versions `devtool.json` pins. Maintained runs move the pins to each new
+  release. Do not vendor one or add it to `go.mod` to run it.
 - Check a claim before writing it down: read the source, run the command.
 - Ask before making a decision that is the owner's — scope, or which of two
   designs. Do not ask about the process above; follow it.

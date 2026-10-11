@@ -81,6 +81,7 @@ var owners = []struct{ path, part string }{
 	{agentsDir + "/", "agents"},
 	{claudePath, "claude"},
 	{lintfilePath, "lintgen"},
+	{databasesDir + "/", "databases"},
 }
 
 // describeUpdate names the parts of [UpdateTask] a commit's files came from,
@@ -177,6 +178,9 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //   - .gitignore after the Makefile, whose targets settle what there is to
 //     ignore, and before AGENTS.md, which says so only once the block is
 //     really there.
+//   - The databases last: the one part that can refuse for want of
+//     something only a person can write, a migration or a driver, and the
+//     files above are worth having regardless.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
@@ -186,6 +190,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		AgentsTask(repo),
 		ClaudeTask(repo),
 		GenLintfile(repo),
+		DatabasesTask(repo),
 	}
 }
 

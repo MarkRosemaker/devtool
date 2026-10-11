@@ -241,9 +241,9 @@ func houseTargets(shape repoShape) []makeTarget {
 		},
 		{
 			Name: "generate",
-			Comment: "Everything a tool writes: the go:generate directives, " +
-				"then the files devtool owns.",
-			Recipe: []string{"go generate ./...", "devtool update"},
+			Comment: "Everything a tool writes: the files devtool owns, " +
+				"then the go:generate directives, some of which devtool writes.",
+			Recipe: []string{"devtool update", "go generate ./..."},
 		},
 		{
 			Name: "verify",

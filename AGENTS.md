@@ -91,8 +91,9 @@ generated. Your own rules go below that block, where they win — in a
 
 - Comments are one line, and only where the code would otherwise puzzle a
   reader. Never a restatement of what it already says.
-- Linters and scanners are installed at their latest by `make tools`. Do not
-  vendor one or add it to `go.mod` to run it.
+- Linters, scanners and generators are installed by `make tools`, at the
+  versions `devtool.json` pins. Maintained runs move the pins to each new
+  release. Do not vendor one or add it to `go.mod` to run it.
 - Check a claim before writing it down: read the source, run the command.
 - Ask before making a decision that is the owner's — scope, or which of two
   designs. Do not ask about the process above; follow it.

@@ -52,7 +52,8 @@ asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
 then licence, README, Makefile, `.gitignore`, `AGENTS.md` and the lint config,
-with the `CLAUDE.md` link to `AGENTS.md` it used to make removed. That one task is the whole of a local rebuild and the
+with the `CLAUDE.md` link to `AGENTS.md` it used to make removed, and the
+files that go with any declared databases last. That one task is the whole of a local rebuild and the
 first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
 
@@ -91,6 +92,49 @@ instead of regenerated.
 `internal/lintgen` writes `maintain/lint.yaml` from a Go value, through
 `go generate`. Never hand-edited.
 
+## Databases
+
+A repository declares its SQLite databases in `devtool.json`, under
+`resources.databases`, by name. A database named `foo` is package `foo` in
+`databases/foo`:
+
+| | |
+| --- | --- |
+| `migrations/<version>_<title>.up.sql` | the schema, written by hand; the first is the initial state |
+| `queries/*.sql` | sqlc queries, written by hand |
+| `sqlc.yaml`, `generate.go` | written by devtool: sqlc's configuration, and the directive that runs it there |
+| `migrate.go` | written by devtool: the migrations embedded, and `Migrate` to apply them |
+| `open.go` | written by devtool: `Open`, which creates and migrates a database file, and `Path`, `~/.<repo>/<name>.db` |
+| `db.go`, `models.go`, `*.sql.go` | written by sqlc, through `go generate` |
+
+Everything sits in one package directory because `go:embed` cannot reach
+outside it, and because `go generate` runs a directive in its own package's
+directory: there, sqlc finds `sqlc.yaml` unasked, with paths relative to it.
+
+sqlc is a tool like golangci-lint. devtool pins it in `tools` wherever a
+database is declared, and `make tools` installs it. It is not linked into
+devtool: its CLI links every engine's parser, which tripled devtool's
+binary and its `vendor/`, and it exits the process on a failed generate.
+
+**`make generate` runs `devtool update` first, then `go generate`.** It used
+to be the other way round. sqlc reads a config devtool writes, so with the
+old order a changed `devtool.json` took two runs to settle, and `make ci`
+failed in between. A maintained run already ran the update first and
+`go generate` last.
+
+sqlc never deletes what it wrote, so devtool removes a `*.sql.go` whose
+`// source:` query file has gone, and nothing else. devtool can run where
+sqlc does not follow, and must not leave a package without the code of a
+query file that is still there.
+
+`Migrate` keeps its version in golang-migrate's own table,
+`schema_migrations(version, dirty)`. A database that golang-migrate brought
+to some version carries on from there.
+
+`Open` uses the driver the repository's `go.mod` already requires,
+`modernc.org/sqlite` or ncruces. That way it adds no dependency, and devtool
+refuses to write it where there is neither. Tests open a real database in
+`t.TempDir()`, so a test and production differ only in where the file is.
 ## Versions, and how a stale build does damage
 
 Each repository's `devtool.json` records the newest devtool build known to
@@ -164,11 +208,12 @@ every badge at the first figure recorded.
 ## Tool versions are pinned too
 
 `devtool.json`'s `tools` pins each tool the Makefile shells out to:
-golangci-lint, govulncheck and pkgsite. devtool is not among them, because
-it pins itself as `devtoolVersion`. `make tools` installs exactly the pinned
-versions. Pinning means every machine lints by the same rules, and a new
-release arrives as a commit that can be read and reverted. Before, it
-arrived as a failure that nobody had changed anything to cause.
+golangci-lint, govulncheck and pkgsite everywhere, and sqlc where a database
+is declared. devtool is not among them, because it pins itself as
+`devtoolVersion`. `make tools` installs exactly the pinned versions.
+Pinning means every machine lints by the same rules, and a new release
+arrives as a commit that can be read and reverted. Before, it arrived as a
+failure that nobody had changed anything to cause.
 
 A pin moves the way the mark does, only forward. `pinTools` in
 `maintain/tools.go` compares each pin with the binary on `PATH`, using the

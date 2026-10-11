@@ -42,9 +42,12 @@ var sqlcTool = Tool{"sqlc", "github.com/sqlc-dev/sqlc/cmd/sqlc", "github.com/sql
 
 // toolsFor are the tools a repository with this definition needs.
 func toolsFor(def Definition) []Tool {
-	_ = def
+	tools := slices.Clone(houseTools)
+	if len(def.Resources.Databases) > 0 {
+		tools = append(tools, sqlcTool)
+	}
 
-	return slices.Clone(houseTools)
+	return tools
 }
 
 // ToolOps is what pinning tools does on the machine: a test replaces it.

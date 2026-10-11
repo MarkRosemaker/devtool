@@ -48,3 +48,12 @@ fuller version of this trap.
 
 Run `go install .` immediately after saving a `.tmpl` edit, before running
 `make ready` even once — not after `make ready` looks wrong.
+
+## A go:generate line in a string runs too
+
+`go generate` reads every line of a source file that starts with
+`//go:generate`, string literals included, and runs it. A generator that
+writes a directive into another repository keeps it split in its own source
+(`"//go:" + "generate …"`), or this repository's `make generate` runs it
+here. `generateGo` in `maintain/databases.go` once held it whole, and sqlc
+failed for want of a config in `maintain/`.

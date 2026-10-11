@@ -53,6 +53,21 @@ type Definition struct {
 	// Tools pins the version of each tool the Makefile shells out to, by
 	// name: see [pinTools] for how a pin moves.
 	Tools map[string]string `json:"tools,omitempty"`
+
+	// Resources are what the repository's code is built around, and
+	// devtool generates the code that goes with them.
+	Resources Resources `json:"resources,omitzero"`
+}
+
+// Resources are a repository's declared resources.
+type Resources struct {
+	// Databases are laid out as [DatabasesTask] describes.
+	Databases []Database `json:"databases,omitempty"`
+}
+
+// Database is one SQLite database, which lives in databases/<Name>.
+type Database struct {
+	Name string `json:"name"`
 }
 
 // equal reports whether two definitions say the same thing.
@@ -63,7 +78,8 @@ func (d Definition) equal(o Definition) bool {
 		d.DevtoolVersion == o.DevtoolVersion &&
 		d.Kind == o.Kind &&
 		d.Private == o.Private &&
-		maps.Equal(d.Tools, o.Tools)
+		maps.Equal(d.Tools, o.Tools) &&
+		slices.Equal(d.Resources.Databases, o.Resources.Databases)
 }
 
 // LoadDefinition reads the repository's definition.
