@@ -67,6 +67,8 @@ Edit the directory, never the file:
 
 ## Keeping the documents true
 
+- Say what is, concisely. Not what was or how it came to be: that is git's.
+  A warning against a trap says what to do and why.
 - `README/*.md` is the README. If it no longer describes this repository,
   correcting it is part of the work, not a separate errand.
 - `docs/architecture.md` describes the architecture as it stands. Update it

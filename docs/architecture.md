@@ -51,10 +51,10 @@ asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
-then licence, README, Makefile, `.gitignore`, `AGENTS.md` and the lint config,
-with the `CLAUDE.md` link to `AGENTS.md` it used to make removed, and the
-files that go with any declared databases last. That one task is the whole of a local rebuild and the
-first task of a maintained run, so the two paths cannot disagree about what
+then licence, README, Makefile, `.gitignore`, `AGENTS.md` (removing any
+`CLAUDE.md` link to it), the lint config, and the files that go with any
+declared databases last. That one task is the whole of a local rebuild and
+the first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
 
 `devtool.json` goes first because the generators read it. It says what kind of
