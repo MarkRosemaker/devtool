@@ -48,8 +48,10 @@ func TestDatabasesWritesTheFiles(t *testing.T) {
 		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
 		"databases/user/migrate.go":  {"package user\n", "//go:embed migrations/*.up.sql", "func Migrate("},
 		"databases/user/open.go": {
-			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", path)`,
-			`filepath.Join(home, ".gorepo", "user.db")`, "func Open(",
+			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", "file:"+path+options)`, "_txlock=immediate",
+			`filepath.Join(home, ".gorepo", "user.db")`, "type DB struct",
+			"func Open(ctx context.Context, path string) (*DB, error)",
+			"func (d *DB) Close() error", "func (d *DB) WithTx(",
 		},
 	} {
 		got := readFile(t, fs, file)
@@ -169,7 +171,7 @@ func TestSQLiteDriverFollowsGoMod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if driver != "sqlite3" || len(imports) != 2 || imports[0] != "github.com/ncruces/go-sqlite3/driver" {
+	if driver != "sqlite3" || len(imports) != 1 || imports[0] != "github.com/ncruces/go-sqlite3/driver" {
 		t.Errorf("ncruces gave %q %v", driver, imports)
 	}
 }

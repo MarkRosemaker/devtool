@@ -188,10 +188,7 @@ var sqliteDrivers = []struct {
 	imports        []string
 }{
 	{"modernc.org/sqlite", "sqlite", []string{"modernc.org/sqlite"}},
-	{"github.com/ncruces/go-sqlite3", "sqlite3", []string{
-		"github.com/ncruces/go-sqlite3/driver",
-		"github.com/ncruces/go-sqlite3/embed",
-	}},
+	{"github.com/ncruces/go-sqlite3", "sqlite3", []string{"github.com/ncruces/go-sqlite3/driver"}},
 }
 
 // sqliteDriver picks the driver the repository requires directly, so open.go
