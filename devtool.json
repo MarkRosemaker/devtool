@@ -1,10 +1,10 @@
 {
-	"coverage": 71.7,
-	"devtoolVersion": "v0.0.0-20261009161243-122c090a48af",
+	"coverage": 72.6,
+	"devtoolVersion": "v0.0.0-20261011020516-647c3e665321",
 	"kind": "cli",
 	"tools": {
 		"golangci-lint": "v2.14.0",
-		"govulncheck": "v1.8.0",
+		"govulncheck": "v1.9.0",
 		"pkgsite": "v0.5.0"
 	}
 }
