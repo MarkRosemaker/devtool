@@ -131,9 +131,9 @@ type repoShape struct {
 	// target is worth having.
 	Benchmarks bool
 
-	// Tools are what the tools target installs, at the versions the
-	// definition pins.
-	Tools []pinnedTool
+	// Tools are what the tools target installs: sqlc joins the house
+	// tools where the repository declares a database.
+	Tools []Tool
 }
 
 // houseTargets are the targets every repository gets, so anything — a
@@ -270,9 +270,13 @@ func houseTargets(shape repoShape) []makeTarget {
 	})
 }
 
-// toolInstalls is the recipe that installs the pinned tools, and devtool —
-// the generator itself, installed like any other tool rather than vendored
-// into every repository it writes. It pins itself, so it goes at latest.
+// toolInstalls is the recipe that installs the tools, and devtool — the
+// generator itself, installed like any other tool rather than vendored into
+// every repository it writes.
+//
+// At latest, like make deps, rather than at the pins: installing a pin would
+// take a machine with a newer copy back to an older one. The next devtool
+// update moves the pins up to what is installed.
 //
 // Through GOTOOLCHAIN, because a tool that analyses this module has to be
 // built with a Go at least as new as the one the module targets, and
@@ -285,10 +289,10 @@ func houseTargets(shape repoShape) []makeTarget {
 // the one that runs — which is the same failure, arriving by a different
 // route. GOBIN is where "go install" writes when it is set, so the PATH line
 // reads that first and falls back to GOPATH/bin rather than assuming.
-func toolInstalls(tools []pinnedTool) []string {
+func toolInstalls(tools []Tool) []string {
 	installs := make([]string, 0, len(tools)+1)
 	for _, t := range tools {
-		installs = append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+t.Package+"@"+t.Version)
+		installs = append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+t.Package+"@latest")
 	}
 
 	return append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+devtoolModule+"@latest")
@@ -478,7 +482,7 @@ func readRepoShape(fs afero.Fs) (repoShape, error) {
 		return repoShape{}, err
 	}
 
-	return repoShape{Command: command, Benchmarks: benchmarks, Tools: pinnedTools(def)}, nil
+	return repoShape{Command: command, Benchmarks: benchmarks, Tools: toolsFor(def)}, nil
 }
 
 // errBenchmarkFound stops the walk in [hasBenchmarks] at the first

@@ -832,9 +832,5 @@ func TestGenerateMakefileRunsPlainUpdate(t *testing.T) {
 	}
 }
 
-// goldenTools pins two tools and leaves one to be installed at latest, as a
-// repository looks before its first run pins everything.
-var goldenTools = pinnedTools(Definition{Tools: map[string]string{
-	"golangci-lint": "v2.5.0",
-	"govulncheck":   "v1.1.4",
-}})
+// goldenTools are the house tools, those of a repository without databases.
+var goldenTools = toolsFor(Definition{})

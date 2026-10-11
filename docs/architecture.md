@@ -112,15 +112,14 @@ outside it, and because `go generate` runs a directive in its own package's
 directory: there, sqlc finds `sqlc.yaml` unasked, with paths relative to it.
 
 sqlc is a tool like golangci-lint. devtool pins it in `tools` wherever a
-database is declared, and `make tools` installs it. It is not linked into
-devtool: its CLI links every engine's parser, which tripled devtool's
+database is declared, and `make tools` installs it. Do not link it into
+devtool: its CLI links every engine's parser, which triples devtool's
 binary and its `vendor/`, and it exits the process on a failed generate.
 
-**`make generate` runs `devtool update` first, then `go generate`.** It used
-to be the other way round. sqlc reads a config devtool writes, so with the
-old order a changed `devtool.json` took two runs to settle, and `make ci`
-failed in between. A maintained run already ran the update first and
-`go generate` last.
+**`make generate` runs `devtool update` first, then `go generate`**, in the
+same order as a maintained run. sqlc reads the config devtool writes, so
+in the other order a changed `devtool.json` would take two runs to settle,
+and `make ci` would fail in between.
 
 sqlc never deletes what it wrote, so devtool removes a `*.sql.go` whose
 `// source:` query file has gone, and nothing else. devtool can run where
@@ -210,10 +209,13 @@ every badge at the first figure recorded.
 `devtool.json`'s `tools` pins each tool the Makefile shells out to:
 golangci-lint, govulncheck and pkgsite everywhere, and sqlc where a database
 is declared. devtool is not among them, because it pins itself as
-`devtoolVersion`. `make tools` installs exactly the pinned versions.
-Pinning means every machine lints by the same rules, and a new release
-arrives as a commit that can be read and reverted. Before, it arrived as a
-failure that nobody had changed anything to cause.
+`devtoolVersion`. Pinning means every machine lints by the same rules,
+and a new release arrives as a commit that can be read and reverted.
+
+`make tools` installs the latest release of each tool, like `make deps`,
+not the pins. Installing a pin would take a machine with a newer copy back
+to an older one. The next `devtool update` moves the pins up to what is
+installed.
 
 A pin moves the way the mark does, only forward. `pinTools` in
 `maintain/tools.go` compares each pin with the binary on `PATH`, using the

@@ -205,8 +205,7 @@ func TestSharedToolsAsksAndInstallsOnce(t *testing.T) {
 	}
 }
 
-// TestUpdateRecordsThePins: the pins land in devtool.json, inside the task,
-// and the Makefile's tools target installs them.
+// TestUpdateRecordsThePins: the pins land in devtool.json, inside the task.
 func TestUpdateRecordsThePins(t *testing.T) {
 	// Private, so the licence does not ask git for its first year.
 	repo := &fakeRepo{private: true}
@@ -226,8 +225,10 @@ func TestUpdateRecordsThePins(t *testing.T) {
 		t.Errorf("devtool.json pins %v", def.Tools)
 	}
 
-	if mk := readFile(t, repo.Fs(), makefilePath); !strings.Contains(mk, "golangci-lint@v1.0.0") {
-		t.Errorf("the tools target does not install the pin:\n%s", mk)
+	// make tools installs the latest rather than the pin, so it never takes a
+	// machine back; the next update moves the pin up to it.
+	if mk := readFile(t, repo.Fs(), makefilePath); !strings.Contains(mk, "golangci-lint@latest") {
+		t.Errorf("the tools target does not install the latest:\n%s", mk)
 	}
 }
 

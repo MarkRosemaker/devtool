@@ -131,25 +131,6 @@ func newest(a, b string) string {
 	return a
 }
 
-// pinnedTools lists the tools with their pins, in a stable order, for the
-// Makefile's tools target: one not pinned yet is installed at latest.
-func pinnedTools(def Definition) []pinnedTool {
-	var out []pinnedTool
-
-	for _, t := range toolsFor(def) {
-		version := def.Tools[t.Name]
-		if version == "" {
-			version = "latest"
-		}
-
-		out = append(out, pinnedTool{Package: t.Package, Version: version})
-	}
-
-	return out
-}
-
-type pinnedTool struct{ Package, Version string }
-
 // SystemTools pins tools on this machine with the go command.
 type SystemTools struct{}
 

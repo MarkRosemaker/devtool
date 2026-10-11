@@ -124,6 +124,11 @@ func TestDatabasesRefuses(t *testing.T) {
 			want: "names the package",
 		},
 		{
+			name: "a name with a digit",
+			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user2"}]}}`,
+			want: "letters only",
+		},
+		{
 			name:   "no initial migration",
 			remove: "databases/user/migrations/001_initial.up.sql",
 			want:   "001_initial.up.sql",

@@ -83,12 +83,11 @@ func DatabasesTask(repo engine.Repo) engine.Task {
 	}
 }
 
-var databaseName = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
+var databaseName = regexp.MustCompile(`^[a-z]+$`)
 
 func writeDatabase(repo engine.Repo, name string) error {
 	if !databaseName.MatchString(name) {
-		return errors.New("a database's name has to be lower-case letters and digits, " +
-			"starting with a letter, since it names the package")
+		return errors.New("a database's name has to be lower-case letters only, since it names the package")
 	}
 
 	fs, dir := repo.Fs(), path.Join(databasesDir, name)
