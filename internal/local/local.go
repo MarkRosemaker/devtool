@@ -71,6 +71,11 @@ type Options struct {
 	// Nil means not to, and an update then ends in a refusal that says to run
 	// the command again.
 	Restart func(ctx context.Context, binary string) error
+
+	// Tools and CheckLatest pin the tools devtool.json lists: see
+	// [maintain.UpdateOptions].
+	Tools       maintain.ToolOps
+	CheckLatest bool
 }
 
 // Update rebuilds dir's generated files, emitting an event per task.
@@ -183,6 +188,8 @@ func tasks(r *repo, opts Options) []engine.Task {
 			// Set, the flag says the repository is private; left off, it
 			// says nothing, since no Makefile generated now passes it.
 			RecordPrivate: opts.Private,
+			Tools:         opts.Tools,
+			CheckLatest:   opts.CheckLatest,
 		}),
 	}
 }

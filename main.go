@@ -235,6 +235,12 @@ func update(ctx context.Context, args []string) error {
 	// caller asked to read it.
 	events := emitter(*asJSON)
 
+	// The pinned tools, installed where go install writes, have to be the
+	// ones a run's lint and go generate find.
+	if err := maintain.UseToolBin(ctx); err != nil {
+		return err
+	}
+
 	if len(positional) > 1 {
 		return fmt.Errorf("%s update takes one repository or %q, got %q",
 			name, allTarget, positional)
@@ -268,6 +274,9 @@ func update(ctx context.Context, args []string) error {
 			Version:    current,
 			SelfUpdate: selfUpdater(current, true).Update,
 			Restart:    restarter(),
+			Tools:      maintain.NewSharedTools(maintain.SystemTools{}),
+			// Asked for, it covers the tools as well as devtool itself.
+			CheckLatest: *checkLatest,
 		}, events)
 	}
 

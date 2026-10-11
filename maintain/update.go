@@ -3,6 +3,7 @@ package maintain
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -33,6 +34,14 @@ type UpdateOptions struct {
 	// on a maintained run — and so is recorded in devtool.json. Otherwise
 	// there was nobody to ask, and the recorded answer stands.
 	RecordPrivate bool
+
+	// Tools installs and inspects the tools devtool.json pins. Nil leaves
+	// the pins and the machine alone.
+	Tools ToolOps
+
+	// CheckLatest moves the pins to the latest releases, which needs the
+	// network: a maintained run, or a local one asked to.
+	CheckLatest bool
 }
 
 // UpdateTask returns the one task that brings everything devtool owns up to
@@ -72,6 +81,7 @@ var owners = []struct{ path, part string }{
 	{agentsDir + "/", "agents"},
 	{claudePath, "claude"},
 	{lintfilePath, "lintgen"},
+	{databasesDir + "/", "databases"},
 }
 
 // describeUpdate names the parts of [UpdateTask] a commit's files came from,
@@ -130,6 +140,12 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 		return err
 	}
 
+	if opts.Tools != nil {
+		if err := recordTools(ctx, repo, opts); err != nil {
+			return err
+		}
+	}
+
 	for _, t := range generators(repo, opts) {
 		if err := t.Run(ctx); err != nil {
 			return fmt.Errorf("%s: %w", t.Name, err)
@@ -162,6 +178,9 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //   - .gitignore after the Makefile, whose targets settle what there is to
 //     ignore, and before AGENTS.md, which says so only once the block is
 //     really there.
+//   - The databases last: the one part that can refuse for want of
+//     something only a person can write, a migration or a driver, and the
+//     files above are worth having regardless.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
@@ -171,6 +190,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		AgentsTask(repo),
 		ClaudeTask(repo),
 		GenLintfile(repo),
+		DatabasesTask(repo),
 	}
 }
 
@@ -190,6 +210,27 @@ func changedPaths(repo engine.Repo) ([]string, error) {
 	slices.Sort(files)
 
 	return files, nil
+}
+
+// recordTools pins the tools in devtool.json, installing what is behind.
+func recordTools(ctx context.Context, repo engine.Repo, opts UpdateOptions) error {
+	def, _, err := LoadDefinition(repo.Fs())
+	if err != nil {
+		return err
+	}
+
+	pins, err := pinTools(ctx, opts.Tools, def, opts.CheckLatest)
+	if err != nil {
+		return err
+	}
+
+	if maps.Equal(pins, def.Tools) {
+		return nil
+	}
+
+	def.Tools = pins
+
+	return SaveDefinition(repo.Fs(), def)
 }
 
 // recordDefinition writes what this run knows into devtool.json, leaving the

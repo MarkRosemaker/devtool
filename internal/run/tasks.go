@@ -28,6 +28,9 @@ const licenseHolder = "Marco Rösler (MarkRosemaker)"
 //   - Formatting runs after the fixers, so anything they rewrote is left tidy.
 //   - The single-linter fixes come last, one task each, so every commit carries
 //     exactly one kind of change and is easy to read later.
+//
+// A maintained run moves every tool pin to the latest release, which it
+// has the network to ask about.
 func tasks(
 	r *engine.Runner, repo *repository, spec engine.Spec, version string,
 ) []engine.Task {
@@ -39,6 +42,8 @@ func tasks(
 			Description:   spec.Description,
 			Topics:        spec.Topics,
 			RecordPrivate: true,
+			Tools:         tools,
+			CheckLatest:   true,
 		}),
 		{Name: "update dependencies", Short: "deps", Run: repo.UpdateDependencies},
 		{Name: "go fix", Short: "fix", Run: repo.GoFix},
@@ -62,3 +67,7 @@ func (repo *repository) sequence(version string) engine.Sequence {
 		return tasks(r, repo, spec, version)
 	}
 }
+
+// tools is shared by every repository a run maintains, since they install
+// into the same directory.
+var tools = maintain.NewSharedTools(maintain.SystemTools{})

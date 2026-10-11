@@ -238,3 +238,11 @@ What is untested is what touches a repository from the outside:
 
 `internal/local` is covered where it matters, including the refusal to touch a
 dirty worktree.
+
+## Documents that say only what is
+
+`docs/`, `AGENTS/` and the code comments say what is, concisely. Many
+passages still tell how something came to be: the stale build that reverted
+generated files, the refusal that was once a notice, how the generators
+moved here from `portfolio`. Rewrite each as what is. Where a passage warns
+against a trap, it keeps the warning as what to do and why.

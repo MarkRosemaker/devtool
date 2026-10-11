@@ -58,6 +58,10 @@ type agentsData struct {
 	// what enrich already wrote.
 	OpenAPIEnrich bool
 
+	// Databases are the names of the databases devtool.json declares,
+	// whose packages an agent needs to know how to change.
+	Databases []string
+
 	// Frontend is true where OpenAPIEnrich also holds and devtool.json says
 	// this is a web app, whose frontend uses api/interactions.json as its mock data, so a stale
 	// interaction means a wrong mock too.
@@ -195,6 +199,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		Gitignore:     blocked,
 		OpenAPIEnrich: openAPIEnrich,
 		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
+		Databases:     databaseNames(def),
 	}, nil
 }
 
