@@ -93,14 +93,18 @@ generated. Your own rules go below that block, where they win — in a
 ## Databases
 
 `devtool.json` declares this repository's SQLite databases, each a package
-under `databases/`: {{ range $i, $name := . }}{{ if $i }}, {{ end }}`databases/{{ $name }}`{{ end }}. Two parts of
-each are written by hand:
+under `databases/`: {{ range $i, $name := . }}{{ if $i }}, {{ end }}`databases/{{ $name }}`{{ end }}.
+
+Two parts of each are written by hand:
 
 - **The schema, as migrations:** `migrations/<version>_<title>.up.sql`,
   numbered on from the last. The first is the initial state. Never edit a
   migration that has been merged, since a database already past it will not
   see the change. Add the next one instead.
 - **The queries:** `queries/*.sql`, in sqlc's syntax (`-- name: Foo :one`).
+  Keep them ASCII, comments included. sqlc's SQLite parser counts positions
+  in characters and cuts the file in bytes, so one em dash shifts the text of
+  every query after it. The code compiles, and the queries fail when run.
 
 Everything else in the package is generated, and `make generate` rewrites
 it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
