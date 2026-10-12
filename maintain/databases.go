@@ -188,13 +188,10 @@ var sqliteDrivers = []struct {
 	imports        []string
 }{
 	{"modernc.org/sqlite", "sqlite", []string{"modernc.org/sqlite"}},
-	{"github.com/ncruces/go-sqlite3", "sqlite3", []string{
-		"github.com/ncruces/go-sqlite3/driver",
-		"github.com/ncruces/go-sqlite3/embed",
-	}},
+	{"github.com/ncruces/go-sqlite3", "sqlite3", []string{"github.com/ncruces/go-sqlite3/driver"}},
 }
 
-// sqliteDriver picks the driver the repository already requires, so open.go
+// sqliteDriver picks the driver the repository requires directly, so open.go
 // adds no dependency of its own.
 func sqliteDriver(fs afero.Fs) (string, []string, error) {
 	b, err := afero.ReadFile(fs, "go.mod")
@@ -209,7 +206,8 @@ func sqliteDriver(fs afero.Fs) (string, []string, error) {
 
 	for _, d := range sqliteDrivers {
 		for _, r := range mod.Require {
-			if r.Mod.Path == d.module {
+			// Indirect is what some dependency uses, not this repository.
+			if r.Mod.Path == d.module && !r.Indirect {
 				return d.driver, d.imports, nil
 			}
 		}

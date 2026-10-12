@@ -48,8 +48,10 @@ func TestDatabasesWritesTheFiles(t *testing.T) {
 		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
 		"databases/user/migrate.go":  {"package user\n", "//go:embed migrations/*.up.sql", "func Migrate("},
 		"databases/user/open.go": {
-			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", path)`,
-			`filepath.Join(home, ".gorepo", "user.db")`, "func Open(",
+			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", "file:"+path+options)`, "_txlock=immediate",
+			`filepath.Join(home, ".gorepo", "user.db")`, "type DB struct",
+			"func Open(ctx context.Context, path string) (*DB, error)",
+			"func (d *DB) Close() error", "func (d *DB) WithTx(",
 		},
 	} {
 		got := readFile(t, fs, file)
@@ -169,7 +171,7 @@ func TestSQLiteDriverFollowsGoMod(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if driver != "sqlite3" || len(imports) != 2 || imports[0] != "github.com/ncruces/go-sqlite3/driver" {
+	if driver != "sqlite3" || len(imports) != 1 || imports[0] != "github.com/ncruces/go-sqlite3/driver" {
 		t.Errorf("ncruces gave %q %v", driver, imports)
 	}
 }
@@ -221,4 +223,22 @@ func snapshot(t *testing.T, fs afero.Fs) map[string]string {
 	}
 
 	return files
+}
+
+// TestSQLiteDriverIgnoresAnIndirectOne: a driver some dependency requires is
+// not the one the repository opens its databases with.
+func TestSQLiteDriverIgnoresAnIndirectOne(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeFile(t, fs, "go.mod", "module example.com/app\n\ngo 1.27\n\n"+
+		"require github.com/ncruces/go-sqlite3 v0.35.5\n\n"+
+		"require modernc.org/sqlite v1.59.0 // indirect\n")
+
+	driver, _, err := sqliteDriver(fs)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if driver != "sqlite3" {
+		t.Errorf("picked %q, the indirect modernc driver, over the direct ncruces one", driver)
+	}
 }

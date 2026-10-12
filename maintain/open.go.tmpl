@@ -5,12 +5,32 @@ package {{.Package}}
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 {{range .Imports}}
 	_ "{{.}}"{{end}}
 )
+
+// options configure every connection:
+//
+//   - foreign_keys: SQLite ignores the references in a schema unless told not to.
+//   - busy_timeout: a writer that finds the lock taken waits, up to five
+//     seconds, rather than failing at once.
+//   - WAL: readers and the writer do not block each other.
+//   - txlock=immediate: a transaction takes the write lock when it begins, so
+//     two read-modify-write transactions wait for each other rather than one
+//     failing after it has read.
+const options = "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)" +
+	"&_pragma=journal_mode(WAL)&_txlock=immediate"
+
+// DB is this database, open: every query sqlc generated, and Close.
+type DB struct {
+	*Queries
+
+	db *sql.DB
+}
 
 // Path is where this database lives on this machine: in the user's home
 // directory, under a directory named after the repository.
@@ -29,21 +49,41 @@ func Path() (string, error) {
 // A test opens one of its own the same way, in a directory of its own:
 //
 //	db, err := {{.Package}}.Open(ctx, filepath.Join(t.TempDir(), "{{.Package}}.db"))
-func Open(ctx context.Context, path string) (*sql.DB, error) {
+func Open(ctx context.Context, path string) (*DB, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("creating the directory for %s: %w", path, err)
 	}
 
-	db, err := sql.Open("{{.Driver}}", path)
+	db, err := sql.Open("{{.Driver}}", "file:"+path+options)
 	if err != nil {
 		return nil, fmt.Errorf("opening %s: %w", path, err)
 	}
 
 	if err := Migrate(ctx, db); err != nil {
-		_ = db.Close()
-
-		return nil, fmt.Errorf("migrating %s: %w", path, err)
+		return nil, errors.Join(fmt.Errorf("migrating %s: %w", path, err), db.Close())
 	}
 
-	return db, nil
+	return &DB{Queries: New(db), db: db}, nil
+}
+
+// Close closes the database.
+func (d *DB) Close() error { return d.db.Close() }
+
+// DB is the connection pool, for what the queries do not cover: its size,
+// for one.
+func (d *DB) DB() *sql.DB { return d.db }
+
+// WithTx runs fn in a transaction: everything it writes lands together, or
+// none of it does.
+func (d *DB) WithTx(ctx context.Context, fn func(*Queries) error) error {
+	tx, err := d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(d.Queries.WithTx(tx)); err != nil {
+		return errors.Join(err, tx.Rollback())
+	}
+
+	return tx.Commit()
 }

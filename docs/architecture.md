@@ -104,7 +104,7 @@ A repository declares its SQLite databases in `devtool.json`, under
 | `queries/*.sql` | sqlc queries, written by hand |
 | `sqlc.yaml`, `generate.go` | written by devtool: sqlc's configuration, and the directive that runs it there |
 | `migrate.go` | written by devtool: the migrations embedded, and `Migrate` to apply them |
-| `open.go` | written by devtool: `Open`, which creates and migrates a database file, and `Path`, `~/.<repo>/<name>.db` |
+| `open.go` | written by devtool: `DB`, which is every query plus `WithTx` and `Close`; `Open`, which creates, configures and migrates a database file and returns one; and `Path`, `~/.<repo>/<name>.db` |
 | `db.go`, `models.go`, `*.sql.go` | written by sqlc, through `go generate` |
 
 Everything sits in one package directory because `go:embed` cannot reach
@@ -130,10 +130,18 @@ query file that is still there.
 `schema_migrations(version, dirty)`. A database that golang-migrate brought
 to some version carries on from there.
 
-`Open` uses the driver the repository's `go.mod` already requires,
+`Open` uses the driver the repository's `go.mod` requires directly,
 `modernc.org/sqlite` or ncruces. That way it adds no dependency, and devtool
 refuses to write it where there is neither. Tests open a real database in
 `t.TempDir()`, so a test and production differ only in where the file is.
+
+Every connection `Open` makes has foreign keys on, waits up to five seconds
+for a lock, uses WAL, and begins its transactions immediately. Both drivers
+take these as `_pragma` and `_txlock` in a `file:` URI, and apply them to
+every connection in the pool. Immediate transactions are what make
+read-modify-write safe: two of them wait for each other rather than one
+failing after it has read.
+
 ## Versions, and how a stale build does damage
 
 Each repository's `devtool.json` records the newest devtool build known to
