@@ -6,10 +6,10 @@ github.com/MarkRosemaker/errpath v0.0.0-20261011100139-0f973ba10436 h1:K8rswHZpg
 github.com/MarkRosemaker/errpath v0.0.0-20261011100139-0f973ba10436/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
 github.com/MarkRosemaker/ghrepo v0.0.0-20261011100143-1c83aa546e8b h1:Z5rhRELHc+39+/rkDirb6JXgYPqRC9TubHDvWy5SG0U=
 github.com/MarkRosemaker/ghrepo v0.0.0-20261011100143-1c83aa546e8b/go.mod h1:XxYsM4oYvei6NLX7jhnO1EznnB8AWeJ71hcR1J/Lsvo=
-github.com/MarkRosemaker/golangci-json v0.0.0-20261011100143-cb44110e067d h1:JftkBLybr2aLvhNWmPquORK30bykhJVLoeAykMQv46E=
-github.com/MarkRosemaker/golangci-json v0.0.0-20261011100143-cb44110e067d/go.mod h1:jPc0I/knyTSsaPODZGPCAgFHVAZFzVGwQpPxeoeEmzQ=
-github.com/MarkRosemaker/gorepo v0.0.0-20261011100427-a79154a92a6b h1:0NHOm9T1Zj7G8/oZMNmBTGuThLvjmSr87gv2GGtuH8Q=
-github.com/MarkRosemaker/gorepo v0.0.0-20261011100427-a79154a92a6b/go.mod h1:7IIxB3gw2/gL/NvEQWaBKdL+e61C5btKMdTXRF0Ui1Q=
+github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0 h1:j5Qd9lVD2YP9fgY2hI8z3moBN0EFRZjNsVjCGyQSXyM=
+github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0/go.mod h1:5dKQgfEeJ/eA314v85ZBs0SrEONZaUG4XB4FdpM7ZlM=
+github.com/MarkRosemaker/gorepo v0.0.0-20261013100306-2b43bf007de2 h1:k1mW6eKeU4Ly5XvLk1YC/a6vtEjwwbwVZHuUDYXMgjo=
+github.com/MarkRosemaker/gorepo v0.0.0-20261013100306-2b43bf007de2/go.mod h1:CFo7v2nzWZDipkkyKwgo4A9/Wc+YLv5oVVCk0djGY7Y=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68 h1:OioRuqNICzAZvbBCGJA+LCaiB6Y+JtJNNON1A4DwVuo=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261011100139-a4e91ee48afc h1:LMBcVLu2DCOg0Kx6SA435dgklk6iQV+EACEuxinqdlk=
@@ -108,8 +108,8 @@ github.com/spf13/pflag v1.0.10/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3A
 github.com/spf13/viper v1.21.0 h1:x5S+0EU27Lbphp4UKm1C+1oQO+rKx36vfCoaVebLFSU=
 github.com/spf13/viper v1.21.0/go.mod h1:P0lhsswPGWD/1lZJ9ny3fYnVqxiegrlNrEmgLjbTCAY=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
-github.com/stretchr/objx v0.5.3 h1:jmXUvGomnU1o3W/V5h2VEradbpJDwGrzugQQvL0POH4=
-github.com/stretchr/objx v0.5.3/go.mod h1:rDQraq+vQZU7Fde9LOZLr8Tax6zZvy4kuNKF+QYS+U0=
+github.com/stretchr/objx v0.7.0 h1:vyXn+M0i636+5W3S8uu9xLCMODOUu4cRJvByx7EjOXo=
+github.com/stretchr/objx v0.7.0/go.mod h1:xSzHnPHkdEv7vtgdQej8atlCuU1mdX+ELge8bn0hCsE=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=

@@ -13,10 +13,10 @@ github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/ghrepo v0.0.0-20261011100143-1c83aa546e8b
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261011100143-cb44110e067d
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261011100427-a79154a92a6b
+# github.com/MarkRosemaker/gorepo v0.0.0-20261013100306-2b43bf007de2
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68
@@ -281,8 +281,8 @@ github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
 github.com/spf13/viper/internal/features
-# github.com/stretchr/objx v0.5.3
-## explicit; go 1.20
+# github.com/stretchr/objx v0.7.0
+## explicit; go 1.25
 github.com/stretchr/objx
 # github.com/stretchr/testify v1.12.1
 ## explicit; go 1.17
