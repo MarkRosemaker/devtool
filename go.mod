@@ -5,12 +5,12 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261011100139-bc045dd994dc
 	github.com/MarkRosemaker/ghrepo v0.0.0-20261014040200-ec264debd6fe
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0
-	github.com/MarkRosemaker/gorepo v0.0.0-20261014040333-2d79df82c547
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261014160132-507faa120e7b
+	github.com/MarkRosemaker/gorepo v0.0.0-20261014160325-1a72d77b7a01
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261011100139-a4e91ee48afc
-	github.com/MarkRosemaker/openapi v0.0.0-20261013220155-20aeef38b089
-	github.com/MarkRosemaker/ordmap v0.0.0-20261013220133-26e93d0a53be
+	github.com/MarkRosemaker/openapi v0.0.0-20261014160147-b50e9a6647e8
+	github.com/MarkRosemaker/ordmap v0.0.0-20261014160122-d6113d0a91f7
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.14.0
 	github.com/spf13/afero v1.15.0
@@ -50,12 +50,12 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
-	github.com/stretchr/objx v0.7.0 // indirect
+	github.com/stretchr/objx v0.8.0 // indirect
 	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/exp v0.0.0-20261013213113-2ab7f3cbc5fb // indirect
+	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect

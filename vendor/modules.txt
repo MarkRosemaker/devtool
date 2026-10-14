@@ -13,10 +13,10 @@ github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/ghrepo v0.0.0-20261014040200-ec264debd6fe
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261014160132-507faa120e7b
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261014040333-2d79df82c547
+# github.com/MarkRosemaker/gorepo v0.0.0-20261014160325-1a72d77b7a01
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68
@@ -25,10 +25,10 @@ github.com/MarkRosemaker/json2yaml
 # github.com/MarkRosemaker/jsonutil v0.0.0-20261011100139-a4e91ee48afc
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261013220155-20aeef38b089
+# github.com/MarkRosemaker/openapi v0.0.0-20261014160147-b50e9a6647e8
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20261013220133-26e93d0a53be
+# github.com/MarkRosemaker/ordmap v0.0.0-20261014160122-d6113d0a91f7
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
 # github.com/MarkRosemaker/yaml v0.0.0-20261011100206-7a238ac9deda
@@ -281,7 +281,7 @@ github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
 github.com/spf13/viper/internal/features
-# github.com/stretchr/objx v0.7.0
+# github.com/stretchr/objx v0.8.0
 ## explicit; go 1.25
 github.com/stretchr/objx
 # github.com/stretchr/testify v1.12.1
@@ -316,7 +316,7 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/exp v0.0.0-20261013213113-2ab7f3cbc5fb
+# golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e
 ## explicit; go 1.26.0
 golang.org/x/exp/maps
 # golang.org/x/mod v0.42.0
