@@ -4,9 +4,9 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261011100139-bc045dd994dc
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261011100143-1c83aa546e8b
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261014040200-ec264debd6fe
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261013100206-3e40e0a840e0
-	github.com/MarkRosemaker/gorepo v0.0.0-20261013100306-2b43bf007de2
+	github.com/MarkRosemaker/gorepo v0.0.0-20261014040333-2d79df82c547
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261011100139-a4e91ee48afc
 	github.com/MarkRosemaker/openapi v0.0.0-20261013220155-20aeef38b089
@@ -24,7 +24,7 @@ require (
 	github.com/MarkRosemaker/yaml v0.0.0-20261011100206-7a238ac9deda // indirect
 	github.com/MarkRosemaker/yaml2json v0.0.0-20261011100139-1181ffd29042 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
-	github.com/Microsoft/go-winio v0.6.3 // indirect
+	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/ProtonMail/go-crypto v1.5.2 // indirect
 	github.com/cloudflare/circl v1.6.5 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
