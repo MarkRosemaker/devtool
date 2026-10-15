@@ -6,9 +6,11 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go/token"
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -85,10 +87,18 @@ func DatabasesTask(repo engine.Repo) engine.Task {
 
 var databaseName = regexp.MustCompile(`^[a-z]+$`)
 
+// pathNames are the names open.go's Path uses, which its argument cannot share.
+var pathNames = []string{"err", "filepath", "home", "os"}
+
 func writeDatabase(repo engine.Repo, db Database) error {
 	name := db.Name
 	if !databaseName.MatchString(name) {
 		return errors.New("a database's name has to be lower-case letters only, since it names the package")
+	}
+
+	if db.Per != "" && (!databaseName.MatchString(db.Per) || token.IsKeyword(db.Per) || slices.Contains(pathNames, db.Per)) {
+		return fmt.Errorf("per %q cannot name Path's argument: it has to be lower-case letters, "+
+			"and neither a Go keyword nor one of %s", db.Per, strings.Join(pathNames, ", "))
 	}
 
 	fs, dir := repo.Fs(), path.Join(databasesDir, name)
@@ -131,10 +141,10 @@ func writeDatabase(repo engine.Repo, db Database) error {
 		}},
 		{"open.go", func() ([]byte, error) {
 			return render(openTmpl, struct {
-				Package, Repo, Driver string
-				Imports               []string
-				Encrypted             bool
-			}{name, repo.Name(), driver, imports, db.Encrypted})
+				Package, Repo, Driver, Per string
+				Imports                    []string
+				Encrypted                  bool
+			}{name, repo.Name(), driver, db.Per, imports, db.Encrypted})
 		}},
 	}
 

@@ -16,7 +16,10 @@ it existed has one.
 `resources.databases` names the repository's SQLite databases, which are
 laid out as `docs/architecture.md` describes. Each name is also its
 package's name, so it is lower-case letters only. `"encrypted": true` gives
-it an `Open` that takes a key, and needs the ncruces driver. `tools` pins the
+it an `Open` that takes a key, and needs the ncruces driver. `"per": "world"`
+is for a database with a copy per world: `Path(world)` is
+`~/.<repo>/<world>/<name>.db`. It names a Go parameter, so it is lower-case
+letters, and neither a keyword nor a name `Path` uses itself. `tools` pins the
 Makefile's tools. A run moves the pins itself and only forward, so a pin
 lowered by hand is raised again by the next run on a machine with a newer
 copy installed.
