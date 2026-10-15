@@ -73,7 +73,7 @@ func DatabasesTask(repo engine.Repo) engine.Task {
 			}
 
 			for _, db := range def.Resources.Databases {
-				if err := writeDatabase(repo, db.Name); err != nil {
+				if err := writeDatabase(repo, db); err != nil {
 					return fmt.Errorf("database %q: %w", db.Name, err)
 				}
 			}
@@ -85,7 +85,8 @@ func DatabasesTask(repo engine.Repo) engine.Task {
 
 var databaseName = regexp.MustCompile(`^[a-z]+$`)
 
-func writeDatabase(repo engine.Repo, name string) error {
+func writeDatabase(repo engine.Repo, db Database) error {
+	name := db.Name
 	if !databaseName.MatchString(name) {
 		return errors.New("a database's name has to be lower-case letters only, since it names the package")
 	}
@@ -110,6 +111,15 @@ func writeDatabase(repo engine.Repo, name string) error {
 		return err
 	}
 
+	if db.Encrypted {
+		if driver != ncrucesDriver {
+			return fmt.Errorf("an encrypted database needs %s, which can encrypt; "+
+				"modernc.org/sqlite cannot", ncrucesModule)
+		}
+
+		imports = append(imports, ncrucesModule+"/vfs/adiantum")
+	}
+
 	files := []struct {
 		name string
 		body func() ([]byte, error)
@@ -123,7 +133,8 @@ func writeDatabase(repo engine.Repo, name string) error {
 			return render(openTmpl, struct {
 				Package, Repo, Driver string
 				Imports               []string
-			}{name, repo.Name(), driver, imports})
+				Encrypted             bool
+			}{name, repo.Name(), driver, imports, db.Encrypted})
 		}},
 	}
 
@@ -181,6 +192,13 @@ func removeOrphans(fs afero.Fs, dir string) error {
 	return nil
 }
 
+// ncrucesModule is the one driver that can encrypt, and ncrucesDriver the
+// name it registers.
+const (
+	ncrucesModule = "github.com/ncruces/go-sqlite3"
+	ncrucesDriver = "sqlite3"
+)
+
 // sqliteDrivers are the database/sql drivers open.go knows, by module: the
 // name each registers, and what has to be imported for it.
 var sqliteDrivers = []struct {
@@ -188,7 +206,7 @@ var sqliteDrivers = []struct {
 	imports        []string
 }{
 	{"modernc.org/sqlite", "sqlite", []string{"modernc.org/sqlite"}},
-	{"github.com/ncruces/go-sqlite3", "sqlite3", []string{"github.com/ncruces/go-sqlite3/driver"}},
+	{ncrucesModule, ncrucesDriver, []string{ncrucesModule + "/driver"}},
 }
 
 // sqliteDriver picks the driver the repository requires directly, so open.go

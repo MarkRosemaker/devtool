@@ -1,6 +1,8 @@
 package maintain
 
 import (
+	"bytes"
+	"go/format"
 	"os"
 	"strings"
 	"testing"
@@ -48,7 +50,7 @@ func TestDatabasesWritesTheFiles(t *testing.T) {
 		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
 		"databases/user/migrate.go":  {"package user\n", "//go:embed migrations/*.up.sql", "func Migrate("},
 		"databases/user/open.go": {
-			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", "file:"+path+options)`, "_txlock=immediate",
+			"package user\n", `_ "modernc.org/sqlite"`, `sql.Open("sqlite", "file:"+path+"?"+options)`, "_txlock=immediate",
 			`filepath.Join(home, ".gorepo", "user.db")`, "type DB struct",
 			"func Open(ctx context.Context, path string) (*DB, error)",
 			"func (d *DB) Close() error", "func (d *DB) WithTx(",
@@ -240,5 +242,71 @@ func TestSQLiteDriverIgnoresAnIndirectOne(t *testing.T) {
 
 	if driver != "sqlite3" {
 		t.Errorf("picked %q, the indirect modernc driver, over the direct ncruces one", driver)
+	}
+}
+
+// TestAnEncryptedDatabaseIsOpenedWithAKey: the key is in every connection's
+// URI, so the whole pool can read the file, not only the connection that set
+// it.
+func TestAnEncryptedDatabaseIsOpenedWithAKey(t *testing.T) {
+	repo := databaseRepo(t)
+	writeFile(t, repo.Fs(), DefinitionPath,
+		`{"resources": {"databases": [{"name": "user", "encrypted": true}]}}`+"\n")
+	writeFile(t, repo.Fs(), "go.mod",
+		"module example.com/app\n\ngo 1.27\n\nrequire github.com/ncruces/go-sqlite3 v0.35.6\n")
+
+	if err := runDatabases(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readFile(t, repo.Fs(), "databases/user/open.go")
+	for _, want := range []string{
+		"func Open(ctx context.Context, path, key string) (*DB, error)",
+		`"?vfs=adiantum&textkey="+url.QueryEscape(key)+"&"+options`,
+		`_ "github.com/ncruces/go-sqlite3/vfs/adiantum"`,
+		"\t\"net/url\"\n",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("open.go lacks %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestAnEncryptedDatabaseNeedsNcruces(t *testing.T) {
+	repo := databaseRepo(t)
+	writeFile(t, repo.Fs(), DefinitionPath,
+		`{"resources": {"databases": [{"name": "user", "encrypted": true}]}}`+"\n")
+
+	err := runDatabases(t, repo)
+	if err == nil || !strings.Contains(err.Error(), "github.com/ncruces/go-sqlite3") {
+		t.Errorf("want a refusal naming ncruces, got %v", err)
+	}
+}
+
+// TestOpenIsGo: a template slip shows up as a repository that does not build,
+// so both forms of open.go are checked to be Go here.
+func TestOpenIsGo(t *testing.T) {
+	for _, encrypted := range []bool{false, true} {
+		b, err := render(openTmpl, struct {
+			Package, Repo, Driver string
+			Imports               []string
+			Encrypted             bool
+		}{"user", "app", "sqlite3", []string{"github.com/ncruces/go-sqlite3/driver"}, encrypted})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		formatted, err := format.Source(b)
+		if err != nil {
+			t.Fatalf("encrypted=%v: not Go: %v\n%s", encrypted, err, b)
+		}
+
+		if !bytes.Equal(formatted, b) {
+			t.Errorf("encrypted=%v: not gofmt'd:\n%s", encrypted, b)
+		}
+
+		if !encrypted && bytes.Contains(b, []byte(`"net/url"`)) {
+			t.Error("an unencrypted open.go imports net/url, which it does not use")
+		}
 	}
 }

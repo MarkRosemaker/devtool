@@ -7,6 +7,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+{{- if .Encrypted }}
+	"net/url"
+{{- end }}
 	"os"
 	"path/filepath"
 {{range .Imports}}
@@ -22,7 +25,7 @@ import (
 //   - txlock=immediate: a transaction takes the write lock when it begins, so
 //     two read-modify-write transactions wait for each other rather than one
 //     failing after it has read.
-const options = "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)" +
+const options = "_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)" +
 	"&_pragma=journal_mode(WAL)&_txlock=immediate"
 
 // DB is this database, open: every query sqlc generated, and Close.
@@ -45,16 +48,21 @@ func Path() (string, error) {
 
 // Open opens the database at path, creating it and its directory where they
 // do not exist yet, and brings it up to date with [Migrate].
+{{- if .Encrypted }}
+//
+// The file is encrypted with key, which every connection opens it with: a
+// wrong one fails, as "file is not a database".
+{{- end }}
 //
 // A test opens one of its own the same way, in a directory of its own:
 //
-//	db, err := {{.Package}}.Open(ctx, filepath.Join(t.TempDir(), "{{.Package}}.db"))
-func Open(ctx context.Context, path string) (*DB, error) {
+//	db, err := {{.Package}}.Open(ctx, filepath.Join(t.TempDir(), "{{.Package}}.db"){{ if .Encrypted }}, "key"{{ end }})
+func Open(ctx context.Context, path{{ if .Encrypted }}, key{{ end }} string) (*DB, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, fmt.Errorf("creating the directory for %s: %w", path, err)
 	}
 
-	db, err := sql.Open("{{.Driver}}", "file:"+path+options)
+	db, err := sql.Open("{{.Driver}}", {{ if .Encrypted }}"file:"+path+"?vfs=adiantum&textkey="+url.QueryEscape(key)+"&"+options{{ else }}"file:"+path+"?"+options{{ end }})
 	if err != nil {
 		return nil, fmt.Errorf("opening %s: %w", path, err)
 	}
