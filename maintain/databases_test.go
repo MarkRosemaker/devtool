@@ -286,12 +286,17 @@ func TestAnEncryptedDatabaseNeedsNcruces(t *testing.T) {
 // TestOpenIsGo: a template slip shows up as a repository that does not build,
 // so both forms of open.go are checked to be Go here.
 func TestOpenIsGo(t *testing.T) {
-	for _, encrypted := range []bool{false, true} {
+	for _, c := range []struct {
+		encrypted bool
+		per       string
+	}{{false, ""}, {true, ""}, {false, "world"}, {true, "world"}} {
+		encrypted := c.encrypted
+
 		b, err := render(openTmpl, struct {
-			Package, Repo, Driver string
-			Imports               []string
-			Encrypted             bool
-		}{"user", "app", "sqlite3", []string{"github.com/ncruces/go-sqlite3/driver"}, encrypted})
+			Package, Repo, Driver, Per string
+			Imports                    []string
+			Encrypted                  bool
+		}{"user", "app", "sqlite3", c.per, []string{"github.com/ncruces/go-sqlite3/driver"}, encrypted})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,6 +312,44 @@ func TestOpenIsGo(t *testing.T) {
 
 		if !encrypted && bytes.Contains(b, []byte(`"net/url"`)) {
 			t.Error("an unencrypted open.go imports net/url, which it does not use")
+		}
+	}
+}
+
+// TestADatabasePerWorldHasAPathPerWorld: where there is one copy of a
+// database per something, Path takes which one.
+func TestADatabasePerWorldHasAPathPerWorld(t *testing.T) {
+	repo := databaseRepo(t)
+	writeFile(t, repo.Fs(), DefinitionPath,
+		`{"resources": {"databases": [{"name": "user", "per": "world"}]}}`+"\n")
+
+	if err := runDatabases(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readFile(t, repo.Fs(), "databases/user/open.go")
+	for _, want := range []string{
+		"func Path(world string) (string, error)",
+		`filepath.Join(home, ".gorepo", world, "user.db")`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("open.go lacks %q:\n%s", want, got)
+		}
+	}
+
+	if strings.Contains(got, "func Path() (") {
+		t.Errorf("open.go has both Paths:\n%s", got)
+	}
+}
+
+func TestPerHasToBeAParameterName(t *testing.T) {
+	for _, per := range []string{"World", "type", "home", "err"} {
+		repo := databaseRepo(t)
+		writeFile(t, repo.Fs(), DefinitionPath,
+			`{"resources": {"databases": [{"name": "user", "per": "`+per+`"}]}}`+"\n")
+
+		if err := runDatabases(t, repo); err == nil {
+			t.Errorf("per %q was accepted", per)
 		}
 	}
 }

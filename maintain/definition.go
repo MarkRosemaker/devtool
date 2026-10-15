@@ -72,6 +72,10 @@ type Database struct {
 	// Encrypted databases are opened with a key, which needs the ncruces
 	// driver.
 	Encrypted bool `json:"encrypted,omitzero"`
+
+	// Per names what each copy of the database belongs to, where there
+	// is one per something: one per world gives Path(world string).
+	Per string `json:"per,omitempty"`
 }
 
 // equal reports whether two definitions say the same thing.

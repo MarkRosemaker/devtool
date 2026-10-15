@@ -114,7 +114,8 @@ file of your own beside them.
 `Open(ctx, path)` creates the database where it does not exist, migrates it
 (an encrypted one takes its key as well: `Open(ctx, path, key)`)
 and returns a `DB`: every query as a method, `WithTx` for a transaction,
-and `Close`. `Path()` is where the database lives on this machine. A test
+and `Close`. `Path()` is where the database lives on this machine, or
+`Path(world)` for one with a copy per world, declared `"per": "world"`. A test
 opens a real one of its own, rather than mocking it:
 `Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
 

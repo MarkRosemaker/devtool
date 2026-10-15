@@ -104,7 +104,7 @@ A repository declares its SQLite databases in `devtool.json`, under
 | `queries/*.sql` | sqlc queries, written by hand |
 | `sqlc.yaml`, `generate.go` | written by devtool: sqlc's configuration, and the directive that runs it there |
 | `migrate.go` | written by devtool: the migrations embedded, and `Migrate` to apply them |
-| `open.go` | written by devtool: `DB`, which is every query plus `WithTx` and `Close`; `Open`, which creates, configures and migrates a database file and returns one; and `Path`, `~/.<repo>/<name>.db` |
+| `open.go` | written by devtool: `DB`, which is every query plus `WithTx` and `Close`; `Open`, which creates, configures and migrates a database file and returns one; and `Path`, `~/.<repo>/<name>.db`, or for a database declared `"per": "world"`, `Path(world)`, `~/.<repo>/<world>/<name>.db` |
 | `db.go`, `models.go`, `*.sql.go` | written by sqlc, through `go generate` |
 
 Everything sits in one package directory because `go:embed` cannot reach

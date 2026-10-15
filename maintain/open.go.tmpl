@@ -35,6 +35,19 @@ type DB struct {
 	db *sql.DB
 }
 
+{{ if .Per -}}
+// Path is where the database of {{.Per}} lives on this machine: in the user's
+// home directory, under a directory named after the repository, in one named
+// after {{.Per}}.
+func Path({{.Per}} string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(home, ".{{.Repo}}", {{.Per}}, "{{.Package}}.db"), nil
+}
+{{- else -}}
 // Path is where this database lives on this machine: in the user's home
 // directory, under a directory named after the repository.
 func Path() (string, error) {
@@ -45,6 +58,7 @@ func Path() (string, error) {
 
 	return filepath.Join(home, ".{{.Repo}}", "{{.Package}}.db"), nil
 }
+{{- end }}
 
 // Open opens the database at path, creating it and its directory where they
 // do not exist yet, and brings it up to date with [Migrate].
