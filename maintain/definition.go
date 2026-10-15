@@ -68,6 +68,10 @@ type Resources struct {
 // Database is one SQLite database, which lives in databases/<Name>.
 type Database struct {
 	Name string `json:"name"`
+
+	// Encrypted databases are opened with a key, which needs the ncruces
+	// driver.
+	Encrypted bool `json:"encrypted,omitzero"`
 }
 
 // equal reports whether two definitions say the same thing.

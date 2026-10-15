@@ -142,6 +142,13 @@ every connection in the pool. Immediate transactions are what make
 read-modify-write safe: two of them wait for each other rather than one
 failing after it has read.
 
+A database declared `"encrypted": true` is opened with a key, through
+ncruces's Adiantum VFS; modernc cannot encrypt, so devtool refuses it there.
+The key goes in the URI (`?vfs=adiantum&textkey=…`), escaped, so every
+connection in the pool opens the file with it. A `PRAGMA textkey` would key
+only the connection that ran it, and a file keyed that way opens the same
+with the key in the URI.
+
 ## Versions, and how a stale build does damage
 
 Each repository's `devtool.json` records the newest devtool build known to

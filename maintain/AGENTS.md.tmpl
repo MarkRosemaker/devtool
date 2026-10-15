@@ -112,6 +112,7 @@ it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
 file of your own beside them.
 
 `Open(ctx, path)` creates the database where it does not exist, migrates it
+(an encrypted one takes its key as well: `Open(ctx, path, key)`)
 and returns a `DB`: every query as a method, `WithTx` for a transaction,
 and `Close`. `Path()` is where the database lives on this machine. A test
 opens a real one of its own, rather than mocking it:
