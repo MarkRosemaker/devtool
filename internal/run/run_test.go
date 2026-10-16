@@ -2,6 +2,7 @@ package run
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/MarkRosemaker/devtool-engine/event"
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/ordmap"
+	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 func TestFullMonthsSince(t *testing.T) {
@@ -207,5 +210,33 @@ func TestAFailureIsReportedOnce(t *testing.T) {
 
 	if len(results) != 1 || results[0].Err == nil {
 		t.Errorf("results = %+v, want the failure recorded", results)
+	}
+}
+
+// A dependency of an owner the run maintains, left out of the run, is
+// reported every time it is found; the repository itself is not.
+func TestDependReportsWhatTheRunLeavesOut(t *testing.T) {
+	var got []event.Event
+
+	s := &Service{events: event.EmitterFunc(func(ev event.Event) { got = append(got, ev) })}
+
+	u := &unit{owner: "MarkRosemaker", name: "app"}
+	deps := map[string][]string{}
+	requires := []*modfile.Require{
+		{Mod: module.Version{Path: "github.com/MarkRosemaker/lib"}},
+		{Mod: module.Version{Path: "github.com/MarkRosemaker/gone/v2"}},
+		{Mod: module.Version{Path: "github.com/markrosemaker/app/sub"}},
+		{Mod: module.Version{Path: "github.com/spf13/afero"}},
+	}
+
+	s.depend(u, requires, []string{"MarkRosemaker/lib"}, deps)
+
+	if want := []string{"MarkRosemaker/lib"}; !slices.Equal(deps[u.key()], want) {
+		t.Errorf("deps = %v, want %v", deps[u.key()], want)
+	}
+
+	if len(got) != 1 || got[0].Kind != event.Unmaintained ||
+		got[0].Repo != "MarkRosemaker/app" || got[0].Dependency != "MarkRosemaker/gone" {
+		t.Errorf("events = %+v, want one Unmaintained for MarkRosemaker/gone", got)
 	}
 }

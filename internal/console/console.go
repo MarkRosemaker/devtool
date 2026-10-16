@@ -64,6 +64,8 @@ func (c *Console) Emit(ev event.Event) {
 		if !c.multi {
 			c.line("", "📦", ev.Repo)
 		}
+	case event.Unmaintained:
+		c.line(ev.Repo, "⚠️ ", "requires "+ev.Dependency+", which is not in the list")
 	case event.TaskDone:
 		c.taskDone(ev)
 	case event.RepoPushed:
