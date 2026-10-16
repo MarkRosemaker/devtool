@@ -158,13 +158,22 @@ type errorLintSettings struct {
 
 type exhaustiveSettings struct {
 	Check                      []string `json:"check,omitempty"`
+	ExplicitExhaustive         bool     `json:"explicit-exhaustive,omitzero"`
+	OnlyTypes                  []string `json:"only-types,omitempty"`
+	IgnoreTypes                []string `json:"ignore-types,omitempty"`
+	IgnoreConstants            []string `json:"ignore-constants,omitempty"`
 	DefaultSignifiesExhaustive bool     `json:"default-signifies-exhaustive,omitzero"`
-	IgnoreEnumMembers          string   `json:"ignore-enum-members,omitzero"`
-	IgnoreEnumTypes            string   `json:"ignore-enum-types,omitzero"`
-	PackageScopeOnly           bool     `json:"package-scope-only,omitzero"`
-	ExplicitExhaustiveMap      bool     `json:"explicit-exhaustive-map,omitzero"`
-	ExplicitExhaustiveSwitch   bool     `json:"explicit-exhaustive-switch,omitzero"`
 	DefaultCaseRequired        bool     `json:"default-case-required,omitzero"`
+	PackageScopeOnly           bool     `json:"package-scope-only,omitzero"`
+
+	// Deprecated: use IgnoreConstants instead.
+	IgnoreEnumMembers string `json:"ignore-enum-members,omitzero"`
+	// Deprecated: use IgnoreTypes instead.
+	IgnoreEnumTypes string `json:"ignore-enum-types,omitzero"`
+	// Deprecated: use ExplicitExhaustive instead.
+	ExplicitExhaustiveMap bool `json:"explicit-exhaustive-map,omitzero"`
+	// Deprecated: use ExplicitExhaustive instead.
+	ExplicitExhaustiveSwitch bool `json:"explicit-exhaustive-switch,omitzero"`
 }
 
 type exhaustructSettings struct {
@@ -753,6 +762,7 @@ type preallocSettings struct {
 type predeclaredSettings struct {
 	Ignore    []string `json:"ignore,omitempty"`
 	Qualified bool     `json:"qualified-name,omitzero"`
+	Mode      []string `json:"mode,omitzero"`
 }
 
 type promlinterSettings struct {
