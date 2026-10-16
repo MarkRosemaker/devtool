@@ -22,10 +22,10 @@ github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261011100139-2d7c8ec80f68
 ## explicit; go 1.27
 github.com/MarkRosemaker/json2yaml
-# github.com/MarkRosemaker/jsonutil v0.0.0-20261015233346-026192cb8989
+# github.com/MarkRosemaker/jsonutil v0.0.0-20261016100147-71b5e319deaa
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261016040148-ee917e6f18e9
+# github.com/MarkRosemaker/openapi v0.0.0-20261016100238-2360b5dc7df6
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
 # github.com/MarkRosemaker/ordmap v0.0.0-20261014160122-d6113d0a91f7
