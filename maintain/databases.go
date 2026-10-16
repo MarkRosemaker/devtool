@@ -45,6 +45,14 @@ sql:
       go:
         package: %s
         out: .
+        overrides:
+          - db_type: "DATE"
+            go_type:
+              import: "cloud.google.com/go/civil"
+              type: "Date"
+          - db_type: "INTEGER"
+            go_type:
+              type: "int"
 `
 
 // generateGo is the directive that runs sqlc, from the database's directory.
