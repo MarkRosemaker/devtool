@@ -4,6 +4,8 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20261011100139-bc045dd994dc h1:ob
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261011100139-bc045dd994dc/go.mod h1:NmXGg9FlNZ3WxO5nX8+FerJvVrWWSsLXEZbvJt316wg=
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261016084139-069331649b35 h1:yAMmS6uo7VmSJSke/DmK1m1EZr62J+dWjtBOtSSj2JA=
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261016084139-069331649b35/go.mod h1:NmXGg9FlNZ3WxO5nX8+FerJvVrWWSsLXEZbvJt316wg=
+github.com/MarkRosemaker/devtool-engine v0.0.0-20261016085447-b99bd50a9da0 h1:7EFOiyYDAbxQNGFPTsynAMuOOqGB1EJ1R97ReuYbACM=
+github.com/MarkRosemaker/devtool-engine v0.0.0-20261016085447-b99bd50a9da0/go.mod h1:NmXGg9FlNZ3WxO5nX8+FerJvVrWWSsLXEZbvJt316wg=
 github.com/MarkRosemaker/errpath v0.0.0-20261011100139-0f973ba10436 h1:K8rswHZpg8TLt5qQEamgnN4QR5/1sKSymXvhY0TGiCg=
 github.com/MarkRosemaker/errpath v0.0.0-20261011100139-0f973ba10436/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
 github.com/MarkRosemaker/ghrepo v0.0.0-20261014040200-ec264debd6fe h1:SuUx3+ixEUP16Eayo2HhGd6pBNROZbUJSwRC9ZECOWk=
