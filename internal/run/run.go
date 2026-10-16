@@ -15,6 +15,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/MarkRosemaker/devtool-engine/depgraph"
@@ -24,6 +25,7 @@ import (
 	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/MarkRosemaker/ghrepo"
 	"github.com/MarkRosemaker/gorepo"
+	"golang.org/x/mod/modfile"
 )
 
 // TokenEnv names the environment variable holding the GitHub token.
@@ -154,7 +156,7 @@ func (s *Service) RunOne(ctx context.Context, owner, name string) error {
 	}
 
 	u := &unit{owner: owner, name: name, cfg: repoCfg}
-	s.open(ctx, u, nil, map[string][]string{})
+	s.open(ctx, u, config.Keys(cfg), map[string][]string{})
 
 	graph, err := depgraph.New([]string{u.key()}, nil)
 	if err != nil {
@@ -257,13 +259,6 @@ const openingPhase = "opening"
 func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 	count := config.Count(cfg)
 
-	// Module path → key, so a go.mod requirement can be recognised as one of
-	// the repositories in this run.
-	byModulePath := make(map[string]string, count)
-	for _, key := range config.Keys(cfg) {
-		byModulePath["github.com/"+key] = key
-	}
-
 	p := &plan{
 		keys:  make([]string, 0, count),
 		units: make(map[string]*unit, count),
@@ -292,7 +287,7 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 				TaskCount: count,
 			})
 
-			s.open(ctx, u, byModulePath, p.deps)
+			s.open(ctx, u, config.Keys(cfg), p.deps)
 		}
 	}
 
@@ -317,12 +312,14 @@ func (s *Service) prefetch(ctx context.Context, owner string, isOrg bool) error 
 	return nil
 }
 
-// open clones or locates the unit's repository and reads its dependencies.
+// open clones or locates the unit's repository and reads its dependencies:
+// those among keys, the repositories of the run, and an event for each one of
+// their owners' that the run leaves out.
 //
 // Failure to open is recorded on the unit rather than returned: one unreachable
 // repository should be reported as such, not stop the rest of the portfolio from
 // being maintained.
-func (s *Service) open(ctx context.Context, u *unit, byModulePath map[string]string, deps map[string][]string) {
+func (s *Service) open(ctx context.Context, u *unit, keys []string, deps map[string][]string) {
 	repo, err := s.repos.NewRepository(ctx, u.owner, u.name)
 	if err != nil {
 		u.err = fmt.Errorf("opening repository: %w", err)
@@ -351,7 +348,24 @@ func (s *Service) open(ctx context.Context, u *unit, byModulePath map[string]str
 		return
 	}
 
-	deps[u.key()] = engine.ModuleDeps(requires, byModulePath)
+	s.depend(u, requires, keys, deps)
+}
+
+// depend records which of keys the unit requires, and reports each repository
+// of their owners it requires that keys leaves out.
+func (s *Service) depend(u *unit, requires []*modfile.Require, keys []string, deps map[string][]string) {
+	maintained, unmaintained := engine.RepoDeps(requires, keys)
+	deps[u.key()] = maintained
+
+	for _, dep := range unmaintained {
+		// A repository run on its own, before it joins the list, is not a gap
+		// in its own maintenance.
+		if strings.EqualFold(dep, u.key()) {
+			continue
+		}
+
+		event.Emit(s.events, event.Event{Kind: event.Unmaintained, Repo: u.key(), Dependency: dep})
+	}
 }
 
 // execute maintains every repository, in dependency order and as parallel as

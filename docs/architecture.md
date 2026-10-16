@@ -38,7 +38,9 @@ catastrophic for the one somebody is working in.
 **`internal/run`** is the list. It opens every repository named in
 `config.json`, reads each `go.mod` to work out which of them depend on which
 others, orders them with the engine's dependency graph, and maintains them as
-parallel as that order allows.
+parallel as that order allows. A required repository of an owner in
+`config.json` that is not in it is a gap, reported as an `unmaintained` event
+on every run.
 
 Both emit the same event stream, so one repository reports exactly like one
 row of a full run. Who reads it is the caller's choice. By default

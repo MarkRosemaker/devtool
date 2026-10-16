@@ -87,6 +87,7 @@ func TestAList(t *testing.T) {
 		event.Event{Kind: event.RunStart, Repos: []string{"user/alpha", "user/beta", "user/gamma"}},
 		event.Event{Kind: event.RunProgress, Task: "opening", TaskIndex: 1, TaskCount: 3},
 		event.Event{Kind: event.RunProgress, Task: "opening", TaskIndex: 2, TaskCount: 3},
+		event.Event{Kind: event.Unmaintained, Repo: "user/beta", Dependency: "user/delta"},
 		event.Event{Kind: event.RepoStart, Repo: "user/alpha"},
 		event.Event{Kind: event.RepoStart, Repo: "user/beta"},
 		event.Event{
@@ -102,6 +103,7 @@ func TestAList(t *testing.T) {
 
 	want := `🚀 Maintaining 3 repositories
 📂 Opening 3 repositories…
+user/beta ⚠️  requires user/delta, which is not in the list
 user/alpha ✏️  update: README.md
 user/alpha 🚀 pushed readme
 user/gamma ❌ deps: go get: timeout
