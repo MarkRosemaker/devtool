@@ -205,18 +205,27 @@ func houseTargets(shape repoShape) []makeTarget {
 		}}
 	}
 
+	tools := makeTarget{
+		Name:    "tools",
+		Comment: "Installs what the targets above shell out to, into $(go env GOPATH)/bin.",
+		Recipe:  toolInstalls(shape.Tools),
+	}
+
 	var smoke []makeTarget
 
 	if shape.Smoke {
 		ready.Prereqs = append(ready.Prereqs, "smoke")
-		ready.Comment = "After any code change. Needs no network beyond the module cache, " +
-			"once smoke has installed its own."
+
+		// Its npm dependencies are tools like the rest, so fetching them is
+		// make tools' use of the network and not ready's.
+		tools.Comment = "Installs what the targets above shell out to, into $(go env GOPATH)/bin " +
+			"and " + smokeDir + "/node_modules."
+		tools.Recipe = append(tools.Recipe, "cd "+smokeDir+" && npm install --silent")
 
 		smoke = []makeTarget{{
 			Name:    "smoke",
 			Comment: "Renders the frontend in a browser, failing on any console error or uncaught exception.",
-
-			Recipe: []string{"cd " + smokeDir + " && npm install --silent && node " + smokeScript},
+			Recipe:  []string{"cd " + smokeDir + " && node " + smokeScript},
 		}}
 	}
 
@@ -283,11 +292,7 @@ func houseTargets(shape repoShape) []makeTarget {
 			Comment: "Serves this module's documentation on :8080, as pkg.go.dev will show it.",
 			Recipe:  []string{"pkgsite ."},
 		},
-		{
-			Name:    "tools",
-			Comment: "Installs what the targets above shell out to, into $(go env GOPATH)/bin.",
-			Recipe:  toolInstalls(shape.Tools),
-		},
+		tools,
 		{
 			Name:    "clean",
 			Comment: "A fragment adds its own with CLEAN_FILES += dist.",

@@ -876,7 +876,8 @@ func TestGenerateMakefileWebapp(t *testing.T) {
 			"ready: generate fix vet test-race build smoke",
 			"build:", "go build -o $(BINARY) $(PKG)",
 			"run: build",
-			"smoke:", "\tcd smoke && npm install --silent && node smoke.js",
+			"smoke:", "\tcd smoke && node smoke.js",
+			"tools:", "\tcd smoke && npm install --silent",
 		})
 	})
 
