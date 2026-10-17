@@ -397,6 +397,7 @@ func TestAgentsGolden(t *testing.T) {
 			Gitignore:     true,
 			OpenAPIEnrich: true,
 			Frontend:      true,
+			Smoke:         true,
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

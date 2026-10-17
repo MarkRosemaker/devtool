@@ -7,10 +7,11 @@
 # Bundles rely on their prerequisites running in order, so not with -j.
 .NOTPARALLEL:
 MAKEFLAGS += --no-print-directory
-{{ with .Command }}
+{{ with .Binary }}
 BINARY := bin/{{ . }}
-PKG    := ./cmd/{{ . }}/
+PKG    := {{ $.Pkg }}
 {{ end -}}
+
 {{ with .CleanFiles }}
 CLEAN_FILES := {{ . }}
 {{ end -}}

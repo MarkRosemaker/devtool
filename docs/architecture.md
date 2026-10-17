@@ -70,6 +70,9 @@ on it as `-private`, and a Makefile generated without the flag rebuilt a
 private repository's README as a public one's. The flag is still accepted, for
 the Makefiles that pass it, and recorded.
 
+A web app's Makefile builds its root `main` package as `bin/<repo>`, and
+`make ready` runs its smoke test, `smoke/smoke.js`, where it has one.
+
 One commit, but not one name. The task tells the runner which of its parts a
 commit came from, by the files it changed, so a run's table reads
 `definition, readme → pushed` rather than `update → pushed`. The map is

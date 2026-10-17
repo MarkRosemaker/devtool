@@ -51,6 +51,13 @@ the work in hand cannot go on without the fix.
   tests. It needs no network beyond the module cache, so it runs in a
   sandbox. `make tools` installs what it shells out to, and the Makefile
   puts that directory on its own `PATH`, so you do not have to.
+{{- if .Smoke }}
+- Here it also runs `make smoke`, which renders the frontend in a real
+  browser and fails on any console error or uncaught exception. Its first
+  run installs its npm dependencies, which needs the network. The browser
+  comes from playwright, or from `PLAYWRIGHT_BROWSERS_PATH` where that is
+  set.
+{{- end }}
 - Because it regenerates, it may leave changes of its own. Those are its
   output, not a failure: read them, and commit them with the work where they
   follow from it, or on their own where they are drift an earlier run left

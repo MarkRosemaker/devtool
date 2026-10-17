@@ -73,12 +73,10 @@ type makefileData struct {
 	// DefaultGoal is what plain "make" runs.
 	DefaultGoal string
 
-	// Command is the name of the one package under cmd/ that this
-	// repository builds, or empty where there is not exactly one. It names
-	// both the binary and the package to build, which is what lets the
-	// generated file define BINARY and PKG and a build target that uses
-	// them.
-	Command string
+	// Binary and Pkg are the binary this repository builds and the package
+	// it is built from, both empty where there is nothing settled to build.
+	// They define BINARY and PKG, which the build target uses.
+	Binary, Pkg string
 
 	// Targets are the ones the generated Makefile defines itself.
 	Targets []makeTarget
@@ -123,9 +121,14 @@ type makeTarget struct {
 // repoShape is what the repository itself settles about the house targets:
 // what there is to build, and whether there is anything to benchmark.
 type repoShape struct {
-	// Command is the name of the one package under cmd/ this repository
-	// builds, empty where there is not exactly one.
-	Command string
+	// Binary and Pkg are what this repository builds, from what: the one
+	// package under cmd/, or a web app's main package at the root, named
+	// after the repository. Both are empty where neither settles it.
+	Binary, Pkg string
+
+	// Smoke is true for a web app with smoke/smoke.js, which renders its
+	// frontend in a real browser.
+	Smoke bool
 
 	// Benchmarks is true where some test file defines one, so a bench
 	// target is worth having.
@@ -178,7 +181,7 @@ func houseTargets(shape repoShape) []makeTarget {
 
 	var build []makeTarget
 
-	if shape.Command != "" {
+	if shape.Binary != "" {
 		runRecipe := "$(BINARY) $(ARGS) | loggo stream"
 		if shape.LoggoTemplate {
 			runRecipe += " --template loggo.template"
@@ -202,6 +205,21 @@ func houseTargets(shape repoShape) []makeTarget {
 		}}
 	}
 
+	var smoke []makeTarget
+
+	if shape.Smoke {
+		ready.Prereqs = append(ready.Prereqs, "smoke")
+		ready.Comment = "After any code change. Needs no network beyond the module cache, " +
+			"once smoke has installed its own."
+
+		smoke = []makeTarget{{
+			Name:    "smoke",
+			Comment: "Renders the frontend in a browser, failing on any console error or uncaught exception.",
+
+			Recipe: []string{"cd " + smokeDir + " && npm install --silent && node " + smokeScript},
+		}}
+	}
+
 	var bench []makeTarget
 
 	if shape.Benchmarks {
@@ -213,7 +231,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		}}
 	}
 
-	return slices.Concat([]makeTarget{all, ci, ready}, build, []makeTarget{
+	return slices.Concat([]makeTarget{all, ci, ready}, build, smoke, []makeTarget{
 		{Name: "lint", Recipe: []string{"golangci-lint run"}},
 		{Name: "vet", Recipe: []string{"go vet ./..."}},
 		{
@@ -348,19 +366,19 @@ func MakefileTask(repo engine.Repo) engine.Task {
 		Name:  "generate Makefile",
 		Short: "makefile",
 		Run: func(context.Context) error {
-			return generateMakefile(repo.Fs())
+			return generateMakefile(repo.Fs(), repo.Name())
 		},
 	}
 }
 
 // generateMakefile is [MakefileTask]'s work, factored out so it can run
 // against an in-memory filesystem in tests without a real repository.
-func generateMakefile(fs afero.Fs) error {
+func generateMakefile(fs afero.Fs, name string) error {
 	if err := adoptExistingMakefile(fs); err != nil {
 		return err
 	}
 
-	data, err := collectMakefileData(fs)
+	data, err := collectMakefileData(fs, name)
 	if err != nil {
 		return err
 	}
@@ -420,25 +438,26 @@ func adoptExistingMakefile(fs afero.Fs) error {
 // collectMakefileData reads mk/ and works out what the generated Makefile
 // should say: which of the house targets the repository has not already
 // defined for itself, and what plain "make" should run.
-func collectMakefileData(fs afero.Fs) (makefileData, error) {
+func collectMakefileData(fs afero.Fs, name string) (makefileData, error) {
 	fragments, err := readMakeFragments(fs)
 	if err != nil {
 		return makefileData{}, err
 	}
 
-	shape, err := readRepoShape(fs)
+	shape, err := readRepoShape(fs, name)
 	if err != nil {
 		return makefileData{}, err
 	}
 
 	cleanFiles := []string{coverProfile}
-	if shape.Command != "" {
+	if shape.Binary != "" {
 		cleanFiles = append([]string{binDir}, cleanFiles...)
 	}
 
 	data := makefileData{
 		DefaultGoal: defaultGoal,
-		Command:     shape.Command,
+		Binary:      shape.Binary,
+		Pkg:         shape.Pkg,
 		CleanFiles:  strings.Join(cleanFiles, " "),
 		Flags:       fragments.Flags,
 		Includes:    fragments.Paths,
@@ -472,35 +491,64 @@ func collectMakefileData(fs afero.Fs) (makefileData, error) {
 	return data, nil
 }
 
+// smokeDir holds a web app's smoke test, and smokeScript is what runs it.
+const (
+	smokeDir    = "smoke"
+	smokeScript = "smoke.js"
+)
+
+// hasSmoke reports whether this is a web app with a smoke test to run.
+func hasSmoke(fs afero.Fs, def Definition) (bool, error) {
+	if def.Kind != KindWebapp {
+		return false, nil
+	}
+
+	return afero.Exists(fs, path.Join(smokeDir, smokeScript))
+}
+
 // readRepoShape works out what the repository itself settles about the
-// house targets.
-func readRepoShape(fs afero.Fs) (repoShape, error) {
-	command, err := repoCommand(fs)
-	if err != nil {
-		return repoShape{}, err
-	}
-
-	benchmarks, err := hasBenchmarks(fs)
-	if err != nil {
-		return repoShape{}, err
-	}
-
-	loggoTpl, err := afero.Exists(fs, "loggo.template")
-	if err != nil {
-		return repoShape{}, err
-	}
-
+// house targets. name is the repository's, which a web app's binary is
+// named after.
+func readRepoShape(fs afero.Fs, name string) (repoShape, error) {
 	def, _, err := LoadDefinition(fs)
 	if err != nil {
 		return repoShape{}, err
 	}
 
-	return repoShape{
-		Command:       command,
-		Benchmarks:    benchmarks,
-		LoggoTemplate: loggoTpl,
-		Tools:         toolsFor(def),
-	}, nil
+	shape := repoShape{Tools: toolsFor(def)}
+
+	command, err := repoCommand(fs)
+	if err != nil {
+		return repoShape{}, err
+	}
+
+	if command != "" {
+		shape.Binary, shape.Pkg = command, "./"+commandDir+"/"+command+"/"
+	}
+
+	if def.Kind == KindWebapp {
+		// The root main package is what serves the frontend; cmd/ holds the
+		// tools beside it.
+		if isMain, err := rootIsMain(fs); err != nil {
+			return repoShape{}, err
+		} else if isMain {
+			shape.Binary, shape.Pkg = name, "./"
+		}
+	}
+
+	if shape.Smoke, err = hasSmoke(fs, def); err != nil {
+		return repoShape{}, err
+	}
+
+	if shape.Benchmarks, err = hasBenchmarks(fs); err != nil {
+		return repoShape{}, err
+	}
+
+	if shape.LoggoTemplate, err = afero.Exists(fs, "loggo.template"); err != nil {
+		return repoShape{}, err
+	}
+
+	return shape, nil
 }
 
 // errBenchmarkFound stops the walk in [hasBenchmarks] at the first

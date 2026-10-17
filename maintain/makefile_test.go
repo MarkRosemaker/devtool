@@ -19,7 +19,7 @@ func TestGenerateMakefile(t *testing.T) {
 	t.Run("a repository with nothing of its own gets the house targets", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -50,7 +50,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/repo.mk", "test:\n\tgo test -race ./...\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -77,7 +77,7 @@ func TestGenerateMakefile(t *testing.T) {
 		const handWritten = "build:\n\t@echo building\n\ntest:\n\t@echo testing\n"
 		writeFile(t, fs, makefilePath, handWritten)
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -101,13 +101,13 @@ func TestGenerateMakefile(t *testing.T) {
 	t.Run("a Makefile this task wrote is rewritten, not adopted again", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
 		first := readFile(t, fs, makefilePath)
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -129,7 +129,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/repo.mk", "deploy:\n\t@echo deploying\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -143,7 +143,7 @@ func TestGenerateMakefile(t *testing.T) {
 		writeFile(t, fs, makefilePath, "build:\n\t@echo building\n")
 		writeFile(t, fs, "mk/legacy.mk", "something else already here\n")
 
-		err := generateMakefile(fs)
+		err := generateMakefile(fs, "repo")
 		if err == nil {
 			t.Fatal("expected an error rather than either file being overwritten")
 		}
@@ -159,7 +159,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/notes.txt", "make ignores this entirely\n")
 
-		err := generateMakefile(fs)
+		err := generateMakefile(fs, "repo")
 		if err == nil {
 			t.Fatal("expected an error for a file that would never be included, got nil")
 		}
@@ -173,7 +173,7 @@ func TestGenerateMakefile(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "mk/.keep", "")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -184,7 +184,7 @@ func TestGenerateMakefile(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := generateMakefile(fs); err == nil {
+		if err := generateMakefile(fs, "repo"); err == nil {
 			t.Fatal("expected an error for non-UTF-8 fragment content, got nil")
 		}
 	})
@@ -239,7 +239,7 @@ func TestGenerateMakefileRunsUnderMake(t *testing.T) {
 	writeFile(t, fs, makefilePath,
 		"build:\n\t@echo built\n\ntest:\n\t@echo repo-test\n\nship: build\n\t@echo shipped\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, "repo"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -296,13 +296,27 @@ func TestMakefileGolden(t *testing.T) {
 		}},
 		{"binary", makefileData{
 			DefaultGoal: defaultGoal,
-			Command:     "worldweaver",
+			Binary:      "worldweaver",
+			Pkg:         "./cmd/worldweaver/",
 			CleanFiles:  "bin cover.out",
 			Tools:       true,
-			Targets:     houseTargets(repoShape{Command: "worldweaver", Benchmarks: true, Tools: goldenTools}),
-			Flags:       "mk/flags.mk",
-			Includes:    []string{"mk/legacy.mk", "mk/sprites.mk"},
+			Targets: houseTargets(repoShape{
+				Binary: "worldweaver", Pkg: "./cmd/worldweaver/", Benchmarks: true, Tools: goldenTools,
+			}),
+			Flags:    "mk/flags.mk",
+			Includes: []string{"mk/legacy.mk", "mk/sprites.mk"},
 		}},
+		{"webapp", makefileData{
+			DefaultGoal: defaultGoal,
+			Binary:      "vault",
+			Pkg:         "./",
+			CleanFiles:  "bin cover.out",
+			Tools:       true,
+			Targets: houseTargets(repoShape{
+				Binary: "vault", Pkg: "./", LoggoTemplate: true, Smoke: true, Tools: goldenTools,
+			}),
+		}},
+
 		{"none", makefileData{DefaultGoal: "build"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -354,7 +368,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 				writeFile(t, fs, "cmd/"+cmd+"/main.go", "package main\n")
 			}
 
-			if err := generateMakefile(fs); err != nil {
+			if err := generateMakefile(fs, "repo"); err != nil {
 				t.Fatal(err)
 			}
 
@@ -404,7 +418,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 		writeFile(t, fs, "cmd/worldweaver/main.go", "package main\n")
 		writeFile(t, fs, "mk/repo.mk", "build:\n\tgo build -tags prod ./...\n")
 
-		if err := generateMakefile(fs); err != nil {
+		if err := generateMakefile(fs, "repo"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -478,7 +492,7 @@ func TestGenerateMakefileIncludes(t *testing.T) {
 func generateAndRead(t *testing.T, fs afero.Fs) string {
 	t.Helper()
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, "repo"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -517,7 +531,7 @@ func TestGenerateMakefileBuildsUnderMake(t *testing.T) {
 	// a make too old to have.
 	writeFile(t, fs, "mk/probe.mk", "show:\n\t@echo [$(SET_BY_FLAGS)]\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, "repo"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -766,7 +780,7 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 		"\t@echo \"go=$$(command -v go)\"\n"+
 		"\t@echo \"housetool=$$(command -v housetool)\"\n")
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, "repo"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -818,7 +832,7 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 func TestGenerateMakefileRunsPlainUpdate(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
-	if err := generateMakefile(fs); err != nil {
+	if err := generateMakefile(fs, "repo"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -834,3 +848,60 @@ func TestGenerateMakefileRunsPlainUpdate(t *testing.T) {
 
 // goldenTools are the house tools, those of a repository without databases.
 var goldenTools = toolsFor(Definition{})
+
+// TestGenerateMakefileWebapp covers what a web app gets beyond the rest: its
+// root main package built under the repository's name, and the smoke test in
+// ready once there is one.
+func TestGenerateMakefileWebapp(t *testing.T) {
+	webapp := func(t *testing.T) afero.Fs {
+		t.Helper()
+
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, DefinitionPath, `{"kind": "webapp"}`)
+		writeFile(t, fs, "main.go", "package main\n")
+		writeFile(t, fs, "cmd/generate/main.go", "package main\n")
+
+		return fs
+	}
+
+	t.Run("the root main package is the binary, and smoke runs in ready", func(t *testing.T) {
+		fs := webapp(t)
+		writeFile(t, fs, "smoke/smoke.js", "")
+
+		got := generateAndRead(t, fs)
+
+		checkOrder(t, got, []string{
+			"BINARY := bin/repo",
+			"PKG    := ./",
+			"ready: generate fix vet test-race build smoke",
+			"build:", "go build -o $(BINARY) $(PKG)",
+			"run: build",
+			"smoke:", "\tcd smoke && npm install --silent && node smoke.js",
+		})
+	})
+
+	t.Run("without smoke/smoke.js there is no smoke target", func(t *testing.T) {
+		got := generateAndRead(t, webapp(t))
+
+		if strings.Contains(got, "smoke") {
+			t.Errorf("want no smoke target without a smoke test:\n%s", got)
+		}
+
+		checkOrder(t, got, []string{"ready: generate fix vet test-race build\n"})
+	})
+
+	t.Run("a command's root main package is not built", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, DefinitionPath, `{"kind": "cli"}`)
+		writeFile(t, fs, "main.go", "package main\n")
+		writeFile(t, fs, "smoke/smoke.js", "")
+
+		got := generateAndRead(t, fs)
+
+		for _, unwanted := range []string{"BINARY", "smoke"} {
+			if strings.Contains(got, unwanted) {
+				t.Errorf("want no %q outside a web app:\n%s", unwanted, got)
+			}
+		}
+	})
+}
