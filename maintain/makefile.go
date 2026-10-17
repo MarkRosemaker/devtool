@@ -131,6 +131,9 @@ type repoShape struct {
 	// target is worth having.
 	Benchmarks bool
 
+	// LoggoTemplate is true when the repo has a loggo.template
+	LoggoTemplate bool
+
 	// Tools are what the tools target installs: sqlc joins the house
 	// tools where the repository declares a database.
 	Tools []Tool
@@ -176,6 +179,11 @@ func houseTargets(shape repoShape) []makeTarget {
 	var build []makeTarget
 
 	if shape.Command != "" {
+		runRecipe := "$(BINARY) $(ARGS) | loggo stream"
+		if shape.LoggoTemplate {
+			runRecipe += " --template loggo.template"
+		}
+
 		ready.Prereqs = append(ready.Prereqs, "build")
 
 		// Through BINARY and PKG, so a fragment can repoint either.
@@ -190,7 +198,7 @@ func houseTargets(shape repoShape) []makeTarget {
 			Comment: "ARGS passes flags through, e.g. `make run ARGS=-debug`.",
 			Prereqs: []string{"build"},
 			Needs:   []string{"build"},
-			Recipe:  []string{"$(BINARY) $(ARGS)"},
+			Recipe:  []string{runRecipe},
 		}}
 	}
 
@@ -477,12 +485,22 @@ func readRepoShape(fs afero.Fs) (repoShape, error) {
 		return repoShape{}, err
 	}
 
+	loggoTpl, err := afero.Exists(fs, "loggo.template")
+	if err != nil {
+		return repoShape{}, err
+	}
+
 	def, _, err := LoadDefinition(fs)
 	if err != nil {
 		return repoShape{}, err
 	}
 
-	return repoShape{Command: command, Benchmarks: benchmarks, Tools: toolsFor(def)}, nil
+	return repoShape{
+		Command:       command,
+		Benchmarks:    benchmarks,
+		LoggoTemplate: loggoTpl,
+		Tools:         toolsFor(def),
+	}, nil
 }
 
 // errBenchmarkFound stops the walk in [hasBenchmarks] at the first
