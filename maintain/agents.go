@@ -66,6 +66,9 @@ type agentsData struct {
 	// this is a web app, whose frontend uses api/interactions.json as its mock data, so a stale
 	// interaction means a wrong mock too.
 	Frontend bool
+
+	// Smoke is true for a web app with a smoke test, which make ready runs.
+	Smoke bool
 }
 
 // generatedRoot is one generated root file and the directory it is built
@@ -193,12 +196,18 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
+	smoke, err := hasSmoke(fs, def)
+	if err != nil {
+		return agentsData{}, err
+	}
+
 	return agentsData{
 		Generated:     generated,
 		Fragments:     fragments,
 		Gitignore:     blocked,
 		OpenAPIEnrich: openAPIEnrich,
 		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
+		Smoke:         smoke,
 		Databases:     databaseNames(def),
 	}, nil
 }
