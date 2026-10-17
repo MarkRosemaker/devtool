@@ -220,7 +220,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		// make tools' use of the network and not ready's.
 		tools.Comment = "Installs what the targets above shell out to, into $(go env GOPATH)/bin " +
 			"and " + smokeDir + "/node_modules."
-		tools.Recipe = append(tools.Recipe, "cd "+smokeDir+" && npm install --silent")
+		tools.Recipe = append(tools.Recipe, "cd "+smokeDir+" && npm install")
 
 		smoke = []makeTarget{{
 			Name:    "smoke",

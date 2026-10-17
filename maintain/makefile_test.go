@@ -877,7 +877,7 @@ func TestGenerateMakefileWebapp(t *testing.T) {
 			"build:", "go build -o $(BINARY) $(PKG)",
 			"run: build",
 			"smoke:", "\tcd smoke && node smoke.js",
-			"tools:", "\tcd smoke && npm install --silent",
+			"tools:", "\tcd smoke && npm install",
 		})
 	})
 

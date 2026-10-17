@@ -98,7 +98,7 @@ tools:
 	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/vuln/cmd/govulncheck@latest
 	GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/pkgsite/cmd/pkgsite@latest
 	GOTOOLCHAIN=$(TOOL_GO) go install github.com/MarkRosemaker/devtool@latest
-	cd smoke && npm install --silent
+	cd smoke && npm install
 
 # A fragment adds its own with CLEAN_FILES += dist.
 clean:
