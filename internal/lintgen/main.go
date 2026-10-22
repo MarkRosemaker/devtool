@@ -73,7 +73,7 @@ var lintConfig = config.Config{
 				},
 			},
 			Exhaustive: config.ExhaustiveSettings{
-				Check: []string{"switch", "map"},
+				Check: []string{"switch", "mapliteral"},
 				// Presence of "default" case in switch statements satisfies exhaustiveness,
 				// even if all enum members are not listed.
 				DefaultSignifiesExhaustive: true,
