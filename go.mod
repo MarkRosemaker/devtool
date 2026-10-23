@@ -9,7 +9,7 @@ require (
 	github.com/MarkRosemaker/gorepo v0.0.0-20261022123359-3aea929a678d
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261022223629-e568f70f9927
-	github.com/MarkRosemaker/openapi v0.0.0-20261023164334-d8717d3ab534
+	github.com/MarkRosemaker/openapi v0.0.0-20261023173220-3fc10e958884
 	github.com/MarkRosemaker/ordmap v0.0.0-20261022123151-722ebe65c15c
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
