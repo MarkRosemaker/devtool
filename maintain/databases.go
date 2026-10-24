@@ -84,6 +84,25 @@ sql:
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
         emit_interface: true
+        overrides:
+          - db_type: "date"
+            go_type:
+              import: "cloud.google.com/go/civil"
+              type: "Date"
+          - db_type: "date"
+            nullable: true
+            go_type:
+              import: "cloud.google.com/go/civil"
+              type: "Date"
+              pointer: true
+          - db_type: "timestamptz"
+            go_type:
+              type: "time.Time"
+          - db_type: "timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
 `
 
 // generateGo is the directive that runs sqlc, from the database's directory.

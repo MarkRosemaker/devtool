@@ -162,7 +162,9 @@ A database declared `"type": "postgres"` lives on a server, reached at a
 `postgres://` URL that `Open(ctx, dsn)` is given at run time: nothing in
 `devtool.json` says where. The files are the same, with three differences.
 `sqlc.yaml` has sqlc generate for `pgx/v5`, emitting an interface and
-pointers for null columns. `open.go` opens a `pgxpool` of at most five
+pointers for null columns, and gives a `date` column `civil.Date` and a
+`timestamptz` one `time.Time`, rather than pgx's own `pgtype` wrappers, as
+the SQLite configuration gives `DATE`; pgx reads and writes both. `open.go` opens a `pgxpool` of at most five
 connections, which a hosted free tier allows, sends statements unprepared,
 so a pooler that hands each transaction its own connection, as Neon's does,
 never meets one prepared on another, and pings the server, so a wrong

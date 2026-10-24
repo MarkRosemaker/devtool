@@ -82,6 +82,7 @@ func TestPostgresDatabase(t *testing.T) {
 	for file, wants := range map[string][]string{
 		"databases/user/sqlc.yaml": {
 			"engine: postgresql", "sql_package: pgx/v5", "package: user", "schema: migrations", "queries: queries",
+			`import: "cloud.google.com/go/civil"`, `type: "time.Time"`, "pointer: true",
 		},
 		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
 		"databases/user/migrate.go": {
