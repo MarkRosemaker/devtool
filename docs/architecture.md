@@ -99,8 +99,10 @@ instead of regenerated.
 
 ## Databases
 
-A repository declares its SQLite databases in `devtool.json`, under
-`resources.databases`, by name. A database named `foo` is package `foo` in
+A repository declares its databases in `devtool.json`, under
+`resources.databases`, by name and `"type"`: `"sqlite"`, or `"postgres"`,
+below. A database declared without a type is SQLite, and the next update
+writes `"type": "sqlite"` into the file. A database named `foo` is package `foo` in
 `databases/foo`:
 
 | | |
@@ -153,6 +155,29 @@ The key goes in the URI (`?vfs=adiantum&textkey=…`), escaped, so every
 connection in the pool opens the file with it. A `PRAGMA textkey` would key
 only the connection that ran it, and a file keyed that way opens the same
 with the key in the URI.
+
+### Postgres
+
+A database declared `"type": "postgres"` lives on a server, reached at a
+`postgres://` URL that `Open(ctx, dsn)` is given at run time: nothing in
+`devtool.json` says where. The files are the same, with three differences.
+`sqlc.yaml` has sqlc generate for `pgx/v5`, emitting an interface and
+pointers for null columns. `open.go` opens a `pgxpool` of at most five
+connections, which a hosted free tier allows, sends statements unprepared,
+so a pooler that hands each transaction its own connection, as Neon's does,
+never meets one prepared on another, and pings the server, so a wrong
+address fails `Open` rather than the first query. It has no `Path`, no
+`"per"` and no `"encrypted"`. `migrate.go` keeps the version in the same
+`schema_migrations(version, dirty)` table, and applies each migration in a
+transaction that first takes an advisory lock and creates the table under
+it: two servers starting together otherwise collide creating it, even with
+`IF NOT EXISTS`. The lock is per transaction, as a transaction pooler keeps
+no session. A migration's body is sent over the simple protocol, so it may
+hold several statements.
+
+devtool refuses to write one where `go.mod` does not require
+`github.com/jackc/pgx/v5`. An indirect requirement counts: `go get` marks it
+so until the code devtool writes imports it.
 
 ## Versions, and how a stale build does damage
 

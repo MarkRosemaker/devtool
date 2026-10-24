@@ -380,7 +380,9 @@ func TestAgentsGolden(t *testing.T) {
 		{"full", agentsData{
 			Generated: generatedRootDirs,
 			Gitignore: true,
-			Databases: []string{"world", "user"},
+			Databases: []string{"world", "user", "tasks"},
+			SQLite:    []string{"world", "user"},
+			Postgres:  []string{"tasks"},
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},

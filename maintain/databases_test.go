@@ -66,6 +66,56 @@ func TestDatabasesWritesTheFiles(t *testing.T) {
 	}
 }
 
+// TestPostgresDatabase: a database of type postgres is reached at an
+// address, through pgx, and migrated the same way.
+func TestPostgresDatabase(t *testing.T) {
+	repo := databaseRepo(t)
+	fs := repo.Fs()
+
+	writeFile(t, fs, "go.mod", "module example.com/app\n\ngo 1.27\n\nrequire github.com/jackc/pgx/v5 v5.7.0\n")
+	writeFile(t, fs, DefinitionPath, `{"resources": {"databases": [{"name": "user", "type": "postgres"}]}}`+"\n")
+
+	if err := runDatabases(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	for file, wants := range map[string][]string{
+		"databases/user/sqlc.yaml": {
+			"engine: postgresql", "sql_package: pgx/v5", "package: user", "schema: migrations", "queries: queries",
+		},
+		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
+		"databases/user/migrate.go": {
+			"package user\n", "//go:embed migrations/*.up.sql", "func Migrate(ctx context.Context, pool *pgxpool.Pool) error",
+			"pg_advisory_xact_lock", "schema_migrations", "pgx.QueryExecModeSimpleProtocol",
+		},
+		"databases/user/open.go": {
+			"package user\n", "func Open(ctx context.Context, dsn string) (*DB, error)", "pool.Ping(ctx)",
+			"cfg.MaxConns, cfg.MinConns = maxConns, 0", "pgx.QueryExecModeExec",
+			"func (d *DB) Close()", "func (d *DB) WithTx(",
+		},
+	} {
+		got := readFile(t, fs, file)
+
+		for _, want := range wants {
+			if !strings.Contains(got, want) {
+				t.Errorf("%s lacks %q:\n%s", file, want, got)
+			}
+		}
+
+		if strings.HasSuffix(file, ".go") {
+			if formatted, err := format.Source([]byte(got)); err != nil {
+				t.Errorf("%s is not Go: %v", file, err)
+			} else if string(formatted) != got {
+				t.Errorf("%s is not gofmt'd", file)
+			}
+		}
+	}
+
+	if strings.Contains(readFile(t, fs, "databases/user/open.go"), "func Path(") {
+		t.Error("a Postgres database has no path on this machine")
+	}
+}
+
 // TestDatabasesIsIdempotent: a second run writes the same bytes, or every
 // maintained run would commit.
 func TestDatabasesIsIdempotent(t *testing.T) {
@@ -141,6 +191,26 @@ func TestDatabasesRefuses(t *testing.T) {
 			name: "no driver to open it with",
 			file: "go.mod", content: "module example.com/app\n\ngo 1.27\n",
 			want: "modernc.org/sqlite",
+		},
+		{
+			name: "a type devtool does not know",
+			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "mysql"}]}}`,
+			want: "no kind of database",
+		},
+		{
+			name: "Postgres without its driver",
+			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "postgres"}]}}`,
+			want: "github.com/jackc/pgx/v5",
+		},
+		{
+			name: "Postgres with a copy per something",
+			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "postgres", "per": "world"}]}}`,
+			want: "no copy per anything",
+		},
+		{
+			name: "Postgres opened with a key",
+			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "postgres", "encrypted": true}]}}`,
+			want: "encrypted by its server",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

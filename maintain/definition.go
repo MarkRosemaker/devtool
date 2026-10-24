@@ -57,6 +57,10 @@ type Definition struct {
 	// Resources are what the repository's code is built around, and
 	// devtool generates the code that goes with them.
 	Resources Resources `json:"resources,omitzero"`
+
+	// untyped is set where the file had a database without its type, which
+	// is then written down.
+	untyped bool
 }
 
 // Resources are a repository's declared resources.
@@ -65,9 +69,14 @@ type Resources struct {
 	Databases []Database `json:"databases,omitempty"`
 }
 
-// Database is one SQLite database, which lives in databases/<Name>.
+// Database is one database, which lives in databases/<Name>.
 type Database struct {
 	Name string `json:"name"`
+
+	// Type is sqlite or postgres: a database on a server, reached at an
+	// address given when it is opened. Loading gives a database without one
+	// sqlite, and the next update writes it down.
+	Type string `json:"type"`
 
 	// Encrypted databases are opened with a key, which needs the ncruces
 	// driver.
@@ -105,6 +114,13 @@ func LoadDefinition(fs afero.Fs) (Definition, bool, error) {
 	var def Definition
 	if err := json.Unmarshal(b, &def); err != nil {
 		return Definition{}, false, fmt.Errorf("%s: %w", DefinitionPath, err)
+	}
+
+	for i := range def.Resources.Databases {
+		if def.Resources.Databases[i].Type == "" {
+			def.Resources.Databases[i].Type = sqlite
+			def.untyped = true
+		}
 	}
 
 	if def.Kind != "" && !slices.Contains(kinds, def.Kind) {

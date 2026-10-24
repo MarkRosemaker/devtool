@@ -131,3 +131,25 @@ func packageFor(name string) string {
 		return ""
 	}
 }
+
+// TestDatabaseTypeIsWrittenDown: a database declared before types were is
+// SQLite, and the next run says so in the file.
+func TestDatabaseTypeIsWrittenDown(t *testing.T) {
+	repo := &fakeRepo{}
+	writeFile(t, repo.Fs(), DefinitionPath,
+		`{"kind": "library", "resources": {"databases": [{"name": "user"}, {"name": "tasks", "type": "postgres"}]}}`)
+
+	def := recordAndLoad(t, repo, UpdateOptions{})
+	if got := def.Resources.Databases; got[0].Type != sqlite || got[1].Type != postgres {
+		t.Errorf("types = %q, %q, want %q, %q", got[0].Type, got[1].Type, sqlite, postgres)
+	}
+
+	b, err := afero.ReadFile(repo.Fs(), DefinitionPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(b), `"type": "sqlite"`) {
+		t.Errorf("%s does not say the type:\n%s", DefinitionPath, b)
+	}
+}
