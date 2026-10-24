@@ -62,6 +62,10 @@ type agentsData struct {
 	// whose packages an agent needs to know how to change.
 	Databases []string
 
+	// SQLite and Postgres split Databases by type, since each opens and is
+	// tested differently.
+	SQLite, Postgres []string
+
 	// Frontend is true where OpenAPIEnrich also holds and devtool.json says
 	// this is a web app, whose frontend uses api/interactions.json as its mock data, so a stale
 	// interaction means a wrong mock too.
@@ -208,7 +212,9 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		OpenAPIEnrich: openAPIEnrich,
 		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
 		Smoke:         smoke,
-		Databases:     databaseNames(def),
+		Databases:     databaseNames(def, ""),
+		SQLite:        databaseNames(def, sqlite),
+		Postgres:      databaseNames(def, postgres),
 	}, nil
 }
 

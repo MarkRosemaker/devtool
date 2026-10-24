@@ -73,8 +73,8 @@ generated. Your own rules go below that block, where they win — in a
 
 ## Databases
 
-`devtool.json` declares this repository's SQLite databases, each a package
-under `databases/`: `databases/world`, `databases/user`.
+`devtool.json` declares this repository's databases, each a package
+under `databases/`: `databases/world`, `databases/user`, `databases/tasks`.
 
 Two parts of each are written by hand:
 
@@ -92,17 +92,28 @@ it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
 `db.go`, `models.go` and `*.sql.go` by sqlc. Code of your own goes in a
 file of your own beside them.
 
-`Open(ctx, path)` creates the database where it does not exist, migrates it
-(an encrypted one takes its key as well: `Open(ctx, path, key)`)
+`world`, `user` are SQLite.
+`Open(ctx, path)` creates the database where it does not exist,
+migrates it (an encrypted one takes its key as well: `Open(ctx, path, key)`)
 and returns a `DB`: every query as a method, `WithTx` for a transaction,
 and `Close`. `Path()` is where the database lives on this machine, or
 `Path(world)` for one with a copy per world, declared `"per": "world"`. A test
 opens a real one of its own, rather than mocking it:
 `Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
 
+`tasks` is Postgres, declared `"type": "postgres"`.
+`Open(ctx, dsn)` connects to the server the URL names, pings it, migrates
+it and returns a `DB`: every query as a method, `WithTx` for a transaction,
+`Pool` and `Close`. Statements are sent unprepared, so that a transaction
+pooler can serve them, and unprepared, a `[]byte` parameter arrives as
+`bytea`: pass a `jsonb` one as text and cast it,
+`CAST(sqlc.arg(name)::text AS jsonb)`. A test opens a real database rather
+than mocking it, at a URL the environment gives, and skips where it gives
+none.
+
 To add a database, add `{"name": "…"}` to `resources.databases` in
-`devtool.json`, write `databases/<name>/migrations/001_initial.up.sql`, and
-run `make generate`.
+`devtool.json` (with `"type": "postgres"` for a Postgres one), write
+`databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
 
 ## Keeping the documents true
 

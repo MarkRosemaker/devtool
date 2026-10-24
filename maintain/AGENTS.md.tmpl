@@ -98,7 +98,7 @@ generated. Your own rules go below that block, where they win — in a
 {{ end }}{{ with .Databases }}
 ## Databases
 
-`devtool.json` declares this repository's SQLite databases, each a package
+`devtool.json` declares this repository's databases, each a package
 under `databases/`: {{ range $i, $name := . }}{{ if $i }}, {{ end }}`databases/{{ $name }}`{{ end }}.
 
 Two parts of each are written by hand:
@@ -117,17 +117,28 @@ it: `sqlc.yaml`, `generate.go`, `migrate.go` and `open.go` by devtool, and
 `db.go`, `models.go` and `*.sql.go` by sqlc. Code of your own goes in a
 file of your own beside them.
 
-`Open(ctx, path)` creates the database where it does not exist, migrates it
-(an encrypted one takes its key as well: `Open(ctx, path, key)`)
+{{ with $.SQLite }}{{ if $.Postgres }}{{ range $i, $name := . }}{{ if $i }}, {{ end }}`{{ $name }}`{{ end }} {{ if gt (len .) 1 }}are{{ else }}is{{ end }} SQLite.
+{{ end }}`Open(ctx, path)` creates the database where it does not exist,
+migrates it (an encrypted one takes its key as well: `Open(ctx, path, key)`)
 and returns a `DB`: every query as a method, `WithTx` for a transaction,
 and `Close`. `Path()` is where the database lives on this machine, or
 `Path(world)` for one with a copy per world, declared `"per": "world"`. A test
 opens a real one of its own, rather than mocking it:
 `Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
 
-To add a database, add `{"name": "…"}` to `resources.databases` in
-`devtool.json`, write `databases/<name>/migrations/001_initial.up.sql`, and
-run `make generate`.
+{{ end }}{{ with $.Postgres }}{{ range $i, $name := . }}{{ if $i }}, {{ end }}`{{ $name }}`{{ end }} {{ if gt (len .) 1 }}are{{ else }}is{{ end }} Postgres, declared `"type": "postgres"`.
+`Open(ctx, dsn)` connects to the server the URL names, pings it, migrates
+it and returns a `DB`: every query as a method, `WithTx` for a transaction,
+`Pool` and `Close`. Statements are sent unprepared, so that a transaction
+pooler can serve them, and unprepared, a `[]byte` parameter arrives as
+`bytea`: pass a `jsonb` one as text and cast it,
+`CAST(sqlc.arg(name)::text AS jsonb)`. A test opens a real database rather
+than mocking it, at a URL the environment gives, and skips where it gives
+none.
+
+{{ end }}To add a database, add `{"name": "…"}` to `resources.databases` in
+`devtool.json` (with `"type": "postgres"` for a Postgres one), write
+`databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
 {{ end }}
 ## Keeping the documents true
 

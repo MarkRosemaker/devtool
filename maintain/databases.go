@@ -2,6 +2,7 @@ package maintain
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	_ "embed"
 	"errors"
@@ -361,11 +362,14 @@ func render(tmpl *template.Template, data any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// databaseNames are the names of the databases def declares.
-func databaseNames(def Definition) []string {
-	names := make([]string, 0, len(def.Resources.Databases))
+// databaseNames are the names of the databases def declares of type typ,
+// or of any type where typ is empty.
+func databaseNames(def Definition, typ string) []string {
+	var names []string
 	for _, db := range def.Resources.Databases {
-		names = append(names, db.Name)
+		if typ == "" || cmp.Or(db.Type, sqlite) == typ {
+			names = append(names, db.Name)
+		}
 	}
 
 	return names
