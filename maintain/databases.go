@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"go/token"
+	"maps"
 	"os"
 	"path"
 	"regexp"
@@ -29,9 +30,26 @@ var (
 	//go:embed open.go.tmpl
 	openText string
 
-	migrateTmpl = template.Must(template.New("migrate.go").Parse(migrateText))
-	openTmpl    = template.Must(template.New("open.go").Parse(openText))
+	//go:embed migrate_postgres.go.tmpl
+	migratePostgresText string
+
+	//go:embed open_postgres.go.tmpl
+	openPostgresText string
+
+	migrateTmpl         = template.Must(template.New("migrate.go").Parse(migrateText))
+	openTmpl            = template.Must(template.New("open.go").Parse(openText))
+	migratePostgresTmpl = template.Must(template.New("migrate.go").Parse(migratePostgresText))
+	openPostgresTmpl    = template.Must(template.New("open.go").Parse(openPostgresText))
 )
+
+// The kinds of database devtool lays out.
+const (
+	sqlite   = "sqlite"
+	postgres = "postgres"
+)
+
+// pgxModule is the driver a Postgres database is opened with.
+const pgxModule = "github.com/jackc/pgx/v5"
 
 // sqlcConfig is the sqlc configuration of one database, written beside it so
 // that sqlc, run by go generate in that directory, finds it unasked.
@@ -50,6 +68,22 @@ sql:
             go_type:
               import: "cloud.google.com/go/civil"
               type: "Date"
+`
+
+// sqlcPostgresConfig is sqlc's configuration for a Postgres database.
+const sqlcPostgresConfig = "# " + generatedBy + ` — edit devtool.json instead.
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: queries
+    gen:
+      go:
+        package: %s
+        out: .
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+        emit_interface: true
 `
 
 // generateGo is the directive that runs sqlc, from the database's directory.
@@ -121,6 +155,14 @@ func writeDatabase(repo engine.Repo, db Database) error {
 		return err
 	}
 
+	switch db.Type {
+	case "", sqlite:
+	case postgres:
+		return writePostgres(fs, dir, db)
+	default:
+		return fmt.Errorf("type %q is no kind of database devtool knows: %s or %s", db.Type, sqlite, postgres)
+	}
+
 	driver, imports, err := sqliteDriver(fs)
 	if err != nil {
 		return err
@@ -165,6 +207,61 @@ func writeDatabase(repo engine.Repo, db Database) error {
 	}
 
 	return nil
+}
+
+// writePostgres writes the files of a Postgres database: it is reached at an
+// address given when it is opened, so it has no path, nor a copy per
+// anything, and the server encrypts what it keeps.
+func writePostgres(fs afero.Fs, dir string, db Database) error {
+	switch {
+	case db.Per != "":
+		return errors.New("a Postgres database is one server's, reached at its address: it has no copy per anything")
+	case db.Encrypted:
+		return errors.New("a Postgres database is encrypted by its server, not opened with a key")
+	}
+
+	if ok, err := requires(fs, pgxModule); err != nil {
+		return err
+	} else if !ok {
+		return fmt.Errorf("go.mod requires no Postgres driver to open it with; add %s", pgxModule)
+	}
+
+	files := map[string]func() ([]byte, error){
+		"sqlc.yaml":   func() ([]byte, error) { return fmt.Appendf(nil, sqlcPostgresConfig, db.Name), nil },
+		"generate.go": func() ([]byte, error) { return fmt.Appendf(nil, generateGo, db.Name), nil },
+		"migrate.go":  func() ([]byte, error) { return render(migratePostgresTmpl, struct{ Package string }{db.Name}) },
+		"open.go":     func() ([]byte, error) { return render(openPostgresTmpl, struct{ Package string }{db.Name}) },
+	}
+
+	for _, name := range slices.Sorted(maps.Keys(files)) {
+		b, err := files[name]()
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+
+		if err := afero.WriteFile(fs, path.Join(dir, name), b, 0o644); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// requires reports whether go.mod requires module. Indirect counts: there is
+// one Postgres driver to choose, and go get marks it indirect until the code
+// devtool writes imports it.
+func requires(fs afero.Fs, module string) (bool, error) {
+	b, err := afero.ReadFile(fs, "go.mod")
+	if err != nil {
+		return false, err
+	}
+
+	mod, err := modfile.ParseLax("go.mod", b, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return slices.ContainsFunc(mod.Require, func(r *modfile.Require) bool { return r.Mod.Path == module }), nil
 }
 
 // sqlcSource finds the query file a file sqlc generated was made from.

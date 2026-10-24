@@ -65,9 +65,13 @@ type Resources struct {
 	Databases []Database `json:"databases,omitempty"`
 }
 
-// Database is one SQLite database, which lives in databases/<Name>.
+// Database is one database, which lives in databases/<Name>.
 type Database struct {
 	Name string `json:"name"`
+
+	// Type is sqlite, where none is given, or postgres: a database on a
+	// server, reached at an address given when it is opened.
+	Type string `json:"type,omitempty"`
 
 	// Encrypted databases are opened with a key, which needs the ncruces
 	// driver.
