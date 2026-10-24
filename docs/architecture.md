@@ -100,8 +100,9 @@ instead of regenerated.
 ## Databases
 
 A repository declares its databases in `devtool.json`, under
-`resources.databases`, by name. They are SQLite, unless declared
-`"type": "postgres"`, below. A database named `foo` is package `foo` in
+`resources.databases`, by name and `"type"`: `"sqlite"`, or `"postgres"`,
+below. A database declared without a type is SQLite, and the next update
+writes `"type": "sqlite"` into the file. A database named `foo` is package `foo` in
 `databases/foo`:
 
 | | |

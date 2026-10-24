@@ -13,11 +13,12 @@ field leaves the file as it was.
 only repositories that have no `kind` yet. Every repository maintained since
 it existed has one.
 
-`resources.databases` names the repository's SQLite databases, which are
-laid out as `docs/architecture.md` describes. Each name is also its
+`resources.databases` names the repository's databases, each with its
+`"type"`, `"sqlite"` or `"postgres"`, laid out as `docs/architecture.md`
+describes. Each name is also its
 package's name, so it is lower-case letters only. `"encrypted": true` gives
-it an `Open` that takes a key, and needs the ncruces driver. `"type": "postgres"` makes it a database on a server instead, opened at a
-URL given at run time, and allows neither of these. `"per": "world"`
+it an `Open` that takes a key, and needs the ncruces driver. A Postgres database is on a server instead,
+opened at a URL given at run time, and allows neither of these. `"per": "world"`
 is for a database with a copy per world: `Path(world)` is
 `~/.<repo>/<world>/<name>.db`. It names a Go parameter, so it is lower-case
 letters, and neither a keyword nor a name `Path` uses itself. `tools` pins the

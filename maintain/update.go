@@ -268,7 +268,7 @@ func recordDefinition(repo engine.Repo, opts UpdateOptions) error {
 		next.Topics = opts.Topics
 	}
 
-	if next.equal(def) {
+	if next.equal(def) && !def.untyped {
 		return nil
 	}
 

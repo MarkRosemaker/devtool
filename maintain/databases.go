@@ -2,7 +2,6 @@ package maintain
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	_ "embed"
 	"errors"
@@ -157,7 +156,7 @@ func writeDatabase(repo engine.Repo, db Database) error {
 	}
 
 	switch db.Type {
-	case "", sqlite:
+	case sqlite:
 	case postgres:
 		return writePostgres(fs, dir, db)
 	default:
@@ -367,7 +366,7 @@ func render(tmpl *template.Template, data any) ([]byte, error) {
 func databaseNames(def Definition, typ string) []string {
 	var names []string
 	for _, db := range def.Resources.Databases {
-		if typ == "" || cmp.Or(db.Type, sqlite) == typ {
+		if typ == "" || db.Type == typ {
 			names = append(names, db.Name)
 		}
 	}

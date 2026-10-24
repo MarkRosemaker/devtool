@@ -136,8 +136,8 @@ pooler can serve them, and unprepared, a `[]byte` parameter arrives as
 than mocking it, at a URL the environment gives, and skips where it gives
 none.
 
-{{ end }}To add a database, add `{"name": "…"}` to `resources.databases` in
-`devtool.json` (with `"type": "postgres"` for a Postgres one), write
+{{ end }}To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
+to `resources.databases` in `devtool.json`, write
 `databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
 {{ end }}
 ## Keeping the documents true
