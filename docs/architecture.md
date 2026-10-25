@@ -165,9 +165,10 @@ A database declared `"type": "postgres"` lives on a server, reached at a
 more than one, `LIFEFLOW_TASKS_DATABASE_URL`; `open.go` has it as `EnvURL`.
 The files are the same, with three differences. `sqlc.yaml` has sqlc
 generate for `pgx/v5`, emitting an interface and pointers for null columns,
-and gives a `date` column `civil.Date` and a `timestamptz` one `time.Time`,
-rather than pgx's own `pgtype` wrappers, as the SQLite configuration gives
-`DATE`; pgx reads and writes both. `open.go`'s `Open(ctx)` migrates first,
+and gives a `date` column `civil.Date`, a `timestamptz` one `time.Time` and
+a `uuid` one the standard library's `uuid.UUID`, rather than pgx's own
+`pgtype` wrappers, as the SQLite configuration gives `DATE`; pgx reads and
+writes all three. `open.go`'s `Open(ctx)` migrates first,
 over one connection of its own straight to the server, closed after: a URL
 whose host is a pooler, as Neon names one with `-pooler` after its first
 label, is migrated without it, as a migration wants a session to itself.
