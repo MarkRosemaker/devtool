@@ -102,14 +102,15 @@ opens a real one of its own, rather than mocking it:
 `Open(ctx, filepath.Join(t.TempDir(), "<name>.db"))`.
 
 `tasks` is Postgres, declared `"type": "postgres"`.
-`Open(ctx, dsn)` connects to the server the URL names, pings it, migrates
-it and returns a `DB`: every query as a method, `WithTx` for a transaction,
-`Pool` and `Close`. Statements are sent unprepared, so that a transaction
-pooler can serve them, and unprepared, a `[]byte` parameter arrives as
-`bytea`: pass a `jsonb` one as text and cast it,
-`CAST(sqlc.arg(name)::text AS jsonb)`. A test opens a real database rather
-than mocking it, at a URL the environment gives, and skips where it gives
-none.
+`Open(ctx)` reads the server's URL from the environment variable its
+`EnvURL` names, migrates over a connection straight to the server, and returns
+a `DB` on a pool: every query as a method, `WithTx` for a transaction, `Pool`
+and `Close`. The URL is the pooled one where the server has a pooler; the
+direct one is derived from it, so there is one variable to set. Statements
+go through the pool unprepared, so that a transaction pooler can serve them.
+A field is a column and a list a table of its own: never `json` or `jsonb`.
+A test opens a real database rather than mocking it, setting `EnvURL` to one
+the environment gives, and skips where it gives none.
 
 To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
 to `resources.databases` in `devtool.json`, write

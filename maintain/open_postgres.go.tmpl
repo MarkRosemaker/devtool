@@ -6,10 +6,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
+	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// EnvURL names the environment variable Open reads the database's address
+// from: a postgres:// URL, the pooled one where the server has a pooler.
+const EnvURL = "{{.Env}}"
 
 // maxConns bounds the pool: a hosted Postgres's free tier allows few
 // connections, and one server needs few.
@@ -22,20 +30,33 @@ type DB struct {
 	pool *pgxpool.Pool
 }
 
-// Open connects to the database at dsn, a postgres:// URL, checks it can be
-// reached, and brings it up to date with [Migrate].
+// Open connects to the database at the URL in [EnvURL], brings it up to date
+// with [Migrate] and checks it can be reached.
 //
-// Statements are sent unprepared, so a pooler that hands each transaction a
-// connection of its own, as Neon's does, never meets a statement prepared on
-// another.
+// Migrations go over a connection of their own, straight to the server: a
+// pooled host, which Neon names with "-pooler" after its first label, is
+// reached without it. A migration wants a session to itself, which a pooler
+// that hands each transaction its own connection does not keep. Everything
+// else goes through the pool, unprepared, so the pooler never meets a
+// statement prepared on another connection.
 //
 // A test opens one of its own the same way, given a database to use:
 //
-//	db, err := {{.Package}}.Open(ctx, os.Getenv("DATABASE_URL"))
-func Open(ctx context.Context, dsn string) (*DB, error) {
+//	t.Setenv({{.Package}}.EnvURL, url)
+//	db, err := {{.Package}}.Open(ctx)
+func Open(ctx context.Context) (*DB, error) {
+	dsn := os.Getenv(EnvURL)
+	if dsn == "" {
+		return nil, fmt.Errorf("{{.Package}}: %s is not set", EnvURL)
+	}
+
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("{{.Package}}: parsing the connection string: %w", err)
+		return nil, fmt.Errorf("{{.Package}}: parsing %s: %w", EnvURL, err)
+	}
+
+	if err := migrateAt(ctx, direct(dsn)); err != nil {
+		return nil, fmt.Errorf("{{.Package}}: migrating: %w", err)
 	}
 
 	cfg.MaxConns, cfg.MinConns = maxConns, 0
@@ -46,21 +67,54 @@ func Open(ctx context.Context, dsn string) (*DB, error) {
 		return nil, fmt.Errorf("{{.Package}}: connecting to %s: %w", cfg.ConnConfig.Host, err)
 	}
 
-	// Connecting is lazy: without this, a wrong address shows only once
-	// something is asked of the database.
+	// Connecting is lazy: without this, a pooler that cannot be reached shows
+	// only once something is asked of the database.
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
 
 		return nil, fmt.Errorf("{{.Package}}: reaching %s: %w", cfg.ConnConfig.Host, err)
 	}
 
-	if err := Migrate(ctx, pool); err != nil {
-		pool.Close()
+	return &DB{Queries: New(pool), pool: pool}, nil
+}
 
-		return nil, fmt.Errorf("{{.Package}}: migrating: %w", err)
+// migrateAt migrates the database at dsn over one connection, closed after.
+func migrateAt(ctx context.Context, dsn string) error {
+	conn, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		return err
+	}
+	defer conn.Close(ctx) //nolint:errcheck // nothing is left to lose
+
+	return Migrate(ctx, conn)
+}
+
+// direct is dsn without its pooler: the host with "-pooler" dropped from its
+// first label. A dsn that names no pooler is direct already.
+func direct(dsn string) string {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return dsn
 	}
 
-	return &DB{Queries: New(pool), pool: pool}, nil
+	label, rest, _ := strings.Cut(u.Hostname(), ".")
+
+	host, pooled := strings.CutSuffix(label, "-pooler")
+	if !pooled {
+		return dsn
+	}
+
+	if rest != "" {
+		host += "." + rest
+	}
+
+	if port := u.Port(); port != "" {
+		host = net.JoinHostPort(host, port)
+	}
+
+	u.Host = host
+
+	return u.String()
 }
 
 // Close closes every connection.

@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Migrations are this database's up-migrations, named the way golang-migrate
@@ -24,23 +23,24 @@ import (
 var Migrations embed.FS
 
 // migrateLock is the advisory lock a migration holds, so two servers starting
-// together do not apply the same one twice. It is taken per transaction, as
-// a pooler that hands each transaction its own connection keeps no session.
+// together do not apply the same one twice. It is taken per transaction, so
+// that it is let go of with the transaction, however that ends.
 const migrateLock = int64(0x6465766d696772) // "devmigr"
 
 // Migrate applies the migrations the database has not had yet, in order,
-// each in a transaction of its own.
+// each in a transaction of its own, over conn: a connection straight to the
+// server, not through a pooler. [Open] makes one.
 //
 // The version is kept where golang-migrate keeps it, so a database it
 // migrated carries on from where it was.
-func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
+func Migrate(ctx context.Context, conn *pgx.Conn) error {
 	all, err := migrations()
 	if err != nil {
 		return err
 	}
 
 	for _, m := range all {
-		if err := apply(ctx, pool, m); err != nil {
+		if err := apply(ctx, conn, m); err != nil {
 			return fmt.Errorf("migration %s: %w", m.file, err)
 		}
 	}
@@ -79,13 +79,13 @@ func migrations() ([]migration, error) {
 
 // apply applies m unless the database has it already, which it asks under
 // the lock, in the same transaction.
-func apply(ctx context.Context, pool *pgxpool.Pool, m migration) error {
+func apply(ctx context.Context, conn *pgx.Conn, m migration) error {
 	body, err := Migrations.ReadFile(m.file)
 	if err != nil {
 		return err
 	}
 
-	tx, err := pool.Begin(ctx)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
