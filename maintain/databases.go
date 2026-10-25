@@ -103,6 +103,16 @@ sql:
             go_type:
               type: "time.Time"
               pointer: true
+          - db_type: "uuid"
+            go_type:
+              import: "uuid"
+              type: "UUID"
+          - db_type: "uuid"
+            nullable: true
+            go_type:
+              import: "uuid"
+              type: "UUID"
+              pointer: true
 `
 
 // generateGo is the directive that runs sqlc, from the database's directory.
