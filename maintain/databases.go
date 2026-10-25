@@ -133,7 +133,7 @@ func DatabasesTask(repo engine.Repo) engine.Task {
 			}
 
 			for _, db := range def.Resources.Databases {
-				if err := writeDatabase(repo, db); err != nil {
+				if err := writeDatabase(repo, db, len(def.Resources.Databases) == 1); err != nil {
 					return fmt.Errorf("database %q: %w", db.Name, err)
 				}
 			}
@@ -148,7 +148,7 @@ var databaseName = regexp.MustCompile(`^[a-z]+$`)
 // pathNames are the names open.go's Path uses, which its argument cannot share.
 var pathNames = []string{"err", "filepath", "home", "os"}
 
-func writeDatabase(repo engine.Repo, db Database) error {
+func writeDatabase(repo engine.Repo, db Database, only bool) error {
 	name := db.Name
 	if !databaseName.MatchString(name) {
 		return errors.New("a database's name has to be lower-case letters only, since it names the package")
@@ -177,7 +177,7 @@ func writeDatabase(repo engine.Repo, db Database) error {
 	switch db.Type {
 	case sqlite:
 	case postgres:
-		return writePostgres(fs, dir, db)
+		return writePostgres(fs, dir, db, envURL(repo.Name(), db.Name, only))
 	default:
 		return fmt.Errorf("type %q is no kind of database devtool knows: %s or %s", db.Type, sqlite, postgres)
 	}
@@ -231,7 +231,7 @@ func writeDatabase(repo engine.Repo, db Database) error {
 // writePostgres writes the files of a Postgres database: it is reached at an
 // address given when it is opened, so it has no path, nor a copy per
 // anything, and the server encrypts what it keeps.
-func writePostgres(fs afero.Fs, dir string, db Database) error {
+func writePostgres(fs afero.Fs, dir string, db Database, env string) error {
 	switch {
 	case db.Per != "":
 		return errors.New("a Postgres database is one server's, reached at its address: it has no copy per anything")
@@ -249,7 +249,9 @@ func writePostgres(fs afero.Fs, dir string, db Database) error {
 		"sqlc.yaml":   func() ([]byte, error) { return fmt.Appendf(nil, sqlcPostgresConfig, db.Name), nil },
 		"generate.go": func() ([]byte, error) { return fmt.Appendf(nil, generateGo, db.Name), nil },
 		"migrate.go":  func() ([]byte, error) { return render(migratePostgresTmpl, struct{ Package string }{db.Name}) },
-		"open.go":     func() ([]byte, error) { return render(openPostgresTmpl, struct{ Package string }{db.Name}) },
+		"open.go": func() ([]byte, error) {
+			return render(openPostgresTmpl, struct{ Package, Env string }{db.Name, env})
+		},
 	}
 
 	for _, name := range slices.Sorted(maps.Keys(files)) {
@@ -264,6 +266,26 @@ func writePostgres(fs afero.Fs, dir string, db Database) error {
 	}
 
 	return nil
+}
+
+// envURL is the environment variable a Postgres database's URL is read from:
+// the repository's name, then the database's where it has more than one, as
+// LIFEFLOW_DATABASE_URL or LIFEFLOW_TASKS_DATABASE_URL.
+func envURL(repo, name string, only bool) string {
+	parts := []string{repo}
+	if !only {
+		parts = append(parts, name)
+	}
+
+	key := strings.Map(func(r rune) rune {
+		if 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' {
+			return r
+		}
+
+		return '_'
+	}, strings.Join(parts, "_"))
+
+	return strings.ToUpper(key) + "_DATABASE_URL"
 }
 
 // requires reports whether go.mod requires module. Indirect counts: there is

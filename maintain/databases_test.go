@@ -86,11 +86,12 @@ func TestPostgresDatabase(t *testing.T) {
 		},
 		"databases/user/generate.go": {"package user\n", "//go:generate sqlc generate\n"},
 		"databases/user/migrate.go": {
-			"package user\n", "//go:embed migrations/*.up.sql", "func Migrate(ctx context.Context, pool *pgxpool.Pool) error",
+			"package user\n", "//go:embed migrations/*.up.sql", "func Migrate(ctx context.Context, conn *pgx.Conn) error",
 			"pg_advisory_xact_lock", "schema_migrations", "pgx.QueryExecModeSimpleProtocol",
 		},
 		"databases/user/open.go": {
-			"package user\n", "func Open(ctx context.Context, dsn string) (*DB, error)", "pool.Ping(ctx)",
+			"package user\n", "func Open(ctx context.Context) (*DB, error)", "pool.Ping(ctx)",
+			`const EnvURL = "GOREPO_DATABASE_URL"`, "migrateAt(ctx, direct(dsn))", `strings.CutSuffix(label, "-pooler")`,
 			"cfg.MaxConns, cfg.MinConns = maxConns, 0", "pgx.QueryExecModeExec",
 			"func (d *DB) Close()", "func (d *DB) WithTx(",
 		},
@@ -114,6 +115,22 @@ func TestPostgresDatabase(t *testing.T) {
 
 	if strings.Contains(readFile(t, fs, "databases/user/open.go"), "func Path(") {
 		t.Error("a Postgres database has no path on this machine")
+	}
+}
+
+func TestEnvURL(t *testing.T) {
+	for _, tc := range []struct {
+		repo, name string
+		only       bool
+		want       string
+	}{
+		{"lifeflow", "tasks", true, "LIFEFLOW_DATABASE_URL"},
+		{"lifeflow", "tasks", false, "LIFEFLOW_TASKS_DATABASE_URL"},
+		{"go-api-libs", "user", true, "GO_API_LIBS_DATABASE_URL"},
+	} {
+		if got := envURL(tc.repo, tc.name, tc.only); got != tc.want {
+			t.Errorf("envURL(%q, %q, %t) = %q, want %q", tc.repo, tc.name, tc.only, got, tc.want)
+		}
 	}
 }
 

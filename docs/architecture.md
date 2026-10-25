@@ -159,23 +159,33 @@ with the key in the URI.
 ### Postgres
 
 A database declared `"type": "postgres"` lives on a server, reached at a
-`postgres://` URL that `Open(ctx, dsn)` is given at run time: nothing in
-`devtool.json` says where. The files are the same, with three differences.
-`sqlc.yaml` has sqlc generate for `pgx/v5`, emitting an interface and
-pointers for null columns, and gives a `date` column `civil.Date` and a
-`timestamptz` one `time.Time`, rather than pgx's own `pgtype` wrappers, as
-the SQLite configuration gives `DATE`; pgx reads and writes both. `open.go` opens a `pgxpool` of at most five
-connections, which a hosted free tier allows, sends statements unprepared,
-so a pooler that hands each transaction its own connection, as Neon's does,
-never meets one prepared on another, and pings the server, so a wrong
-address fails `Open` rather than the first query. It has no `Path`, no
-`"per"` and no `"encrypted"`. `migrate.go` keeps the version in the same
-`schema_migrations(version, dirty)` table, and applies each migration in a
-transaction that first takes an advisory lock and creates the table under
-it: two servers starting together otherwise collide creating it, even with
-`IF NOT EXISTS`. The lock is per transaction, as a transaction pooler keeps
-no session. A migration's body is sent over the simple protocol, so it may
-hold several statements.
+`postgres://` URL read at run time from an environment variable: nothing in
+`devtool.json` says where. The variable is named after the repository,
+`LIFEFLOW_DATABASE_URL`, and after the database too where a repository has
+more than one, `LIFEFLOW_TASKS_DATABASE_URL`; `open.go` has it as `EnvURL`.
+The files are the same, with three differences. `sqlc.yaml` has sqlc
+generate for `pgx/v5`, emitting an interface and pointers for null columns,
+and gives a `date` column `civil.Date` and a `timestamptz` one `time.Time`,
+rather than pgx's own `pgtype` wrappers, as the SQLite configuration gives
+`DATE`; pgx reads and writes both. `open.go`'s `Open(ctx)` migrates first,
+over one connection of its own straight to the server, closed after: a URL
+whose host is a pooler, as Neon names one with `-pooler` after its first
+label, is migrated without it, as a migration wants a session to itself.
+So one variable is set, holding the pooled URL, and the direct one is
+derived from it. Then it opens a `pgxpool` of at most five connections,
+which a hosted free tier allows, sends statements unprepared, so a pooler
+that hands each transaction its own connection, as Neon's does, never meets
+one prepared on another, and pings, so a pooler that cannot be reached
+fails `Open` rather than the first query. It has no `Path`, no `"per"` and
+no `"encrypted"`. `migrate.go`'s `Migrate` takes that connection and keeps
+the version in the same `schema_migrations(version, dirty)` table. It
+applies each migration in a transaction that first takes an advisory lock
+and creates the table under it: two servers starting together otherwise
+collide creating it, even with `IF NOT EXISTS`. The lock is per transaction,
+let go of with it however it ends. A migration's body is sent over the
+simple protocol, so it may hold several statements. Migrating on every
+`Open` costs one read of `schema_migrations` when there is nothing to apply,
+the same read a check that the database is not behind the code would make.
 
 devtool refuses to write one where `go.mod` does not require
 `github.com/jackc/pgx/v5`. An indirect requirement counts: `go get` marks it
