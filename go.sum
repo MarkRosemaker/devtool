@@ -4,12 +4,12 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20261022123121-32054fa8c089 h1:Vh
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261022123121-32054fa8c089/go.mod h1:NmXGg9FlNZ3WxO5nX8+FerJvVrWWSsLXEZbvJt316wg=
 github.com/MarkRosemaker/errpath v0.0.0-20261022123114-077265568e41 h1:tBn7sXqg71fh/rS1lfHpjLJrYvdfEtHiQMCEZCIJ9Zw=
 github.com/MarkRosemaker/errpath v0.0.0-20261022123114-077265568e41/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261022123132-a59c9fdd5ed3 h1:cXCKAASocjs1Z4Voyg+wjuXQYoP5lkZa6BO4VKYVh/w=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261022123132-a59c9fdd5ed3/go.mod h1:skchxZWDHJZ2lwyRyJ+YcUpFQbnELLacltHITXB4kfg=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e h1:10inooZzq4Mrt6oX7FkaMFzgvzDjTinWiwTDziRwj2Q=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e/go.mod h1:6hnvDufZe+92yQFrS658n3FtfmFWC9h4Kl9AXBHDP2Q=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261022123128-57c0116c7b22 h1:DjnzZgVws+7FnXT46jBAQtR5nKM/tKF4Gs22WPpGC6c=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261022123128-57c0116c7b22/go.mod h1:KEmYChAMEMSTsLzBV8jVu0nIedbeFJ8t9SdIh94TpB0=
-github.com/MarkRosemaker/gorepo v0.0.0-20261022123359-3aea929a678d h1:GH1ZFsiB0ej6qsgUrXF/LM2deZZQtDdDTg5/BluUjJw=
-github.com/MarkRosemaker/gorepo v0.0.0-20261022123359-3aea929a678d/go.mod h1:gzGntjcEoVy1KKPkls1z0gywtwp2VTXtpulEFrvDnjw=
+github.com/MarkRosemaker/gorepo v0.0.0-20261027230442-e9f914842169 h1:uZCToqSsClGJ6JgjeI30mcYxjH8ip2IBifkX133jBqQ=
+github.com/MarkRosemaker/gorepo v0.0.0-20261027230442-e9f914842169/go.mod h1:blHkuZs1wokYxxsrKLjanNRkYQy5tkuJYYfV0PRDdIA=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430 h1:NuvPjX87wcKV3EK1yEA1e74a0v/sfcR1QEL+uWxkxI4=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261023192140-497ece8b064f h1:iYNV/ejK+EzFcM/FJdkYO3XMlID8K6GKOAjzJOurQ70=
@@ -123,8 +123,8 @@ golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e h1:HgI6W1OolKK6tcV74is+rl9SM
 golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e/go.mod h1:DBoxwWhjaW8DJJw/YeM4zpeOKMC1FMXSblsYy+1mFSw=
 golang.org/x/mod v0.42.0 h1:ICeL3t2L30ljSPHHxDnR4fqVcBt/zR2zJAb9juavmQg=
 golang.org/x/mod v0.42.0/go.mod h1:u5fzIrRInkL8MaO1cbRkUHT64v303YIT5KEqpNr7jRs=
-golang.org/x/net v0.61.0 h1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=
-golang.org/x/net v0.61.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
+golang.org/x/net v0.62.0 h1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=
+golang.org/x/net v0.62.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
 golang.org/x/oauth2 v0.37.0 h1:JUlcxA8oAtauLfiH8FX2/FkAWHAdi0QtGCGc+hofE98=
 golang.org/x/oauth2 v0.37.0/go.mod h1:IxwZNxUULJmpBFf9K/9NTMSIfZZuvuTy1gGxhigP/58=
 golang.org/x/sync v0.24.0 h1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=
