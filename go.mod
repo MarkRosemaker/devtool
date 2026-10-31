@@ -5,8 +5,8 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261022123121-32054fa8c089
 	github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261022123128-57c0116c7b22
-	github.com/MarkRosemaker/gorepo v0.0.0-20261027230442-e9f914842169
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261031230151-125ecfc420bf
+	github.com/MarkRosemaker/gorepo v0.0.0-20261031230301-eacf13fc9d16
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261023192140-497ece8b064f
 	github.com/MarkRosemaker/openapi v0.0.0-20261023192214-d3203bb285d8
@@ -53,7 +53,7 @@ require (
 	github.com/stretchr/objx v0.8.0 // indirect
 	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
 	golang.org/x/net v0.62.0 // indirect

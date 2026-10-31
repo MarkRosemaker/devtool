@@ -6,10 +6,10 @@ github.com/MarkRosemaker/errpath v0.0.0-20261022123114-077265568e41 h1:tBn7sXqg7
 github.com/MarkRosemaker/errpath v0.0.0-20261022123114-077265568e41/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
 github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e h1:10inooZzq4Mrt6oX7FkaMFzgvzDjTinWiwTDziRwj2Q=
 github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e/go.mod h1:6hnvDufZe+92yQFrS658n3FtfmFWC9h4Kl9AXBHDP2Q=
-github.com/MarkRosemaker/golangci-json v0.0.0-20261022123128-57c0116c7b22 h1:DjnzZgVws+7FnXT46jBAQtR5nKM/tKF4Gs22WPpGC6c=
-github.com/MarkRosemaker/golangci-json v0.0.0-20261022123128-57c0116c7b22/go.mod h1:KEmYChAMEMSTsLzBV8jVu0nIedbeFJ8t9SdIh94TpB0=
-github.com/MarkRosemaker/gorepo v0.0.0-20261027230442-e9f914842169 h1:uZCToqSsClGJ6JgjeI30mcYxjH8ip2IBifkX133jBqQ=
-github.com/MarkRosemaker/gorepo v0.0.0-20261027230442-e9f914842169/go.mod h1:blHkuZs1wokYxxsrKLjanNRkYQy5tkuJYYfV0PRDdIA=
+github.com/MarkRosemaker/golangci-json v0.0.0-20261031230151-125ecfc420bf h1:jYwa4I1YHD8qPK4AJ5STBwSWAXzIWSfvN13GRt29s3I=
+github.com/MarkRosemaker/golangci-json v0.0.0-20261031230151-125ecfc420bf/go.mod h1:h2cW4S0/It23INfKmToY63rad53vlTLBoaHCLUVr7/A=
+github.com/MarkRosemaker/gorepo v0.0.0-20261031230301-eacf13fc9d16 h1:01EbmImXsS+ppp1gBaF8BIpgwBe4IQGb8IbE/+Ie5AY=
+github.com/MarkRosemaker/gorepo v0.0.0-20261031230301-eacf13fc9d16/go.mod h1:TrFAHUdJBQOrguegOQieBMX6yJFsQgB6IiRUYeBNSaE=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430 h1:NuvPjX87wcKV3EK1yEA1e74a0v/sfcR1QEL+uWxkxI4=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261023192140-497ece8b064f h1:iYNV/ejK+EzFcM/FJdkYO3XMlID8K6GKOAjzJOurQ70=
@@ -115,8 +115,8 @@ github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWD
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
 github.com/subosito/gotenv v1.6.0 h1:9NlTDc1FTs4qu0DDq7AEtTPNw6SVm7uBMsUCUjABIf8=
 github.com/subosito/gotenv v1.6.0/go.mod h1:Dk4QP5c2W3ibzajGcXpNraDfq2IrhjMIvMSWPKKo0FU=
-go.yaml.in/yaml/v3 v3.0.5 h1:N6y/pJk8buWs9NY5ERU2HSMfm+IuD/OtfdAnq6kESPw=
-go.yaml.in/yaml/v3 v3.0.5/go.mod h1:HVTZu1O7/Vkt2N+BFy8Zza+lnLsABggaTM2ZpNIGuKg=
+go.yaml.in/yaml/v3 v3.0.6 h1:zcDfvjXEqTQmpjniUBLc91xYJMB2c4QOFxEF/LCEckM=
+go.yaml.in/yaml/v3 v3.0.6/go.mod h1:HVTZu1O7/Vkt2N+BFy8Zza+lnLsABggaTM2ZpNIGuKg=
 golang.org/x/crypto v0.58.0 h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=
 golang.org/x/crypto v0.58.0/go.mod h1:Xh+kl5A+M0gMiWDytH2Hhr5Z7WbNCpv/eB/EFgfSk+w=
 golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e h1:HgI6W1OolKK6tcV74is+rl9SMT0njsHlp0TbQiGXI/A=
