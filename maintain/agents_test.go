@@ -25,6 +25,7 @@ func TestGenerateAgents(t *testing.T) {
 			"## Keeping the documents true",
 			"## Code",
 			"## Reviews",
+			"## The next step",
 		})
 
 		// Nothing to link, so no section inviting anybody to look.
@@ -45,7 +46,12 @@ func TestGenerateAgents(t *testing.T) {
 			// Merging deletes the branch, so the next work starts a new one.
 			"Merging deletes the branch.",
 			"One branch and one pull request at a time",
-			"Once you have branched, leave `main` alone",
+			"While a branch is open, leave `main` alone",
+			// Once it has merged, main is read again for what else changed.
+			"Once the pull request has merged, `main` is yours to read again",
+			"## The next step",
+			"read what changed on it\n  besides your work",
+			"suggest merging it, with its link",
 			// The exit from that rule: a branch that cannot merge is not
 			// something to reconcile on your own initiative.
 			"say so and stop",
@@ -380,6 +386,7 @@ func TestAgentsGolden(t *testing.T) {
 		{"full", agentsData{
 			Generated: generatedRootDirs,
 			Gitignore: true,
+			Roadmap:   true,
 			Databases: []string{"world", "user", "tasks"},
 			SQLite:    []string{"world", "user"},
 			Postgres:  []string{"tasks"},
@@ -470,4 +477,30 @@ func generateAgentsAndRead(t *testing.T, fs afero.Fs) string {
 	}
 
 	return readFile(t, fs, agentsPath)
+}
+
+// A repository with a roadmap gets its rules in a section of their own, in
+// place of the one line every other repository gets.
+func TestGenerateAgentsRoadmap(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	writeFile(t, fs, roadmapPath, "# Roadmap\n")
+
+	got := generateAgentsAndRead(t, fs)
+
+	checkOrder(t, got, []string{
+		"## Keeping the documents true",
+		"## The roadmap",
+		"removes it in the same pull\n  request",
+		"An item you find already implemented",
+		"Keep no record of what was done",
+		"## Code",
+	})
+
+	if strings.Contains(got, "Delete an entry when it is done") {
+		t.Errorf("want the roadmap's rules once, in its section:\n%s", got)
+	}
+
+	if without := generateAgentsAndRead(t, afero.NewMemMapFs()); strings.Contains(without, "## The roadmap") {
+		t.Errorf("want no roadmap section without a roadmap:\n%s", without)
+	}
 }

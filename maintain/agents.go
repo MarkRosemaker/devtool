@@ -73,6 +73,10 @@ type agentsData struct {
 
 	// Smoke is true for a web app with a smoke test, which make ready runs.
 	Smoke bool
+
+	// Roadmap is true where docs/roadmap.md exists, which then has rules of
+	// its own.
+	Roadmap bool
 }
 
 // generatedRoot is one generated root file and the directory it is built
@@ -205,6 +209,11 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
+	roadmap, err := afero.Exists(fs, roadmapPath)
+	if err != nil {
+		return agentsData{}, err
+	}
+
 	return agentsData{
 		Generated:     generated,
 		Fragments:     fragments,
@@ -212,6 +221,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		OpenAPIEnrich: openAPIEnrich,
 		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
 		Smoke:         smoke,
+		Roadmap:       roadmap,
 		Databases:     databaseNames(def, ""),
 		SQLite:        databaseNames(def, sqlite),
 		Postgres:      databaseNames(def, postgres),

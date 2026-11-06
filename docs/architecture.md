@@ -53,11 +53,17 @@ asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
-then licence, README, Makefile, `.gitignore`, `AGENTS.md` (removing any
-`CLAUDE.md` link to it), the lint config, and the files that go with any
+then licence, README, the roadmap's links, Makefile, `.gitignore`,
+`AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
 declared databases last. That one task is the whole of a local rebuild and
 the first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
+
+Like the `.gitignore` block, the roadmap's links go into a file a person
+keeps: where `docs/roadmap/` holds Markdown files, `docs/roadmap.md` lists under
+"See also:" after its title each file it does not already link, named by the
+file's first heading, and drops a listed link whose file has gone. The rest
+of the file is left as it is.
 
 `devtool.json` goes first because the generators read it. It says what kind of
 repository this is — `library`, `cli` (a command, library or not), `webapp` or

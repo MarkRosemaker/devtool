@@ -74,6 +74,7 @@ var owners = []struct{ path, part string }{
 	{licensePath, "license"},
 	{readmePath, "readme"},
 	{readmeDir + "/", "readme"},
+	{roadmapPath, "roadmap"},
 	{makefilePath, "makefile"},
 	{makefileDir + "/", "makefile"},
 	{gitignorePath, "gitignore"},
@@ -175,6 +176,8 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //   - The licence, README and Makefile first, so a repository is licensed,
 //     documented and buildable even if a later generator fails — and so the
 //     make targets AGENTS.md points an agent at exist before it is written.
+//   - The roadmap's links before AGENTS.md, which has rules for a roadmap
+//     only once there is one.
 //   - .gitignore after the Makefile, whose targets settle what there is to
 //     ignore, and before AGENTS.md, which says so only once the block is
 //     really there.
@@ -185,6 +188,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
 		ReadmeTask(repo, opts.Coverage),
+		RoadmapTask(repo),
 		MakefileTask(repo),
 		GitignoreTask(repo),
 		AgentsTask(repo),

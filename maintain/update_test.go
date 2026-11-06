@@ -14,6 +14,7 @@ func TestDescribeUpdate(t *testing.T) {
 		want  []string
 	}{
 		{"coverage moved", []string{"README.md", "devtool.json"}, []string{"definition", "readme"}},
+		{"a roadmap file linked", []string{"AGENTS.md", "docs/roadmap.md"}, []string{"roadmap", "agents"}},
 		{
 			"everything, out of order",
 			[]string{".golangci.yaml", "CLAUDE.md", "AGENTS.md", ".gitignore", "Makefile", "LICENSE"},
