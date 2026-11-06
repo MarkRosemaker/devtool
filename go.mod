@@ -3,14 +3,14 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20261022123121-32054fa8c089
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261106110159-b12a60cf95cf
-	github.com/MarkRosemaker/gorepo v0.0.0-20261106110321-8222cea644b4
-	github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430
-	github.com/MarkRosemaker/jsonutil v0.0.0-20261023192140-497ece8b064f
-	github.com/MarkRosemaker/openapi v0.0.0-20261023192214-d3203bb285d8
-	github.com/MarkRosemaker/ordmap v0.0.0-20261022123151-722ebe65c15c
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20261106130509-f5c00ba23f2c
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261106130533-018375a4a1f6
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261106130519-b56f8a271b92
+	github.com/MarkRosemaker/gorepo v0.0.0-20261106130742-86aa5e5dd9dc
+	github.com/MarkRosemaker/json2yaml v0.0.0-20261106130503-05e8658c3d63
+	github.com/MarkRosemaker/jsonutil v0.0.0-20261106130505-fbbcb8fe8766
+	github.com/MarkRosemaker/openapi v0.0.0-20261106130624-d2c0dbd97967
+	github.com/MarkRosemaker/ordmap v0.0.0-20261106130542-84153a12533a
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
 	github.com/spf13/afero v1.15.0
@@ -20,9 +20,9 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
-	github.com/MarkRosemaker/errpath v0.0.0-20261022123114-077265568e41 // indirect
-	github.com/MarkRosemaker/yaml v0.0.0-20261022123206-78b7994522e0 // indirect
-	github.com/MarkRosemaker/yaml2json v0.0.0-20261022123114-1c329072fb33 // indirect
+	github.com/MarkRosemaker/errpath v0.0.0-20261106130503-00b498cbad34 // indirect
+	github.com/MarkRosemaker/yaml v0.0.0-20261106130551-a36cbd3f041c // indirect
+	github.com/MarkRosemaker/yaml2json v0.0.0-20261106130503-6a5b8aab3119 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/ProtonMail/go-crypto v1.5.2 // indirect
@@ -30,7 +30,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/go-api-libs/types v0.0.0-20261022123113-262188531044 // indirect
+	github.com/go-api-libs/types v0.0.0-20261106130503-977d619995d6 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
 	github.com/go-git/go-billy/v6 v6.0.0-beta.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/exp v0.0.0-20261014143641-f0251eb4aa3e // indirect
+	golang.org/x/exp v0.0.0-20261106112924-d498a4c2cc9a // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
