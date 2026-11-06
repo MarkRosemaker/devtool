@@ -906,3 +906,43 @@ func TestGenerateMakefileWebapp(t *testing.T) {
 		}
 	})
 }
+
+// A fragment deleted since the Makefile was generated must not stop make,
+// since make generate is what writes the Makefile without it.
+func TestGenerateMakefileSurvivesADeletedFragment(t *testing.T) {
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make is not installed")
+	}
+
+	dir := t.TempDir()
+	fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
+
+	if err := fs.MkdirAll("mk", 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, fs, "mk/flags.mk", "export FOO := bar\n")
+	writeFile(t, fs, "mk/custom.mk", "ship:\n\t@echo shipped\n")
+
+	if err := generateMakefile(fs, "repo"); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, p := range []string{"mk/flags.mk", "mk/custom.mk"} {
+		if err := fs.Remove(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	cmd := exec.CommandContext(t.Context(), "make", "-n", "generate")
+	cmd.Dir = dir
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -n generate: %v\n%s", err, out)
+	}
+
+	if !strings.Contains(string(out), "devtool update") {
+		t.Errorf("make -n generate printed %q, want it to run devtool update", out)
+	}
+}
