@@ -5,8 +5,8 @@ go 1.27.0
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261022123121-32054fa8c089
 	github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261031230151-125ecfc420bf
-	github.com/MarkRosemaker/gorepo v0.0.0-20261031230301-eacf13fc9d16
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261106110159-b12a60cf95cf
+	github.com/MarkRosemaker/gorepo v0.0.0-20261106110321-8222cea644b4
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261023192140-497ece8b064f
 	github.com/MarkRosemaker/openapi v0.0.0-20261023192214-d3203bb285d8
@@ -48,7 +48,7 @@ require (
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/spf13/pflag v1.1.0 // indirect
 	github.com/spf13/viper v1.21.0 // indirect
 	github.com/stretchr/objx v0.8.0 // indirect
 	github.com/stretchr/testify v1.12.1 // indirect

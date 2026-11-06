@@ -13,10 +13,10 @@ github.com/MarkRosemaker/errpath
 # github.com/MarkRosemaker/ghrepo v0.0.0-20261027230259-3615eb71756e
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261031230151-125ecfc420bf
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261106110159-b12a60cf95cf
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261031230301-eacf13fc9d16
+# github.com/MarkRosemaker/gorepo v0.0.0-20261106110321-8222cea644b4
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261022123116-6447be2c9430
@@ -270,7 +270,7 @@ github.com/spf13/afero/mem
 ## explicit; go 1.21.0
 github.com/spf13/cast
 github.com/spf13/cast/internal
-# github.com/spf13/pflag v1.0.10
+# github.com/spf13/pflag v1.1.0
 ## explicit; go 1.12
 github.com/spf13/pflag
 # github.com/spf13/viper v1.21.0
