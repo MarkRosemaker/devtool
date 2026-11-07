@@ -182,20 +182,19 @@ func houseTargets(shape repoShape) []makeTarget {
 	var build []makeTarget
 
 	if shape.Binary != "" {
-		runRecipe := "$(BINARY) $(ARGS) | loggo stream"
+		// Quoted, because cmd.exe runs a path with a slash in it only quoted.
+		runRecipe := `"$(BINARY)" $(ARGS) | loggo stream`
 		if shape.LoggoTemplate {
 			runRecipe += " --template loggo.template"
 		}
 
 		ready.Prereqs = append(ready.Prereqs, "build")
 
-		// Through BINARY and PKG, so a fragment can repoint either.
+		// Through BINARY and PKG, so a fragment can repoint either. go build
+		// creates bin/ itself.
 		build = []makeTarget{{
-			Name: "build",
-			Recipe: []string{
-				"mkdir -p " + binDir,
-				"go build -o $(BINARY) $(PKG)",
-			},
+			Name:   "build",
+			Recipe: []string{"go build -o $(BINARY) $(PKG)"},
 		}, {
 			Name:    "run",
 			Comment: "ARGS passes flags through, e.g. `make run ARGS=-debug`.",
@@ -233,10 +232,11 @@ func houseTargets(shape repoShape) []makeTarget {
 
 	if shape.Benchmarks {
 		// The dollar is doubled to reach the shell as "^$", which matches
-		// no test, so only benchmarks run.
+		// no test, so only benchmarks run. Quoted, because cmd.exe takes a
+		// bare ^ for its escape character.
 		bench = []makeTarget{{
 			Name:   "bench",
-			Recipe: []string{"go test -run=^$$ -bench=. -benchmem ./..."},
+			Recipe: []string{`go test -run="^$$" -bench=. -benchmem ./...`},
 		}}
 	}
 
@@ -296,7 +296,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		{
 			Name:    "clean",
 			Comment: "A fragment adds its own with CLEAN_FILES += dist.",
-			Recipe:  []string{"rm -rf $(CLEAN_FILES)"},
+			Recipe:  []string{"$(call remove,$(CLEAN_FILES))"},
 		},
 	})
 }
@@ -313,7 +313,8 @@ func houseTargets(shape repoShape) []makeTarget {
 // built with a Go at least as new as the one the module targets, and
 // "go install" otherwise honours the tool's own pinned toolchain, which can
 // be older: golangci-lint and govulncheck both refuse to run at all when it
-// is.
+// is. The Makefile exports it for the tools target rather than the recipe
+// setting it before the command, which cmd.exe cannot do.
 //
 // Where they land is then put on the Makefile's own PATH, since installing a
 // current tool is no use while an older copy earlier on somebody's PATH is
@@ -323,10 +324,10 @@ func houseTargets(shape repoShape) []makeTarget {
 func toolInstalls(tools []Tool) []string {
 	installs := make([]string, 0, len(tools)+1)
 	for _, t := range tools {
-		installs = append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+t.Package+"@latest")
+		installs = append(installs, "go install "+t.Package+"@latest")
 	}
 
-	return append(installs, "GOTOOLCHAIN=$(TOOL_GO) go install "+devtoolModule+"@latest")
+	return append(installs, "go install "+devtoolModule+"@latest")
 }
 
 // devtoolModule is this generator, which the tools target also installs.

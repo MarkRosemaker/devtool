@@ -8,16 +8,27 @@
 .NOTPARALLEL:
 MAKEFLAGS += --no-print-directory
 {{ with .Binary }}
-BINARY := bin/{{ . }}
+BINARY := bin/{{ . }}$(shell go env GOEXE)
 PKG    := {{ $.Pkg }}
 {{ end -}}
 
 {{ with .CleanFiles }}
 CLEAN_FILES := {{ . }}
+
+# remove deletes files and directories: with rm, or with PowerShell on
+# Windows, which may have no rm.
+ifeq ($(OS),Windows_NT)
+empty :=
+comma := ,
+remove = powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $(subst $(empty) $(empty),$(comma),$(strip $1)); exit 0"
+else
+remove = rm -rf $1
+endif
 {{ end -}}
 {{ if .Tools }}
 # A tool built with an older Go than this module targets refuses to analyse it.
 TOOL_GO := $(shell go env GOVERSION)
+tools: export GOTOOLCHAIN := $(TOOL_GO)
 
 # Where make tools installs, which is GOBIN when that is set. Put on the PATH
 # below so an older copy earlier on yours cannot be the one that runs.
@@ -25,7 +36,9 @@ TOOL_BIN := $(shell go env GOBIN)
 ifeq ($(TOOL_BIN),)
 TOOL_BIN := $(shell go env GOPATH)/bin
 endif
-export PATH := $(TOOL_BIN):$(PATH)
+# A Windows PATH is separated by ;, any other by :, Git Bash's too.
+PATH_SEP := $(if $(findstring ;,$(PATH)),;,:)
+export PATH := $(TOOL_BIN)$(PATH_SEP)$(PATH)
 {{ end -}}
 {{ with .Targets }}
 .PHONY:{{ range . }} {{ .Name }}{{ end }}

@@ -382,7 +382,7 @@ func TestGenerateMakefileCommand(t *testing.T) {
 					// variables so a fragment can repoint either.
 					"ci: ready verify",
 					"ready: generate fix vet test-race build",
-					"build:", "mkdir -p bin", "go build -o $(BINARY) $(PKG)",
+					"build:", "go build -o $(BINARY) $(PKG)",
 				})
 			}
 
@@ -643,7 +643,7 @@ func TestGenerateMakefileDollarEscaping(t *testing.T) {
 
 	// "-run=^$" alone would have make eat the dollar, leaving "-run=^",
 	// which matches every test rather than none of them.
-	if !strings.Contains(got, "go test -run=^$$ -bench=.") {
+	if !strings.Contains(got, `go test -run="^$$" -bench=.`) {
 		t.Errorf("want the dollar doubled for make:\n%s", got)
 	}
 }
@@ -658,9 +658,11 @@ func TestGenerateMakefileTools(t *testing.T) {
 
 	checkOrder(t, got, []string{
 		"TOOL_GO := $(shell go env GOVERSION)",
-		"tools:",
-		"GOTOOLCHAIN=$(TOOL_GO) go install github.com/golangci/golangci-lint",
-		"GOTOOLCHAIN=$(TOOL_GO) go install golang.org/x/vuln/cmd/govulncheck",
+		// Exported for the target, since cmd.exe cannot set it before a command.
+		"tools: export GOTOOLCHAIN := $(TOOL_GO)",
+		"\ntools:",
+		"\tgo install github.com/golangci/golangci-lint",
+		"\tgo install golang.org/x/vuln/cmd/govulncheck",
 	})
 
 	// Nothing to install, nothing to say about which Go to install it with.
@@ -728,7 +730,7 @@ func TestGenerateMakefileCleanIsExtensible(t *testing.T) {
 
 	checkOrder(t, got, []string{
 		"CLEAN_FILES := bin cover.out",
-		"clean:", "rm -rf $(CLEAN_FILES)",
+		"clean:", "$(call remove,$(CLEAN_FILES))",
 	})
 }
 
@@ -944,5 +946,67 @@ func TestGenerateMakefileSurvivesADeletedFragment(t *testing.T) {
 
 	if !strings.Contains(string(out), "devtool update") {
 		t.Errorf("make -n generate printed %q, want it to run devtool update", out)
+	}
+}
+
+// TestGenerateMakefileOnWindows runs the generated file as make on Windows
+// would see it: OS set to Windows_NT, a Go that builds .exe files, and a
+// PATH separated by semicolons.
+func TestGenerateMakefileOnWindows(t *testing.T) {
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make is not installed")
+	}
+
+	dir := t.TempDir()
+	fs := afero.NewBasePathFs(afero.NewOsFs(), dir)
+
+	if err := fs.MkdirAll("cmd/tool", 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, fs, "cmd/tool/main.go", "package main\n")
+
+	if err := generateMakefile(fs, "repo"); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.CommandContext(t.Context(), "make", "-n", "build", "run", "clean", "OS=Windows_NT")
+	cmd.Dir = dir
+
+	cmd.Env = append(os.Environ(), "GOOS=windows", `PATH=C:\Windows;`+os.Getenv("PATH"))
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make: %v\n%s", err, out)
+	}
+
+	for _, want := range []string{
+		"go build -o bin/tool.exe ./cmd/tool/",
+		// cmd.exe runs a path with a slash in it only when it is quoted.
+		`"bin/tool.exe"  | loggo stream`,
+		`powershell -NoProfile -Command "Remove-Item -Recurse -Force ` +
+			`-ErrorAction SilentlyContinue bin,cover.out; exit 0"`,
+	} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("want %q in:\n%s", want, out)
+		}
+	}
+
+	if strings.Contains(string(out), "mkdir") {
+		t.Errorf("want no mkdir, whose -p cmd.exe does not know:\n%s", out)
+	}
+
+	pathCmd := exec.CommandContext(t.Context(), "make", "-p", "-n", "tools")
+	pathCmd.Dir = dir
+
+	pathCmd.Env = append(os.Environ(), `PATH=C:\Windows;`+os.Getenv("PATH"))
+
+	db, err := pathCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("make -p: %v\n%s", err, db)
+	}
+
+	if !strings.Contains(string(db), "PATH_SEP := ;") {
+		t.Errorf("want PATH_SEP to be ; for a Windows PATH")
 	}
 }
