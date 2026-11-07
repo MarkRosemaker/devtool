@@ -13,8 +13,8 @@ import (
 //
 // Both, because a run writes the coverage it measured back into the file and
 // commits it, so the next run on any machine starts from it. Which repository
-// that is used to be a constant naming one person's; it is worked out from the
-// file's own location instead, so anybody's list works the same way.
+// that is comes from the file's own location, so anybody's list works the
+// same way.
 type ConfigFile struct {
 	// Path is the file itself.
 	Path string

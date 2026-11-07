@@ -5,14 +5,9 @@ import (
 	"os"
 )
 
-// Logs go to stderr because stdout belongs to the run's output.
-//
-// They used to share stdout, and the sharing was invisible for months: a
-// consumer parsing the stream read every log line as an event, and the ones
-// whose keys happened to match a field — repo, coverage, commits — became
-// valid-looking events with no kind that it silently dropped. The reader now
-// refuses a line that is not an event, so the two would fail loudly rather
-// than quietly, but the reason they must not share a stream is the same.
+// Logs go to stderr because stdout belongs to the run's output. A consumer
+// parsing the event stream reads a log line there as an event, and one whose
+// keys match a field — repo, coverage, commits — passes for a valid one.
 
 // jsonLogs is whether logging is for a process reading it, set by -json.
 var jsonLogs bool

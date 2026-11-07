@@ -246,7 +246,7 @@ func TestVersionRidesAlongWithRealWork(t *testing.T) {
 }
 
 // TestPrivacyIsReadFromTheDefinition: a local run has no GitHub to ask, and
-// the Makefile no longer passes -private, so devtool.json is the only thing
+// the Makefile passes no -private, so devtool.json is the only thing
 // standing between a private repository and a licence it must not carry.
 func TestPrivacyIsReadFromTheDefinition(t *testing.T) {
 	for _, tc := range []struct {
@@ -311,8 +311,7 @@ func committedRepo(t *testing.T) string {
 
 // TestUpdateRefusesWhenBehind: a build that is behind does not write. Behind
 // is not a worse opinion but a different one, so its generators undo the
-// newer ones' work — which is what happened to this repository's own files
-// before the notice became a refusal.
+// newer ones' work.
 //
 // In-process rather than through the binary, because a binary a test builds
 // is never a published version — that is the whole reason a local build is
@@ -559,14 +558,10 @@ func readFileString(t *testing.T, path string) string {
 	return string(b)
 }
 
-// TestACommitRunCommitsTheDefinition is the bug this task exists to fix.
-//
-// devtool.json used to be written after the engine had committed and pushed,
-// so it was left in the worktree, and the next run's prepare discarded it
-// before pulling. Every maintained run did that for every repository: not one
-// devtool.json in the portfolio came from a run. So this asserts the one thing
-// that was false — after a -commit run, the definition is in the commit that
-// reached the remote, and nothing is left behind in the worktree.
+// TestACommitRunCommitsTheDefinition: devtool.json written after the engine
+// has committed and pushed is left in the worktree, and the next run's
+// prepare discards it before pulling. After a -commit run, the definition is
+// in the commit that reached the remote, and nothing is left behind.
 func TestACommitRunCommitsTheDefinition(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs git and the Go toolchain")

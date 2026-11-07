@@ -51,8 +51,7 @@ type UpdateOptions struct {
 // devtool.json is written inside the task, and that is the point of it being
 // one. A maintained run commits a task's changes and pushes; a definition
 // written after that is left uncommitted, and the next run discards it before
-// pulling. Every portfolio run did exactly that, for every repository, until
-// this existed.
+// pulling, and nothing reports it.
 //
 // The same task is the whole of a local rebuild, so the two paths cannot
 // disagree about what devtool owns.

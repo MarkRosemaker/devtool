@@ -648,7 +648,7 @@ func TestGenerateMakefileDollarEscaping(t *testing.T) {
 	}
 }
 
-// TestGenerateMakefileTools covers what took two goes to get right: a tool
+// TestGenerateMakefileTools covers how the tools are installed: a tool
 // that analyses this module has to be built with a Go at least as new as
 // the module targets, and "go install" alone honours the tool's own pinned
 // toolchain, which can be older. Both golangci-lint and govulncheck then
@@ -827,10 +827,9 @@ func TestGenerateMakefileToolPathUnderMake(t *testing.T) {
 		out, gobin, errs, probe, probeErrs)
 }
 
-// TestGenerateMakefileRunsPlainUpdate: privacy used to ride on the generate
-// target as -private, and a Makefile generated without it rebuilt a private
-// repository's README as a public one's. devtool.json carries it now, so the
-// target has nothing to pass back.
+// TestGenerateMakefileRunsPlainUpdate: devtool.json says whether the
+// repository is private, so the generate target passes nothing, and a
+// Makefile cannot rebuild a private repository's README as a public one's.
 func TestGenerateMakefileRunsPlainUpdate(t *testing.T) {
 	fs := afero.NewMemMapFs()
 

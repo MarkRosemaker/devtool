@@ -174,11 +174,10 @@ func orderedKeys[V any](m ordmap.OrderedMap[string, V]) []string {
 }
 
 // TestAFailureIsReportedOnce: patchpal sends a failure to the chat for every
-// repo_done that carries one, so a failure reported twice reached the reader
-// twice. The run used to report every failed result itself, on top of the
-// engine's own repo_done; now only a repository the engine never saw — one
-// that could not be opened — is reported here, and as text, not as the HTML
-// a chat message is rendered in.
+// repo_done that carries one, so a failure reported twice reaches the reader
+// twice. Only a repository the engine never saw — one that could not be
+// opened — is reported by the run itself, and as text, not as the HTML a chat
+// message is rendered in.
 func TestAFailureIsReportedOnce(t *testing.T) {
 	u := &unit{owner: "user", name: "gone", err: errors.New("opening repository: not found")}
 

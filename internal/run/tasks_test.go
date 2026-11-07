@@ -12,10 +12,9 @@ import (
 // written in a maintained run: inside the sequence, as part of the first
 // task, so the engine commits it with everything else devtool owns.
 //
-// It used to be written by the service after the engine returned — after the
-// commits and the push — so it sat uncommitted in the worktree until the next
-// run's prepare discarded it. Not one devtool.json in the portfolio came from
-// a run. The end-to-end half of this is in internal/local, which drives the
+// Written by the service after the engine returned — after the commits and
+// the push — it would sit uncommitted until the next run's prepare discarded
+// it. The end-to-end half of this is in internal/local, which drives the
 // same task through the same engine against a real remote; this is the half
 // that says the portfolio still uses it.
 func TestTheMaintainedSequenceWritesTheDefinition(t *testing.T) {

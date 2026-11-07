@@ -91,9 +91,8 @@ func TestUnlinkClaude(t *testing.T) {
 
 // TestClaudeTaskOnARepo runs the task the way a run does: through
 // [ClaudeTask], on a [Repo]. Reading a link needs a method the concrete
-// filesystem has and a Repo embedding afero.Fs once did not, which is how the
-// old linking task shipped broken while every test of its inner function
-// passed.
+// filesystem has and an afero.Fs need not, so a test of the inner function
+// alone can pass while the task does nothing.
 func TestClaudeTaskOnARepo(t *testing.T) {
 	dir := t.TempDir()
 	repo := &fakeRepo{fs: afero.NewBasePathFs(afero.NewOsFs(), dir)}

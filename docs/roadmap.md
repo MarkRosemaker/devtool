@@ -153,17 +153,17 @@ Worth taking and not yet here: `release <level>` (a semver bump plus assets),
 `internal/version/`, `init`/`new <name>` with `repository.go`, `update.go` and
 `github.go`.
 
-`self-update` was taken, and not as the fork had it — see `devtool-engine`'s
-roadmap. So `release <level>` is no longer a prerequisite for shipping a fix;
-it is worth having for people who are not us, and nothing is waiting on it.
+`self-update` is here, done differently from the fork — see `devtool-engine`.
+So `release <level>` is not needed to ship a fix; it is worth having for
+people who are not us, and nothing is waiting on it.
 
-Two corrections to a first reading that went by filenames:
+Two files are not what their names suggest:
 
-- `internal/cmd/smart_command.go` looked like the `required:` predicate
-  machinery worth porting. It is ten lines wrapping `cobra.Command` with an
+- `internal/cmd/smart_command.go` is not `required:` predicate machinery worth
+  porting. It is ten lines wrapping `cobra.Command` with an
   `IsRequired func() bool`. Take the idea; there is no code to take.
-- `internal/golangci/golangci.go` looked superseded by the lint config
-  generator. Compared, and kept. Of the 75 linters it enables, 62 still exist
+- `internal/golangci/golangci.go` is not superseded by the lint config
+  generator, and stays. Of the 75 linters it enables, 62 still exist
   in golangci-lint v2 and 13 do not: `deadcode`, `structcheck`, `varcheck`,
   `ifshort`, `exhaustivestruct` and `typecheck` are gone outright,
   `exportloopref` is now `copyloopvar`, `gosimple` and `stylecheck` folded into
@@ -182,12 +182,11 @@ Two corrections to a first reading that went by filenames:
   `nakedret` 10. `exhaustive.DefaultSignifiesExhaustive` and `tagalign` we
   already set the same way.
 
-**"Out of scope" meant now, not forever.** The pruning that took
-`devtool-legacy` from 91 files to 55 cut the microservice, CI and website
-generators because this portfolio has no microservices in it today, not because
-generating a CircleCI config, a Dockerfile or a service skeleton is a bad idea.
-Every deleted file is readable at `devtool-legacy@293f881`, the commit before
-the pruning, which is on `master`'s own history rather than dangling. When one
+**Out of scope for now, not forever.** `devtool-legacy` has no microservice,
+CI or website generators because this portfolio has no microservices in it
+today, not because generating a CircleCI config, a Dockerfile or a service
+skeleton is a bad idea. They are readable at `devtool-legacy@293f881`, on
+`master`'s own history. When one
 of them is wanted, a generator graduates to its own `devtool-<name>` repository
 rather than reverting into the fork — `devtool-circleci` or `devtool-service`
 is the shape. The `required:` predicates above are the other half of that:
@@ -215,11 +214,3 @@ What is untested is what touches a repository from the outside:
 
 `internal/local` is covered where it matters, including the refusal to touch a
 dirty worktree.
-
-## Documents that say only what is
-
-`docs/`, `AGENTS/` and the code comments say what is, concisely. Many
-passages still tell how something came to be: the stale build that reverted
-generated files, the refusal that was once a notice, how the generators
-moved here from `portfolio`. Rewrite each as what is. Where a passage warns
-against a trap, it keeps the warning as what to do and why.
