@@ -269,6 +269,11 @@ plain rebuild can start dirty, and there a generator rewriting a file it had
 already left dirty would not register; that would mean the generators are not
 deterministic, which is a fault of its own.
 
+Description and topics come from the definition where it has them, and from
+the portfolio's list where it has none. They are read from the worktree as
+the repository's maintenance begins, and the engine pushes them to GitHub
+ahead of any task.
+
 Coverage is recorded alongside, and there the portfolio's list wins over the
 definition: the list holds what the last run measured, written back after
 every run, while `devtool.json` holds a copy. Preferring the copy would freeze
