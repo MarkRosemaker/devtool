@@ -1,7 +1,6 @@
 # Roadmap
 
-Work not yet done. Most of this came over from `portfolio`, where the
-generators used to live; entries about the event stream and the runner are on
+Work not yet done. Entries about the event stream and the runner are on
 `devtool-engine`'s roadmap, and entries about the chat are on `patchpal`'s.
 
 ## Coverage as a gate
@@ -25,25 +24,6 @@ Coverage is measured after the tasks have run, so the figure a task sees — and
 therefore the figure the README badge is generated from — is the one recorded
 going in. Fixing it means a task that runs after the measurement, or a second
 pass over the repository.
-
-## Repository-owned metadata
-
-`devtool.json` in each repository's root holds `description`, `topics`,
-`coverage` and the newest `devtoolVersion` known to have maintained it.
-`devtool test` measures coverage and records it; the README badge reads it. The
-version is a high-water mark, and a run compares its own build against it to
-notice, without asking anything, that it is behind. A maintained run
-prefers the definition for description and topics, falls back to
-`portfolio`'s `config.json` where a repository has none, and writes the
-definition inside its first task — so one full run over the portfolio gives
-every repository one. (Until that task existed the write came after the push
-and never landed; see `docs/architecture.md`.)
-
-What is left: the engine's `Runner.prepare` pushes `Description` and `Topics`
-before any task runs, and takes them from the definition where there is one,
-which means reading a file out of a worktree that `prepare` itself pulls. Worth
-a look when the fields leave `config.json`, because the ordering is the part
-that was always awkward — and it is a change to `devtool-engine`, not here.
 
 ## Record how long each step took
 
@@ -112,8 +92,7 @@ A command's shape — its name, subcommands and flags — belongs in a
 
 ## Per-repository task sequences
 
-Every repository currently gets the same sequence. Some want more:
-`worldweaver` has its own `.golangci.yml` that the shared lint task ignores.
+Every repository gets the same sequence, whatever its kind.
 
 The sequence is already a function of the repository, so this is a matter of
 letting a repository's definition carry an opt-in list rather than a schema
@@ -158,8 +137,8 @@ A natural task: idempotent, writes a file, commits only when it changed.
 
 ## Cap a repository's outside dependencies
 
-Carried over from `portfolio`'s `TODO.md`: check `go.mod` against a maximum
-number of dependencies outside this owner's own modules. A repository that has
+Check `go.mod` against a maximum number of dependencies outside this owner's
+own modules. A repository that has
 grown past it is worth knowing about, and a task that reports rather than
 enforces is the place to start.
 
@@ -232,9 +211,7 @@ still needs one manual edit to `config.json` the first time.
 ## Test coverage
 
 What is untested is what touches a repository from the outside:
-
-- `internal/run`'s dependency discovery and module-path mapping.
-- `internal/run`'s failure-to-open path, recorded on the unit.
+`internal/run`'s failure to open one, which `open` records on the unit.
 
 `internal/local` is covered where it matters, including the refusal to touch a
 dirty worktree.
