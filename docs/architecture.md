@@ -1,7 +1,7 @@
 # Architecture
 
-How this repository is put together, and the parts of it that have caught
-somebody out.
+How this repository is put together, and the parts of it that are easy to get
+wrong.
 
 ## What it is
 
@@ -70,11 +70,10 @@ repository this is — `library`, `cli` (a command, library or not), `webapp` or
 `apilib` — inferred once from the owner `go-api-libs`, `frontend/`, `cmd/` or
 a root `main` package where it does not say yet, and authoritative from then
 on. It also says whether the repository is private: a maintained run records
-GitHub's answer, and a local run, which has nobody to ask, reads it back. That
-is why the generated Makefile runs plain `devtool update`; privacy once rode
-on it as `-private`, and a Makefile generated without the flag rebuilt a
-private repository's README as a public one's. The flag is still accepted, for
-the Makefiles that pass it, and recorded.
+GitHub's answer, and a local run, which has nobody to ask, reads it back. So
+the generated Makefile runs plain `devtool update`, and a local rebuild of a
+private repository still writes a private one's README. `-private` is
+accepted and recorded, for Makefiles that pass it.
 
 A web app's Makefile builds its root `main` package as `bin/<repo>`, and
 `make ready` runs its smoke test, `smoke/smoke.js`, where it has one.
@@ -97,9 +96,9 @@ what lets an unchanged worktree mean "nothing to commit".
 **Anything a run writes into a repository has to be written inside a task.**
 The engine commits a task's changes as it goes and pushes at the end; a file
 written after that is left in the worktree, and the next run's `prepare`
-discards it before pulling. `devtool.json` was written that way — by the
-service, after the engine returned — for every repository on every run, and
-not one of them ever landed. It is written inside `UpdateTask` now.
+discards it before pulling, and nothing reports the loss. That is why
+`devtool.json` is written inside `UpdateTask` and not by the service after
+the engine returns.
 
 Every generated file opens with a marker naming the generator, matched by a
 regular expression rather than an exact string, so the name can change
@@ -220,12 +219,10 @@ say where it installed ends in "run the command again".
 
 This is a refusal rather than a warning because behind is not a worse
 opinion, it is a different one: the older generators rewrite what the newer
-ones wrote and the repository goes backwards. It has happened — a stale build
-reverted twenty-five lines of this repository's own `Makefile`, `AGENTS.md`
-and `.golangci.yaml`, undoing a merged change, while a warning sat in the log
-doing nothing.
+ones wrote, undoing merged changes, and the repository goes backwards. A
+warning in a log stops none of that.
 
-Three things about it are easy to get wrong, and each has cost real time.
+Three things about it are easy to get wrong.
 
 ### Reading the mark and writing it are different questions
 
@@ -238,8 +235,8 @@ something unobtainable.
 exempt it: the commit a dirty build came from orders it perfectly well, and
 semver ignores the metadata when comparing anyway.
 
-Conflating the two is what let the stale build through the first time the
-refusal was written. `Installable` is the third piece — a local build cannot
+Conflating the two lets a stale `+dirty` build write. `Installable` is the
+third piece — a local build cannot
 be replaced by self-update, so it is refused with the remedy that suits it.
 
 ### The refusal has a branch that carries on, by design
@@ -250,8 +247,8 @@ reports there is nothing newer to fetch, the run warns and proceeds.
 
 That branch is correct and it is also a trap for tests: a test that records a
 fictional future version and expects a refusal is asserting against the
-branch that carries on. One did, and passed only on a machine whose build
-happened to be `+dirty` and took the other path.
+branch that carries on. It passes only on a machine whose build happens to be
+`+dirty` and takes the other path.
 
 ### The mark is a passenger
 
@@ -336,8 +333,7 @@ wherever it cannot read git; `go build -buildvcs=true` names the reason
 instead of staying quiet.
 
 The consequence worth remembering: **a test that drives a built binary
-inherits whichever row that machine lands on.** Three separate mistakes in
-one afternoon came from assuming one of them. Assertions about version
+inherits whichever row that machine lands on.** Assertions about version
 behaviour belong in `internal/local` and `maintain`, where the version is a
 parameter and the updater is injected; a test at the binary level should
 assert only what holds on every row.

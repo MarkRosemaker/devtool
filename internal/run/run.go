@@ -407,8 +407,8 @@ func (s *Service) maintain(
 ) event.Result {
 	// A repository that could not be opened never reaches the engine, which
 	// is what reports every other repository, failures included. So its one
-	// repo_done is sent from here — and only here: sending one for every
-	// failed result, as this used to, sent the engine's failures twice.
+	// repo_done is sent from here — and only here, or the engine's failures
+	// are sent twice.
 	if u.err != nil {
 		event.Emit(events, event.Event{Kind: event.RepoDone, Repo: u.key(), Err: u.err.Error()})
 

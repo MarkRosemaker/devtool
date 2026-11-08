@@ -186,7 +186,7 @@ func tasks(r *repo, opts Options) []engine.Task {
 			Coverage: opts.Coverage,
 			Version:  opts.Version,
 			// Set, the flag says the repository is private; left off, it
-			// says nothing, since no Makefile generated now passes it.
+			// says nothing, since no generated Makefile passes it.
 			RecordPrivate: opts.Private,
 			Tools:         opts.Tools,
 			CheckLatest:   opts.CheckLatest,

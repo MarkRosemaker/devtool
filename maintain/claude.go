@@ -10,9 +10,9 @@ import (
 
 const claudePath = "CLAUDE.md"
 
-// ClaudeTask returns a task that removes the CLAUDE.md link this tool used to
-// make to AGENTS.md. Claude reads AGENTS.md itself now, so the link is a
-// second name for one file that nothing needs.
+// ClaudeTask returns a task that removes a CLAUDE.md that is a link to
+// AGENTS.md. Claude reads AGENTS.md itself, so the link is a second name for
+// one file that nothing needs.
 //
 // Only that link goes. A CLAUDE.md somebody wrote, or a link of their own to
 // somewhere else, is theirs, and is left where it is.

@@ -23,7 +23,7 @@ func TestVersionFlag(t *testing.T) {
 
 // TestVersionIsASubcommand: "devtool version" is what anybody who has used
 // another tool tries first, and it has to reach the same answer as the flag
-// rather than the update that a bare word used to fall through to.
+// rather than falling through to an update.
 func TestVersionIsASubcommand(t *testing.T) {
 	if err := dispatch(t.Context(), []string{"version"}); err != nil {
 		t.Errorf("version failed: %v", err)
@@ -221,8 +221,8 @@ func TestUpdateAllReachesTheList(t *testing.T) {
 		t.Fatal("expected a failure about the list, not success")
 	}
 
-	// It must get as far as trying to use the list. The old failure was the
-	// parser never seeing -config at all.
+	// It must get as far as trying to use the list: a parser that stops at
+	// the positional never sees -config.
 	if strings.Contains(err.Error(), "naming a repository needs -config") {
 		t.Errorf("the flags after the positional were ignored: %v", err)
 	}

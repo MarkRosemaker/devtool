@@ -22,7 +22,7 @@ interchangeable.
 
 `devtool update` shells out from `make generate`, so an out-of-date binary
 quietly reverts generated files as part of a target meant to keep them right.
-The refusal above catches that now, but only where the build carries a
+The refusal above catches that, but only where the build carries a
 version to compare — see below. After pulling, `go install .` costs a second
 and removes the question.
 
@@ -40,10 +40,9 @@ toolchain cannot read git, and it says nothing about it;
 `go build -buildvcs=true` names the reason.
 
 **So the same commit behaves differently on different machines**, and a test
-that drives a built binary inherits whichever row it lands on. Three
-mistakes in one afternoon came from assuming one of them, including a test
-that passed here and failed on macOS for a reason neither the test nor its
-failure message could name.
+that drives a built binary inherits whichever row it lands on: it can pass on
+one machine and fail on another for a reason neither it nor its failure
+message names.
 
 Put assertions about version behaviour in `internal/local` or `maintain`,
 where the version is a parameter and the updater is injected. A test at the

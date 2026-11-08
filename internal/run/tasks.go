@@ -22,7 +22,7 @@ const licenseHolder = "Marco Rösler (MarkRosemaker)"
 //     devtool.json. First, so a repository is licensed, documented
 //     and buildable even if a later task fails. One task, so devtool.json is
 //     committed with the rest instead of being written after the push and
-//     discarded by the next run, which is what happened before.
+//     discarded by the next run.
 //   - Dependencies and tools are updated before the code is reformatted, so the
 //     formatters see the code the new versions produce.
 //   - Formatting runs after the fixers, so anything they rewrote is left tidy.

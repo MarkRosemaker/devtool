@@ -32,19 +32,17 @@ conditions involved and read the output before writing a test — a
 A golden file `go test -update` writes for you proves nothing by itself: it
 just repeats whatever the template currently produces, bug included. Before
 trusting one, break the change on purpose — revert the fix, confirm the
-existing goldens fail, restore it, confirm they pass again. `TestAgentsGolden`
-in `maintain/agents_test.go` failed on all three cases, not just the new one,
-which is what made the fix's reach obvious.
+existing goldens fail, restore it, confirm they pass again. Which goldens fail
+shows how far the change reaches.
 
 ## Testing against the wrong binary
 
 `make ready` and `make generate` shell out to the **installed** `devtool`,
 not to the source tree you just edited. A template change — any of it, not
 only the spacing kind above — is invisible to both until `go install .`
-catches up: this repository's own `AGENTS.md` silently failed to pick up a
-brand new section twice in one pull request, once for each edit to the
-template. See [Versions](versions.md#before-running-it-on-anything) for the
-fuller version of this trap.
+catches up, and this repository's own `AGENTS.md` silently stays as it was.
+See [Versions](versions.md#before-running-it-on-anything) for the fuller
+version of this trap.
 
 Run `go install .` immediately after saving a `.tmpl` edit, before running
 `make ready` even once — not after `make ready` looks wrong.
@@ -55,5 +53,5 @@ Run `go install .` immediately after saving a `.tmpl` edit, before running
 `//go:generate`, string literals included, and runs it. A generator that
 writes a directive into another repository keeps it split in its own source
 (`"//go:" + "generate …"`), or this repository's `make generate` runs it
-here. `generateGo` in `maintain/databases.go` once held it whole, and sqlc
-failed for want of a config in `maintain/`.
+here, where sqlc fails for want of a config. `generateGo` in
+`maintain/databases.go` is split that way.

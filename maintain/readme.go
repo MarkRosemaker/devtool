@@ -542,7 +542,7 @@ var legacyHeadingGenerated = map[string]bool{
 
 var (
 	// legacyTagline matches the centred tagline this template writes, so a
-	// README previously generated elsewhere in the same shape hands its
+	// README another generator wrote in the same shape hands its
 	// tagline back as frontmatter rather than as prose.
 	legacyTagline = regexp.MustCompile(`(?is)<h3 align="center">\s*(.*?)\s*</h3>`)
 
