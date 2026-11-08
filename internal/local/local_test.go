@@ -579,7 +579,8 @@ func TestACommitRunCommitsTheDefinition(t *testing.T) {
 	git(t, dir, "remote", "add", "origin", remote)
 	git(t, dir, "push", "-q", "-u", "origin", "HEAD")
 
-	opts := Options{Holder: "T", Commit: true, Version: current}
+	// Private, so its untested code is not held to a public repository's coverage.
+	opts := Options{Holder: "T", Commit: true, Version: current, Private: true}
 	if err := Update(t.Context(), dir, opts, nopEmitter{}); err != nil {
 		t.Fatal(err)
 	}

@@ -276,6 +276,18 @@ definition: the list holds what the last run measured, written back after
 every run, while `devtool.json` holds a copy. Preferring the copy would freeze
 every badge at the first figure recorded.
 
+Coverage has a floor, `maintain.CoverageFloor`, 80%. A run that takes a
+repository from at or above it to below fails, through the engine's
+`Spec.CoverageFloor`, with the two figures: a regression, worth interrupting
+somebody for. The figure is recorded all the same, so the next run finds the
+repository below already, and a private repository below the floor is a log
+line, not a failure. Failing every run on it would teach the reader to ignore
+the failure.
+
+A public repository is held to the floor on every run, through the engine's
+`Spec.PublicCoverage`: a repository is made public only once its coverage is
+good enough, so one below it is wrong until it is fixed or made private.
+
 ## Tool versions are pinned too
 
 `devtool.json`'s `tools` pins each tool the Makefile shells out to:

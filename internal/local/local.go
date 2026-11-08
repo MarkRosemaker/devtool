@@ -312,7 +312,9 @@ func commitRun(
 	defer event.Emit(events, event.Event{Kind: event.RunDone})
 
 	res := (&engine.Runner{Inert: maintain.Inert}).Update(ctx, r,
-		engine.Spec{Coverage: opts.Coverage},
+		engine.Spec{
+			Coverage: opts.Coverage, CoverageFloor: maintain.CoverageFloor, PublicCoverage: maintain.CoverageFloor,
+		},
 		func(*engine.Runner, engine.Repo, engine.Spec) []engine.Task {
 			return tasks(r, opts)
 		}, events)

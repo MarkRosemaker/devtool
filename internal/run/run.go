@@ -10,6 +10,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
@@ -419,19 +420,35 @@ func (s *Service) maintain(
 
 	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence(s.version), events)
 
-	// Write the measured coverage back so the next run can report the change.
-	// Each unit owns its own configuration entry, so concurrent runs do not
-	// contend here. Nothing is written into the repository at this point:
-	// the engine has committed and pushed, so a write now would be left
-	// uncommitted and discarded by the next run's prepare. devtool.json is
-	// written inside the sequence instead.
-	if res.Err == nil {
-		u.cfg.Coverage = res.Coverage
-	}
+	recordCoverage(ctx, u, res)
 
 	s.pruneOccasionally(ctx, u.repo)
 
 	return res
+}
+
+// recordCoverage writes the measured coverage back so the next run can report
+// the change, and logs a repository found below the floor.
+//
+// Each unit owns its own configuration entry, so concurrent runs do not
+// contend here. Nothing is written into the repository at this point: the
+// engine has committed and pushed, so a write now would be left uncommitted
+// and discarded by the next run's prepare. devtool.json is written inside the
+// sequence instead.
+//
+// A coverage failure is recorded too. A fall below the floor then fails one
+// run, and the next finds the repository below already and only logs it,
+// unless it is public, which fails every run until its coverage is up.
+func recordCoverage(ctx context.Context, u *unit, res event.Result) {
+	if res.Err == nil || errors.Is(res.Err, engine.ErrCoverageFell) ||
+		errors.Is(res.Err, engine.ErrPublicCoverage) {
+		u.cfg.Coverage = res.Coverage
+	}
+
+	if res.Err == nil && res.Coverage < maintain.CoverageFloor {
+		slog.InfoContext(ctx, "coverage is below the floor",
+			"repo", u.key(), "coverage", res.Coverage, "floor", maintain.CoverageFloor)
+	}
 }
 
 // pruneRate is how often a repository gets its object store tidied. Repacking
@@ -450,7 +467,11 @@ func (s *Service) spec(ctx context.Context, u *unit) engine.Spec {
 		found = false
 	}
 
-	return withDefinition(u.cfg.Spec(), def, found)
+	spec := withDefinition(u.cfg.Spec(), def, found)
+	spec.CoverageFloor = maintain.CoverageFloor
+	spec.PublicCoverage = maintain.CoverageFloor
+
+	return spec
 }
 
 // withDefinition lets the repository's definition take over the list's entry
