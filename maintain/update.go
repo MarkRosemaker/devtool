@@ -77,6 +77,8 @@ var owners = []struct{ path, part string }{
 	{makefilePath, "makefile"},
 	{makefileDir + "/", "makefile"},
 	{gitignorePath, "gitignore"},
+	{webappMain, "webapp"},
+	{webappApp, "webapp"},
 	{agentsPath, "agents"},
 	{agentsDir + "/", "agents"},
 	{claudePath, "claude"},
@@ -180,7 +182,9 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //   - .gitignore after the Makefile, whose targets settle what there is to
 //     ignore, and before AGENTS.md, which says so only once the block is
 //     really there.
-//   - The databases last: the one part that can refuse for want of
+//   - A web app's main.go before AGENTS.md, which reads its go:generate
+//     lines.
+//   - The databases last: a part that can refuse for want of
 //     something only a person can write, a migration or a driver, and the
 //     files above are worth having regardless.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
@@ -190,6 +194,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		RoadmapTask(repo),
 		MakefileTask(repo),
 		GitignoreTask(repo),
+		WebappTask(repo),
 		AgentsTask(repo),
 		ClaudeTask(repo),
 		GenLintfile(repo),

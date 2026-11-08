@@ -25,3 +25,8 @@ letters, and neither a keyword nor a name `Path` uses itself. `tools` pins the
 Makefile's tools. A run moves the pins itself and only forward, so a pin
 lowered by hand is raised again by the next run on a machine with a newer
 copy installed.
+
+`name` and `webapp` are what a web app's `main.go` is generated from, as
+`docs/architecture.md` describes. `webapp` is a pointer so that a section
+written as `{}` still counts as there, and is refused for want of a port
+rather than ignored.

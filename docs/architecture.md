@@ -53,8 +53,8 @@ asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
-then licence, README, the roadmap's links, Makefile, `.gitignore`,
-`AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
+then licence, README, the roadmap's links, Makefile, `.gitignore`, a web
+app's `main.go`, `AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
 declared databases last. That one task is the whole of a local rebuild and
 the first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
@@ -77,6 +77,21 @@ accepted and recorded, for Makefiles that pass it.
 
 A web app's Makefile builds its root `main` package as `bin/<repo>`, and
 `make ready` runs its smoke test, `smoke/smoke.js`, where it has one.
+
+A web app whose `devtool.json` has a `webapp` section gets its `main.go`
+generated from it and from the root `name` and `description`: a call to
+`webapp.Main` from
+[`MarkRosemaker/webapp`](https://github.com/MarkRosemaker/webapp), which
+serves the embedded `frontend/` as an installable app, with sign-in in the
+cloud where `auth` is set. Its `go:generate` lines follow the specs under
+`api/`: `openapi.json`, enriched where `interactions.json` exists, and
+`asyncapi.json`, enriched where `sessions.json` exists, each with its
+JavaScript client in `frontend/src` and its server in `pkg/api` or `pkg/ws`.
+The first `main.go` comes with `app.go`, where the app's `setup` starts, and
+`app.go` is the app's from then on. A `main.go` without the generated header
+is refused rather than overwritten, as is a section without a `name`, a
+`port`, `frontend/` or the library in `go.mod`. It comes before `AGENTS.md`,
+which reads its `go:generate` lines.
 
 The generated Makefile runs on Windows as well, in `cmd.exe` or Git Bash:
 the binary takes `go env GOEXE` as its extension, the PATH it extends keeps

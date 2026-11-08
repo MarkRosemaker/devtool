@@ -55,3 +55,11 @@ writes a directive into another repository keeps it split in its own source
 (`"//go:" + "generate …"`), or this repository's `make generate` runs it
 here, where sqlc fails for want of a config. `generateGo` in
 `maintain/databases.go` is split that way.
+
+## Go source held in a string is linted as prose
+
+golangci-lint's `dupword` reads string literals, and `make ready` runs it with
+`--fix`: Go source kept in a string, such as `return nil, nil, nil`, loses its
+repeated word without a word of output, and the code it generates stops
+compiling. Write such source so that no word repeats, and test the
+rendered code itself, not only its signature.
