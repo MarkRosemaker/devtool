@@ -82,11 +82,15 @@ read the diff of `api/openapi.json`. Put back any edit enrich reverted,
 and delete any example it inferred from an interaction that no longer
 exists.
 
-`api/interactions.json` is also the frontend's mock data. Claude Design
-copies it to `frontend/mocks.json`, and the generated `api.js` serves
-responses from that file in development. An interaction that is stale
-or missing means a mocked screen that is wrong or empty. Keep each one
-to what the handler actually returns.
+`api/interactions.json` is also the frontend's mock data. In development,
+where `window.ENV` is `"development"`, the generated `api.js` answers from
+`/mocks.json`, and the smoke tests answer from the interactions. An
+interaction that is stale or missing means a mocked screen that is wrong
+or empty. Keep each one to what the handler actually returns.
+
+The frontend is edited here. Its first version came from a Claude Design
+export, and nothing has been synced with Claude Design since: no import,
+no export, no project to keep in step.
 
 `.gitignore` is the exception: only the marked block at its head is
 generated. Your own rules go below that block, where they win — in a
