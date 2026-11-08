@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,10 +20,8 @@ import (
 // from: a postgres:// URL, the pooled one where the server has a pooler.
 const EnvURL = "{{.Env}}"
 
-// TestEnvURL names the environment variable a test reads its database's
-// address from. It is never EnvURL: a test writes rows, and the database
-// EnvURL names is the live one.
-const TestEnvURL = "{{.TestEnv}}"
+// TestSchemaPrefix begins the name of every schema a test runs in.
+const TestSchemaPrefix = "test_"
 
 // maxConns bounds the pool: a hosted Postgres's free tier allows few
 // connections, and one server needs few.
@@ -45,16 +44,19 @@ type DB struct {
 // else goes through the pool, unprepared, so the pooler never meets a
 // statement prepared on another connection.
 //
-// A test opens the one [TestURL] gives the same way, and skips where it gives
-// none:
-//
-//	url, err := {{.Package}}.TestURL()
-//	t.Setenv({{.Package}}.EnvURL, url)
-//	db, err := {{.Package}}.Open(ctx)
+// A test opens it with {{.Package}}test.Open instead. Inside a test binary,
+// Open refuses any address but a test schema on this machine, so no test
+// reaches the live database, however its environment is set.
 func Open(ctx context.Context) (*DB, error) {
 	dsn := os.Getenv(EnvURL)
 	if dsn == "" {
 		return nil, fmt.Errorf("{{.Package}}: %s is not set", EnvURL)
+	}
+
+	if testing.Testing() {
+		if err := testOnly(dsn); err != nil {
+			return nil, err
+		}
 	}
 
 	cfg, err := pgxpool.ParseConfig(dsn)
@@ -85,15 +87,17 @@ func Open(ctx context.Context) (*DB, error) {
 	return &DB{Queries: New(pool), pool: pool}, nil
 }
 
-// TestURL is the address of the database a test may write to, from
-// [TestEnvURL], or "" where it is not set. It refuses the live database's.
-func TestURL() (string, error) {
-	url := os.Getenv(TestEnvURL)
-	if url != "" && url == os.Getenv(EnvURL) {
-		return "", fmt.Errorf("{{.Package}}: %s names the same database as %s, which is the live one: tests write to theirs", TestEnvURL, EnvURL)
+// testOnly refuses an address a test may not open: anything but a schema of
+// its own on this machine, as {{.Package}}test.Open names it.
+func testOnly(dsn string) error {
+	u, err := url.Parse(dsn)
+	if err != nil || u.Hostname() != "127.0.0.1" ||
+		!strings.HasPrefix(u.Query().Get("search_path"), TestSchemaPrefix) {
+		return fmt.Errorf("{{.Package}}: a test opens this database with {{.Package}}test.Open, "+
+			"on a server of its own, and never at %s", EnvURL)
 	}
 
-	return url, nil
+	return nil
 }
 
 // migrateAt migrates the database at dsn over one connection, closed after.

@@ -203,9 +203,22 @@ A database declared `"type": "postgres"` lives on a server, reached at a
 `devtool.json` says where. The variable is named after the repository,
 `LIFEFLOW_DATABASE_URL`, and after the database too where a repository has
 more than one, `LIFEFLOW_TASKS_DATABASE_URL`; `open.go` has it as `EnvURL`.
-A test reads its database from another, with `TEST` before `DATABASE`
-(`LIFEFLOW_TEST_DATABASE_URL`, `TestEnvURL`), so it never writes to the live
-one; `TestURL()` refuses the two naming the same database.
+A test never reads a URL. `<name>test/`, generated beside the package, is
+how it opens the database: `Open(t)` starts the test binary's own Postgres
+the first time (`server.go`), gives the test a schema of its own
+(`TestSchemaPrefix` and a hash of its name), migrates it through
+`search_path`, and drops it when the test ends. The server is zonky's build
+of Postgres 17 (`testPostgresVersion`, the major version Neon runs) from
+Maven Central, checked against its SHA-256, unpacked once into the user's
+cache, and started on a free port of `127.0.0.1` in a temporary folder.
+Postgres refuses to run as root, so where a test does, as in a cloud session,
+it runs as `nobody`, with its cache under the system's temporary folder,
+which `nobody` can read. A shell between the test binary and the server waits
+on a pipe only the binary holds, so when the binary ends, however it ends,
+the server stops and its folder goes. Inside a test binary
+(`testing.Testing()`), the package's own `Open` refuses any address but such
+a schema on `127.0.0.1`, so no test reaches the live database, whatever the
+environment says. The builds cover Linux and macOS, on amd64 and arm64.
 The files are the same, with three differences. `sqlc.yaml` has sqlc
 generate for `pgx/v5`, emitting an interface and pointers for null columns,
 and gives a `date` column `civil.Date`, a `timestamptz` one `time.Time` and

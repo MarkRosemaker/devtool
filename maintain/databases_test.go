@@ -93,10 +93,20 @@ func TestPostgresDatabase(t *testing.T) {
 		},
 		"databases/user/open.go": {
 			"package user\n", "func Open(ctx context.Context) (*DB, error)", "pool.Ping(ctx)",
-			`const EnvURL = "GOREPO_DATABASE_URL"`, `const TestEnvURL = "GOREPO_TEST_DATABASE_URL"`,
-			"func TestURL() (string, error)", "migrateAt(ctx, direct(dsn))", `strings.CutSuffix(label, "-pooler")`,
+			`const EnvURL = "GOREPO_DATABASE_URL"`, "if testing.Testing() {", "func testOnly(dsn string) error",
+			"migrateAt(ctx, direct(dsn))", `strings.CutSuffix(label, "-pooler")`,
 			"cfg.MaxConns, cfg.MinConns = maxConns, 0", "pgx.QueryExecModeExec",
 			"func (d *DB) Close()", "func (d *DB) WithTx(",
+		},
+		"databases/user/usertest/usertest.go": {
+			"package usertest\n", `"example.com/app/databases/user"`, "func Open(t testing.TB) *user.DB",
+			"server()", "user.TestSchemaPrefix", `q.Set("search_path", schema)`, "t.Setenv(user.EnvURL",
+			`"DROP SCHEMA IF EXISTS " + schema + " CASCADE"`,
+		},
+		"databases/user/usertest/server.go": {
+			"package usertest\n", `const pgVersion = "17.11.0"`, `{"linux-amd64", "0dd7b72b`,
+			`{"darwin-arm64v8", "a1c2786a`, "Credential: &syscall.Credential{Uid: nobody",
+			`read -r _; kill -INT "$pid"`, "http.StatusTooManyRequests", "maven-central.storage-download.googleapis.com",
 		},
 	} {
 		got := readFile(t, fs, file)
@@ -133,19 +143,6 @@ func TestEnvURL(t *testing.T) {
 	} {
 		if got := envURL(tc.repo, tc.name, tc.only); got != tc.want {
 			t.Errorf("envURL(%q, %q, %t) = %q, want %q", tc.repo, tc.name, tc.only, got, tc.want)
-		}
-	}
-}
-
-// A test's database is named apart from the live one, so a test never writes
-// to it.
-func TestTestEnvURL(t *testing.T) {
-	for env, want := range map[string]string{
-		"LIFEFLOW_DATABASE_URL":       "LIFEFLOW_TEST_DATABASE_URL",
-		"LIFEFLOW_TASKS_DATABASE_URL": "LIFEFLOW_TASKS_TEST_DATABASE_URL",
-	} {
-		if got := testEnvURL(env); got != want {
-			t.Errorf("testEnvURL(%q) = %q, want %q", env, got, want)
 		}
 	}
 }
@@ -448,14 +445,14 @@ func TestPerHasToBeAParameterName(t *testing.T) {
 // tidies the module, so that make generate builds it at once.
 func TestADatabaseDeclaredAloneIsScaffolded(t *testing.T) {
 	for _, tc := range []struct {
-		name, definition, driver string
-		vendor                   bool
-		migration, queries, open []string
+		name, definition               string
+		vendor                         bool
+		gets, migration, queries, open []string
 	}{
 		{
 			name:       "sqlite",
 			definition: `{"resources": {"databases": [{"name": "data", "type": "sqlite"}]}}`,
-			driver:     "modernc.org/sqlite",
+			gets:       []string{"modernc.org/sqlite"},
 			migration: []string{
 				"This is an example", "002_<title>.up.sql", "CREATE TABLE notes (",
 				"id INTEGER PRIMARY KEY,", "-- int64", "DATE,", "-- *civil.Date", "created_at DATETIME NOT NULL", "-- time.Time",
@@ -466,7 +463,7 @@ func TestADatabaseDeclaredAloneIsScaffolded(t *testing.T) {
 		{
 			name:       "encrypted, vendored",
 			definition: `{"resources": {"databases": [{"name": "data", "type": "sqlite", "encrypted": true}]}}`,
-			driver:     ncrucesModule,
+			gets:       []string{ncrucesModule},
 			vendor:     true,
 			migration:  []string{"CREATE TABLE notes ("},
 			queries:    []string{"VALUES (?, ?, ?, ?, ?, ?, ?)"},
@@ -475,7 +472,7 @@ func TestADatabaseDeclaredAloneIsScaffolded(t *testing.T) {
 		{
 			name:       "postgres",
 			definition: `{"resources": {"databases": [{"name": "data", "type": "postgres"}]}}`,
-			driver:     pgxModule,
+			gets:       []string{pgxModule, xzModule},
 			migration:  []string{"id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY", "uuid NOT NULL", "-- *time.Time", "timestamptz NOT NULL"},
 			queries:    []string{"VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", "WHERE id = $1;"},
 			open:       []string{"func Open(ctx context.Context) (*DB, error)"},
@@ -517,7 +514,12 @@ func TestADatabaseDeclaredAloneIsScaffolded(t *testing.T) {
 				}
 			}
 
-			want := []string{"go get " + tc.driver, "go generate -mod=mod ./databases/...", "go mod tidy"}
+			var want []string
+			for _, m := range tc.gets {
+				want = append(want, "go get "+m)
+			}
+
+			want = append(want, "go generate -mod=mod ./databases/...", "go mod tidy")
 			if tc.vendor {
 				want = append(want, "go mod vendor")
 			}

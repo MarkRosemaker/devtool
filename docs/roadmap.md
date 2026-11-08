@@ -3,6 +3,13 @@
 Work not yet done. Entries about the event stream and the runner are on
 `devtool-engine`'s roadmap, and entries about the chat are on `patchpal`'s.
 
+## A test's Postgres on Windows
+
+`<name>test` starts Postgres on Linux and macOS only. zonky builds it for
+Windows too; what is missing there is stopping the server when the test
+binary ends, which a shell waiting on a pipe does elsewhere (a job object
+would), and running it unprivileged where the test is an administrator.
+
 ## Coverage before a repository joins the portfolio
 
 A repository added to `portfolio`'s list should have good coverage, at or
