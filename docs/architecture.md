@@ -139,11 +139,14 @@ writes `"type": "sqlite"` into the file. A database named `foo` is package `foo`
 A database declared with no migrations gets an example: a first migration
 creating a `notes` table and `queries/notes.sql` with a query of each kind,
 both saying they are to be replaced, so that declaring a database is all it
-takes for `make generate` to build it. Where `go.mod` requires no driver,
-devtool runs `go get` for one, modernc's for SQLite, ncruces' for an
-encrypted one, pgx for Postgres, then `go mod tidy`, and `go mod vendor`
-where the repository vendors, so this is the one part of a run that reaches
-the network.
+takes for `make generate` to build it. The table has a column of each type
+that maps cleanly to Go, commented with the Go type: a date is `civil.Date`,
+and `*civil.Date` where NULL is allowed, in SQLite as in Postgres. Where
+`go.mod` requires no driver, devtool runs `go get` for one, modernc's for
+SQLite, ncruces' for an encrypted one, pgx for Postgres. After either, it
+runs sqlc, whose code imports what the example's types need, then
+`go mod tidy`, and `go mod vendor` where the repository vendors, so this is
+the one part of a run that reaches the network.
 | `sqlc.yaml`, `generate.go` | written by devtool: sqlc's configuration, and the directive that runs it there |
 | `migrate.go` | written by devtool: the migrations embedded, and `Migrate` to apply them |
 | `open.go` | written by devtool: `DB`, which is every query plus `WithTx` and `Close`; `Open`, which creates, configures and migrates a database file and returns one; and `Path`, `~/.<repo>/<name>.db`, or for a database declared `"per": "world"`, `Path(world)`, `~/.<repo>/<world>/<name>.db` |

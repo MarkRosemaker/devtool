@@ -68,6 +68,12 @@ sql:
             go_type:
               import: "cloud.google.com/go/civil"
               type: "Date"
+          - db_type: "DATE"
+            nullable: true
+            go_type:
+              import: "cloud.google.com/go/civil"
+              type: "Date"
+              pointer: true
 `
 
 // sqlcPostgresConfig is sqlc's configuration for a Postgres database.
@@ -173,7 +179,8 @@ var databaseName = regexp.MustCompile(`^[a-z]+$`)
 var pathNames = []string{"err", "filepath", "home", "os"}
 
 // writeDatabase writes one database's files, and reports whether it added a
-// driver to go.mod, which then needs tidying once they are written.
+// driver to go.mod or an example whose code imports more, which then needs
+// tidying once they are written.
 func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool) (bool, error) {
 	name := db.Name
 	if !databaseName.MatchString(name) {
@@ -202,7 +209,8 @@ func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool
 		}
 	}
 
-	if err := writeStarter(fs, dir, db.Type); err != nil {
+	started, err := writeStarter(fs, dir, db.Type)
+	if err != nil {
 		return false, err
 	}
 
@@ -211,7 +219,7 @@ func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool
 	}
 
 	if db.Type == postgres {
-		added := false
+		added := started
 
 		if ok, err := requires(fs, pgxModule); err != nil {
 			return false, err
@@ -227,7 +235,7 @@ func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool
 	}
 
 	driver, imports, err := sqliteDriver(fs)
-	added := false
+	added := started
 
 	switch {
 	case errors.Is(err, errNoDriver):
