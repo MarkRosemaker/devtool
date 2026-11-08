@@ -3,20 +3,10 @@
 Work not yet done. Entries about the event stream and the runner are on
 `devtool-engine`'s roadmap, and entries about the chat are on `patchpal`'s.
 
-## Coverage as a gate
+## Publish a repository that reaches the coverage floor
 
-Coverage is measured and recorded every run, but nothing acts on it. The
-intended behaviour:
-
-- Treat a repository above 80% as ready to publish, and make sure it is.
-- Treat a **drop** below 80% as an error — that is a regression, and worth
-  interrupting someone for.
-- Treat a repository that has *always* been below 80% as a log line, not an
-  error. It is a backlog item, not a regression, and failing every run on it
-  would train the notification to be ignored.
-
-The distinction between the last two is the whole point, and it is why
-`event.Result` carries `PrevCoverage`.
+Treat a repository at or above `maintain.CoverageFloor` as ready to publish,
+and make sure it is.
 
 ## The figure a badge shows is one run behind
 

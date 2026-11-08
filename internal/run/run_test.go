@@ -2,12 +2,14 @@ package run
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/MarkRosemaker/devtool-engine/depgraph"
 	"github.com/MarkRosemaker/devtool-engine/event"
+	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/devtool/internal/config"
 	"github.com/MarkRosemaker/ordmap"
 	"golang.org/x/mod/modfile"
@@ -237,5 +239,30 @@ func TestDependReportsWhatTheRunLeavesOut(t *testing.T) {
 	if len(got) != 1 || got[0].Kind != event.Unmaintained ||
 		got[0].Repo != "MarkRosemaker/app" || got[0].Dependency != "MarkRosemaker/gone" {
 		t.Errorf("events = %+v, want one Unmaintained for MarkRosemaker/gone", got)
+	}
+}
+
+// A fall below the floor is recorded with the rest, so it fails one run and
+// the next finds the repository below already; any other failure leaves the
+// figure as it was.
+func TestRecordCoverage(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  error
+		want float64
+	}{
+		{"a clean run records its figure", nil, 79.6},
+		{"a fall below the floor is recorded", fmt.Errorf("%w 80%%: 84.2%% → 79.6%%", engine.ErrCoverageFell), 79.6},
+		{"any other failure keeps the old figure", errors.New("tests failed"), 84.2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			u := &unit{owner: "user", name: "lib", cfg: &config.Repository{Coverage: 84.2}}
+
+			recordCoverage(t.Context(), u, event.Result{Coverage: 79.6, Err: tc.err})
+
+			if u.cfg.Coverage != tc.want {
+				t.Errorf("recorded %v, want %v", u.cfg.Coverage, tc.want)
+			}
+		})
 	}
 }

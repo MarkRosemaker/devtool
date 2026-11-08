@@ -2,6 +2,10 @@ package maintain
 
 import "github.com/spf13/afero"
 
+// CoverageFloor is the coverage a repository has to keep once it has reached
+// it. A run that takes it below fails; one that finds it below already logs.
+const CoverageFloor = 80
+
 // RecordCoverage writes pct into the repository's own definition, creating it
 // when there is none.
 //
