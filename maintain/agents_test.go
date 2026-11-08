@@ -227,6 +227,35 @@ func TestGenerateAgents(t *testing.T) {
 		})
 	})
 
+	// A program that builds the spec whole wins over a directive that
+	// enriches it in place: both may run, but the program's output is what
+	// lands, and an edit to the spec is not kept at all.
+	t.Run("a program that builds the spec whole wins", func(t *testing.T) {
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, "api/interactions.json", "{}\n")
+		writeFile(t, fs, "generate.go", "package generate\n\n"+
+			"//go:generate go run ./cmd/generate\n//go:generate go tool openapi-enrich\n")
+		writeFile(t, fs, "cmd/generate/main.go", "package main\n\nimport (\n\t\"os\"\n\n"+
+			"\tenrich \"github.com/MarkRosemaker/openapi-enrich\"\n)\n\n"+
+			"var isClaudeCode = os.Getenv(\"CLAUDECODE\") != \"\"\n")
+
+		got := generateAgentsAndRead(t, fs)
+
+		for _, want := range []string{
+			"`api/openapi.json` is generated whole",
+			"make\nthe change in `./cmd/generate` instead",
+			"Outside a Claude Code session",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("missing %q:\n%s", want, got)
+			}
+		}
+
+		if strings.Contains(got, "partly generated") {
+			t.Errorf("the spec is not edited in place:\n%s", got)
+		}
+	})
+
 	// Condition B rides on condition A: being a web app says nothing on its
 	// own about interactions.json being anybody's mock data.
 	t.Run("the frontend paragraph needs openapi-enrich too", func(t *testing.T) {
@@ -411,6 +440,15 @@ func TestAgentsGolden(t *testing.T) {
 			Smoke:         true,
 			Webapp:        true,
 		}},
+		// The same transitions with the spec built whole by a program that
+		// fetches upstream first.
+		{"openapi-generated", agentsData{
+			Generated:        generatedRootDirs[:1],
+			Gitignore:        true,
+			OpenAPIGenerator: "./cmd/generate",
+			OpenAPIFetch:     true,
+			Frontend:         true,
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := renderAgents(tc.data)
@@ -506,4 +544,75 @@ func TestGenerateAgentsRoadmap(t *testing.T) {
 	if without := generateAgentsAndRead(t, afero.NewMemMapFs()); strings.Contains(without, "## The roadmap") {
 		t.Errorf("want no roadmap section without a roadmap:\n%s", without)
 	}
+}
+
+// TestOpenAPIGenerator: the program is what a root go:generate directive
+// runs, a file or a package, and it counts only where it enriches the spec.
+func TestOpenAPIGenerator(t *testing.T) {
+	t.Parallel()
+
+	const (
+		enriches = "package main\n\nimport enrich \"github.com/MarkRosemaker/openapi-enrich\"\n"
+		fetches  = enriches + "\nvar isClaudeCode = os.Getenv(\"CLAUDECODE\") != \"\"\n"
+	)
+
+	for _, tc := range []struct {
+		name      string
+		files     map[string]string
+		generator string
+		fetch     bool
+	}{
+		{"a package that fetches", map[string]string{
+			"generate.go":          "package generate\n\n//go:generate go run ./cmd/generate\n",
+			"cmd/generate/main.go": fetches,
+		}, "./cmd/generate", true},
+		{"a file that does not fetch", map[string]string{
+			"doc.go":       "package notion\n\n//go:generate go run api/fetch.go\n",
+			"api/fetch.go": enriches,
+		}, "api/fetch.go", false},
+		{"a program that does not enrich", map[string]string{
+			"generate.go":          "package generate\n\n//go:generate go run ./cmd/generate\n",
+			"cmd/generate/main.go": "package main\n",
+		}, "", false},
+		{"only its test enriches", map[string]string{
+			"generate.go":               "package generate\n\n//go:generate go run ./cmd/generate\n",
+			"cmd/generate/main.go":      "package main\n",
+			"cmd/generate/main_test.go": enriches,
+		}, "", false},
+		{"a program that is not there", map[string]string{
+			"generate.go": "package generate\n\n//go:generate go run ./cmd/generate\n",
+		}, "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			fs := afero.NewMemMapFs()
+			writeFile(t, fs, "api/interactions.json", "[]\n")
+
+			for name, content := range tc.files {
+				writeFile(t, fs, name, content)
+			}
+
+			generator, fetch, err := openAPIGenerator(fs)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if generator != tc.generator || fetch != tc.fetch {
+				t.Errorf("openAPIGenerator() = %q, %v, want %q, %v", generator, fetch, tc.generator, tc.fetch)
+			}
+		})
+	}
+
+	t.Run("no interactions to enrich from", func(t *testing.T) {
+		t.Parallel()
+
+		fs := afero.NewMemMapFs()
+		writeFile(t, fs, "generate.go", "package generate\n\n//go:generate go run ./cmd/generate\n")
+		writeFile(t, fs, "cmd/generate/main.go", enriches)
+
+		if generator, _, err := openAPIGenerator(fs); err != nil || generator != "" {
+			t.Errorf("openAPIGenerator() = %q, %v, want none", generator, err)
+		}
+	})
 }

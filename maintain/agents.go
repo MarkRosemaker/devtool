@@ -58,6 +58,17 @@ type agentsData struct {
 	// what enrich already wrote.
 	OpenAPIEnrich bool
 
+	// OpenAPIGenerator is, where a program go:generate runs builds
+	// api/openapi.json whole, enriching it on the way, that program as the
+	// directive names it, such as ./cmd/generate. It wins over OpenAPIEnrich:
+	// an edit to the spec is not kept at all, rather than kept unless an
+	// interaction contradicts it.
+	OpenAPIGenerator string
+
+	// OpenAPIFetch is true where OpenAPIGenerator first fetches the newest
+	// upstream specification, which it does outside a Claude Code session.
+	OpenAPIFetch bool
+
 	// Databases are the names of the databases devtool.json declares,
 	// whose packages an agent needs to know how to change.
 	Databases []string
@@ -66,7 +77,7 @@ type agentsData struct {
 	// tested differently.
 	SQLite, Postgres []string
 
-	// Frontend is true where OpenAPIEnrich also holds and devtool.json says
+	// Frontend is true where OpenAPIEnrich or OpenAPIGenerator also holds and devtool.json says
 	// this is a web app, whose frontend uses api/interactions.json as its mock data, so a stale
 	// interaction means a wrong mock too.
 	Frontend bool
@@ -203,6 +214,11 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
+	generator, fetch, err := openAPIGenerator(fs)
+	if err != nil {
+		return agentsData{}, err
+	}
+
 	def, _, err := LoadDefinition(fs)
 	if err != nil {
 		return agentsData{}, err
@@ -219,18 +235,20 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 	}
 
 	return agentsData{
-		Generated:     generated,
-		Fragments:     fragments,
-		Gitignore:     blocked,
-		OpenAPIEnrich: openAPIEnrich,
-		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
-		Smoke:         smoke,
-		Roadmap:       roadmap,
-		Webapp:        def.Webapp != nil,
-		Auth:          def.Webapp != nil && def.Webapp.Auth,
-		Databases:     databaseNames(def, ""),
-		SQLite:        databaseNames(def, sqlite),
-		Postgres:      databaseNames(def, postgres),
+		Generated:        generated,
+		Fragments:        fragments,
+		Gitignore:        blocked,
+		OpenAPIEnrich:    openAPIEnrich && generator == "",
+		OpenAPIGenerator: generator,
+		OpenAPIFetch:     fetch,
+		Frontend:         (openAPIEnrich || generator != "") && def.Kind == KindWebapp,
+		Smoke:            smoke,
+		Roadmap:          roadmap,
+		Webapp:           def.Webapp != nil,
+		Auth:             def.Webapp != nil && def.Webapp.Auth,
+		Databases:        databaseNames(def, ""),
+		SQLite:           databaseNames(def, sqlite),
+		Postgres:         databaseNames(def, postgres),
 	}, nil
 }
 
@@ -277,6 +295,107 @@ func hasOpenAPIEnrich(fs afero.Fs) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// goRunDirective matches a go:generate line that runs a program of this
+// repository, capturing the file or package it names.
+var goRunDirective = regexp.MustCompile(`(?m)^//go:generate go run (\S+)`)
+
+const (
+	// openAPIEnrichImport is what a program that enriches api/openapi.json
+	// imports.
+	openAPIEnrichImport = `"github.com/MarkRosemaker/openapi-enrich"`
+
+	// claudeCodeEnv is what a program reads to tell a Claude Code session,
+	// whose sandbox may not reach the upstream specification.
+	claudeCodeEnv = `"CLAUDECODE"`
+)
+
+// openAPIGenerator returns the program that builds this repository's
+// api/openapi.json whole, as the root go:generate directive that runs it
+// names it, or "" where none does, and whether it fetches the upstream
+// specification first. A program counts where it imports openapi-enrich:
+// one that enriches the spec as it builds it, as pixellab's ./cmd/generate
+// and notion's api/fetch.go do. It fetches where it reads CLAUDECODE, which
+// both skip the fetch in.
+func openAPIGenerator(fs afero.Fs) (string, bool, error) {
+	if ok, err := afero.Exists(fs, interactionsPath); err != nil {
+		return "", false, fmt.Errorf("checking for %s: %w", interactionsPath, err)
+	} else if !ok {
+		return "", false, nil
+	}
+
+	entries, err := afero.ReadDir(fs, ".")
+	if err != nil {
+		return "", false, fmt.Errorf("reading the root directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+			continue
+		}
+
+		b, err := afero.ReadFile(fs, entry.Name())
+		if err != nil {
+			return "", false, fmt.Errorf("%s: %w", entry.Name(), err)
+		}
+
+		for _, m := range goRunDirective.FindAllSubmatch(b, -1) {
+			target := string(m[1])
+
+			src, err := programSource(fs, target)
+			if err != nil {
+				return "", false, err
+			}
+
+			if bytes.Contains(src, []byte(openAPIEnrichImport)) {
+				return target, bytes.Contains(src, []byte(claudeCodeEnv)), nil
+			}
+		}
+	}
+
+	return "", false, nil
+}
+
+// programSource returns the Go source of what go run is given: a file, or
+// the non-test files of a package directory. A target that is neither, such
+// as a module path, has none here.
+func programSource(fs afero.Fs, target string) ([]byte, error) {
+	if strings.HasSuffix(target, ".go") {
+		b, err := afero.ReadFile(fs, target)
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+
+		return b, err
+	}
+
+	dir := path.Clean(target)
+
+	entries, err := afero.ReadDir(fs, dir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", dir, err)
+	}
+
+	var src []byte
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+
+		b, err := afero.ReadFile(fs, path.Join(dir, name))
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", path.Join(dir, name), err)
+		}
+
+		src = append(src, b...)
+	}
+
+	return src, nil
 }
 
 // hasGitignoreBlock reports whether .gitignore carries [GitignoreTask]'s
