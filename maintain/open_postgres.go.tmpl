@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +19,9 @@ import (
 // EnvURL names the environment variable Open reads the database's address
 // from: a postgres:// URL, the pooled one where the server has a pooler.
 const EnvURL = "{{.Env}}"
+
+// TestSchemaPrefix begins the name of every schema a test runs in.
+const TestSchemaPrefix = "test_"
 
 // maxConns bounds the pool: a hosted Postgres's free tier allows few
 // connections, and one server needs few.
@@ -40,14 +44,19 @@ type DB struct {
 // else goes through the pool, unprepared, so the pooler never meets a
 // statement prepared on another connection.
 //
-// A test opens one of its own the same way, given a database to use:
-//
-//	t.Setenv({{.Package}}.EnvURL, url)
-//	db, err := {{.Package}}.Open(ctx)
+// A test opens it with {{.Package}}test.Open instead. Inside a test binary,
+// Open refuses any address but a test schema on this machine, so no test
+// reaches the live database, however its environment is set.
 func Open(ctx context.Context) (*DB, error) {
 	dsn := os.Getenv(EnvURL)
 	if dsn == "" {
 		return nil, fmt.Errorf("{{.Package}}: %s is not set", EnvURL)
+	}
+
+	if testing.Testing() {
+		if err := testOnly(dsn); err != nil {
+			return nil, err
+		}
 	}
 
 	cfg, err := pgxpool.ParseConfig(dsn)
@@ -76,6 +85,19 @@ func Open(ctx context.Context) (*DB, error) {
 	}
 
 	return &DB{Queries: New(pool), pool: pool}, nil
+}
+
+// testOnly refuses an address a test may not open: anything but a schema of
+// its own on this machine, as {{.Package}}test.Open names it.
+func testOnly(dsn string) error {
+	u, err := url.Parse(dsn)
+	if err != nil || u.Hostname() != "127.0.0.1" ||
+		!strings.HasPrefix(u.Query().Get("search_path"), TestSchemaPrefix) {
+		return fmt.Errorf("{{.Package}}: a test opens this database with {{.Package}}test.Open, "+
+			"on a server of its own, and never at %s", EnvURL)
+	}
+
+	return nil
 }
 
 // migrateAt migrates the database at dsn over one connection, closed after.

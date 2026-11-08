@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go/format"
 	"go/token"
 	"maps"
 	"os"
@@ -36,10 +37,18 @@ var (
 	//go:embed open_postgres.go.tmpl
 	openPostgresText string
 
+	//go:embed dbtest_postgres.go.tmpl
+	dbtestPostgresText string
+
+	//go:embed dbtest_server.go.tmpl
+	dbtestServerText string
+
 	migrateTmpl         = template.Must(template.New("migrate.go").Parse(migrateText))
 	openTmpl            = template.Must(template.New("open.go").Parse(openText))
 	migratePostgresTmpl = template.Must(template.New("migrate.go").Parse(migratePostgresText))
 	openPostgresTmpl    = template.Must(template.New("open.go").Parse(openPostgresText))
+	dbtestPostgresTmpl  = template.Must(template.New("dbtest.go").Parse(dbtestPostgresText))
+	dbtestServerTmpl    = template.Must(template.New("server.go").Parse(dbtestServerText))
 )
 
 // The kinds of database devtool lays out.
@@ -50,6 +59,9 @@ const (
 
 // pgxModule is the driver a Postgres database is opened with.
 const pgxModule = "github.com/jackc/pgx/v5"
+
+// xzModule unpacks the Postgres builds a database's tests start.
+const xzModule = "github.com/ulikunitz/xz"
 
 // sqlcConfig is the sqlc configuration of one database, written beside it so
 // that sqlc, run by go generate in that directory, finds it unasked.
@@ -221,14 +233,17 @@ func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool
 	if db.Type == postgres {
 		added := started
 
-		if ok, err := requires(fs, pgxModule); err != nil {
-			return false, err
-		} else if !ok {
-			if err := goGet(ctx, repo, pgxModule); err != nil {
+		// pgx opens it, and xz unpacks the Postgres its tests run against.
+		for _, module := range []string{pgxModule, xzModule} {
+			if ok, err := requires(fs, module); err != nil {
 				return false, err
-			}
+			} else if !ok {
+				if err := goGet(ctx, repo, module); err != nil {
+					return false, err
+				}
 
-			added = true
+				added = true
+			}
 		}
 
 		return added, writePostgres(fs, dir, db, envURL(repo.Name(), db.Name, only))
@@ -299,9 +314,32 @@ func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool
 
 // writePostgres writes the files of a Postgres database: it is reached at an
 // address given when it is opened, so it has no path, nor a copy per
-// anything, and the server encrypts what it keeps.
+// anything, and the server encrypts what it keeps. Beside them is the package
+// a test opens it with.
 func writePostgres(fs afero.Fs, dir string, db Database, env string) error {
+	module, err := modulePath(fs)
+	if err != nil {
+		return err
+	}
+
+	testPkg := db.Name + "test"
+
 	files := map[string]func() ([]byte, error){
+		path.Join(testPkg, testPkg+".go"): func() ([]byte, error) {
+			return render(dbtestPostgresTmpl, struct{ Package, Module string }{db.Name, module})
+		},
+		path.Join(testPkg, "server.go"): func() ([]byte, error) {
+			b, err := render(dbtestServerTmpl, struct {
+				Package, PostgresVersion string
+				Builds                   []postgresBuild
+			}{db.Name, testPostgresVersion, testPostgresBuilds})
+			if err != nil {
+				return nil, err
+			}
+
+			// gofmt aligns the builds by the longest platform.
+			return format.Source(b)
+		},
 		"sqlc.yaml":   func() ([]byte, error) { return fmt.Appendf(nil, sqlcPostgresConfig, db.Name), nil },
 		"generate.go": func() ([]byte, error) { return fmt.Appendf(nil, generateGo, db.Name), nil },
 		"migrate.go":  func() ([]byte, error) { return render(migratePostgresTmpl, struct{ Package string }{db.Name}) },
@@ -316,12 +354,52 @@ func writePostgres(fs afero.Fs, dir string, db Database, env string) error {
 			return fmt.Errorf("%s: %w", name, err)
 		}
 
+		if err := fs.MkdirAll(path.Dir(path.Join(dir, name)), 0o755); err != nil {
+			return err
+		}
+
 		if err := afero.WriteFile(fs, path.Join(dir, name), b, 0o644); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// modulePath is the module go.mod declares.
+func modulePath(fs afero.Fs) (string, error) {
+	b, err := afero.ReadFile(fs, "go.mod")
+	if err != nil {
+		return "", err
+	}
+
+	mod, err := modfile.ParseLax("go.mod", b, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if mod.Module == nil {
+		return "", errors.New("go.mod declares no module")
+	}
+
+	return mod.Module.Mod.Path, nil
+}
+
+// testPostgresVersion is the Postgres a test runs against: the major version
+// the live databases run (Neon's default, 17), as zonky builds it.
+const testPostgresVersion = "17.11.0"
+
+// postgresBuild is zonky's build of testPostgresVersion for one platform, on
+// Maven Central, and the SHA-256 of its archive.
+type postgresBuild struct{ Platform, Artifact, Sum string }
+
+// testPostgresBuilds are the platforms a test can start Postgres on. Windows
+// is not among them: see docs/roadmap.md.
+var testPostgresBuilds = []postgresBuild{
+	{"darwin/amd64", "darwin-amd64", "d464ff178e9860ba204662ac23fa547504b7fd392392ff2fb92e3fd73b5bdb64"},
+	{"darwin/arm64", "darwin-arm64v8", "a1c2786acb0c398f9b2d76806fc52f5dc8b222cbc8e9383a9b9702084daaf3a5"},
+	{"linux/amd64", "linux-amd64", "0dd7b72b6f335b8ecfb355fa24c5781e8a93edd09880bb77eb52ebbf29b3e96d"},
+	{"linux/arm64", "linux-arm64v8", "8b042e0ea418b1927d95399207950da0734d27fe01e29503ade3bdc464ad4c2b"},
 }
 
 // envURL is the environment variable a Postgres database's URL is read from:

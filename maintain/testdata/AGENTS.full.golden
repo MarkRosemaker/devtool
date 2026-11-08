@@ -47,8 +47,9 @@ the work in hand cannot go on without the fix.
 
 - `make ready` passes before every commit. It regenerates what the
   generators own, fixes and formats what it can, then vets and runs the
-  tests. It needs no network beyond the module cache, so it runs in a
-  sandbox. `make tools` installs what it shells out to, and the Makefile
+  tests. It needs no network beyond the module cache, and on
+  a machine's first run the Postgres its database tests start, so it
+  runs in a sandbox. `make tools` installs what it shells out to, and the Makefile
   puts that directory on its own `PATH`, so you do not have to.
 - Because it regenerates, it may leave changes of its own. Those are its
   output, not a failure: read them, and commit them with the work where they
@@ -111,8 +112,13 @@ and `Close`. The URL is the pooled one where the server has a pooler; the
 direct one is derived from it, so there is one variable to set. Statements
 go through the pool unprepared, so that a transaction pooler can serve them.
 A field is a column and a list a table of its own: never `json` or `jsonb`.
-A test opens a real database rather than mocking it, setting `EnvURL` to one
-the environment gives, and skips where it gives none.
+A test opens a real database rather than mocking it, and never the live one:
+`<name>test.Open(t)`, generated beside the package, starts a Postgres of the
+test binary's own and gives the test a schema of its own, empty and migrated,
+dropped when the test ends. Nothing is set up for it: the first run on a
+machine downloads Postgres once, and a test run as root runs it as `nobody`.
+Inside a test binary `Open` refuses anything else, so the live database is
+out of a test's reach however the environment is set.
 
 To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
 to `resources.databases` in `devtool.json` and run `make generate`. devtool
