@@ -28,6 +28,10 @@ const DefinitionPath = "devtool.json"
 // editing the page can see it. What the repository *is* belongs here, where
 // something that never renders a page can read it.
 type Definition struct {
+	// Name is what the repository is called as a person reads it, such as a
+	// web app's title, where the repository's own name is its address.
+	Name string `json:"name,omitempty"`
+
 	// Description and Topics are pushed to the repository's GitHub metadata.
 	Description string   `json:"description,omitempty"`
 	Topics      []string `json:"topics,omitempty"`
@@ -58,6 +62,9 @@ type Definition struct {
 	// devtool generates the code that goes with them.
 	Resources Resources `json:"resources,omitzero"`
 
+	// Webapp is a web app's server, which [WebappTask] writes main.go for.
+	Webapp *Webapp `json:"webapp,omitzero"`
+
 	// untyped is set where the file had a database without its type, which
 	// is then written down.
 	untyped bool
@@ -87,16 +94,31 @@ type Database struct {
 	Per string `json:"per,omitempty"`
 }
 
+// Webapp is how a web app is served and installed.
+type Webapp struct {
+	// Port is where it listens locally. In the cloud, $PORT wins.
+	Port int `json:"port"`
+
+	// ThemeColor and BackgroundColor are how the installed app looks.
+	ThemeColor      string `json:"themeColor,omitempty"`
+	BackgroundColor string `json:"backgroundColor,omitempty"`
+
+	// Auth lets only the one user in, in the cloud.
+	Auth bool `json:"auth,omitzero"`
+}
+
 // equal reports whether two definitions say the same thing.
 func (d Definition) equal(o Definition) bool {
-	return d.Description == o.Description &&
+	return d.Name == o.Name &&
+		d.Description == o.Description &&
 		slices.Equal(d.Topics, o.Topics) &&
 		d.Coverage == o.Coverage &&
 		d.DevtoolVersion == o.DevtoolVersion &&
 		d.Kind == o.Kind &&
 		d.Private == o.Private &&
 		maps.Equal(d.Tools, o.Tools) &&
-		slices.Equal(d.Resources.Databases, o.Resources.Databases)
+		slices.Equal(d.Resources.Databases, o.Resources.Databases) &&
+		(d.Webapp == o.Webapp || d.Webapp != nil && o.Webapp != nil && *d.Webapp == *o.Webapp)
 }
 
 // LoadDefinition reads the repository's definition.
