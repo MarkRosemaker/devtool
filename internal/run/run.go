@@ -34,7 +34,7 @@ const TokenEnv = "GITHUB_TOKEN"
 
 // Service maintains a list of repositories.
 type Service struct {
-	repos   *gorepo.Service
+	repos   repoSource
 	runner  *engine.Runner
 	events  event.Emitter
 	verbose bool
@@ -67,13 +67,13 @@ func New(
 	}
 
 	return &Service{
-		repos: gorepo.NewService(ctx, token,
+		repos: gitHub{gorepo.NewService(ctx, token,
 			ghrepo.WithBaseDir(filepath.Join(home, "go/src/github.com/")),
 			ghrepo.MakeDirAll,
 			ghrepo.CloneGit,
 			ghrepo.CreateRemote,
 			ghrepo.CreateOnGitHub,
-		),
+		)},
 		runner:  &engine.Runner{Inert: maintain.Inert},
 		events:  events,
 		verbose: verbose,
@@ -152,7 +152,7 @@ func (s *Service) RunOne(ctx context.Context, owner, name string) error {
 	})
 	defer event.Emit(s.events, event.Event{Kind: event.RunDone})
 
-	if err := s.prefetch(ctx, owner, org); err != nil {
+	if err := s.repos.prefetch(ctx, owner, org); err != nil {
 		return err
 	}
 
@@ -234,7 +234,7 @@ type unit struct {
 	// repo is nil when the repository could not be opened, in which case err
 	// says why. Keeping the failure here lets it be reported as that
 	// repository's result rather than aborting the whole run.
-	repo *repository
+	repo maintainedRepo
 	err  error
 }
 
@@ -267,7 +267,7 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 	}
 
 	for ownerName, owner := range cfg.ByIndex() {
-		if err := s.prefetch(ctx, ownerName, owner.Organization); err != nil {
+		if err := s.repos.prefetch(ctx, ownerName, owner.Organization); err != nil {
 			return nil, err
 		}
 
@@ -295,24 +295,6 @@ func (s *Service) plan(ctx context.Context, cfg config.Config) (*plan, error) {
 	return p, nil
 }
 
-// prefetch loads an owner's repository metadata in one request, so that opening
-// each repository afterwards does not cost one of its own.
-func (s *Service) prefetch(ctx context.Context, owner string, isOrg bool) error {
-	if isOrg {
-		if err := s.repos.PrefetchOrgRepositories(ctx, owner); err != nil {
-			return fmt.Errorf("prefetching repositories for organisation %q: %w", owner, err)
-		}
-
-		return nil
-	}
-
-	if err := s.repos.PrefetchUserRepositories(ctx, owner); err != nil {
-		return fmt.Errorf("prefetching repositories for user %q: %w", owner, err)
-	}
-
-	return nil
-}
-
 // open clones or locates the unit's repository and reads its dependencies:
 // those among keys, the repositories of the run, and an event for each one of
 // their owners' that the run leaves out.
@@ -321,7 +303,7 @@ func (s *Service) prefetch(ctx context.Context, owner string, isOrg bool) error 
 // repository should be reported as such, not stop the rest of the portfolio from
 // being maintained.
 func (s *Service) open(ctx context.Context, u *unit, keys []string, deps map[string][]string) {
-	repo, err := s.repos.NewRepository(ctx, u.owner, u.name)
+	repo, err := s.repos.open(ctx, u.owner, u.name)
 	if err != nil {
 		u.err = fmt.Errorf("opening repository: %w", err)
 
@@ -330,7 +312,7 @@ func (s *Service) open(ctx context.Context, u *unit, keys []string, deps map[str
 		return
 	}
 
-	u.repo = &repository{Repository: repo}
+	u.repo = repo
 
 	// The dependency read needs the current go.mod, so pull before reading it.
 	// A failure here is not fatal: the worktree may simply be stale, and the
@@ -506,7 +488,7 @@ func withDefinition(spec engine.Spec, def maintain.Definition, found bool) engin
 //
 // A failure is logged and otherwise ignored: housekeeping that did not happen is
 // not a reason to report the repository as failed.
-func (s *Service) pruneOccasionally(ctx context.Context, repo *repository) {
+func (s *Service) pruneOccasionally(ctx context.Context, repo maintainedRepo) {
 	if rand.Float32() >= pruneRate {
 		return
 	}
@@ -569,7 +551,7 @@ func (s *Service) saveConfig(ctx context.Context, cfg config.Config) error {
 // commitConfig commits the coverage figures this run measured, so the next run
 // on any machine starts from them.
 func (s *Service) commitConfig(ctx context.Context) error {
-	repo, err := s.repos.NewRepository(ctx, s.cfg.Owner, s.cfg.Name)
+	repo, err := s.repos.open(ctx, s.cfg.Owner, s.cfg.Name)
 	if err != nil {
 		return fmt.Errorf("opening the repository holding the config: %w", err)
 	}

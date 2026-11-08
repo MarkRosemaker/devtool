@@ -610,3 +610,86 @@ func gitOut(t *testing.T, dir string, args ...string) string {
 
 	return strings.TrimSpace(string(out))
 }
+
+// recorder keeps every event a run emits.
+type recorder struct{ events []event.Event }
+
+func (r *recorder) Emit(ev event.Event) { r.events = append(r.events, ev) }
+
+// TestTestRecordsTheCoverage: "devtool test" measures the coverage, records
+// it in devtool.json and renders the README's badge from it.
+func TestTestRecordsTheCoverage(t *testing.T) {
+	dir := committedRepo(t)
+	write(t, dir, "thing.go", "package thing\n\nfunc One() int { return 1 }\n\nfunc Two() int { return 2 }\n")
+	write(t, dir, "thing_test.go",
+		"package thing\n\nimport \"testing\"\n\nfunc TestOne(t *testing.T) {\n\tif One() != 1 {\n\t\tt.Fail()\n\t}\n}\n")
+
+	rec := &recorder{}
+
+	if err := Test(t.Context(), dir, Options{Holder: "T"}, rec); err != nil {
+		t.Fatal(err)
+	}
+
+	def, found, err := maintain.LoadDefinition(afero.NewBasePathFs(afero.NewOsFs(), dir))
+	if err != nil || !found {
+		t.Fatalf("no definition: %v", err)
+	}
+
+	if def.Coverage != 50 {
+		t.Errorf("recorded %v, want 50", def.Coverage)
+	}
+
+	if readme := readFileString(t, filepath.Join(dir, "README.md")); !strings.Contains(readme, "coverage-50%25") {
+		t.Errorf("the README's badge does not show 50%%:\n%s", readme)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, coverProfile)); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("the coverage profile was left behind: %v", err)
+	}
+
+	var kinds []event.Kind
+	for _, ev := range rec.events {
+		kinds = append(kinds, ev.Kind)
+	}
+
+	want := []event.Kind{
+		event.RunStart, event.RepoStart, event.TaskStart, event.TaskDone, event.RepoDone, event.RunDone,
+	}
+	if !slices.Equal(kinds, want) {
+		t.Errorf("events = %v, want %v", kinds, want)
+	}
+
+	if done := rec.events[4]; done.Coverage != 50 || done.Err != "" {
+		t.Errorf("repo_done = %+v, want 50%% and no error", done)
+	}
+}
+
+// A failing suite records nothing and says why, in the error and the stream.
+func TestTestReportsFailingTests(t *testing.T) {
+	dir := committedRepo(t)
+	write(t, dir, "thing_test.go",
+		"package thing\n\nimport \"testing\"\n\nfunc TestBroken(t *testing.T) { t.Fatal(\"broken on purpose\") }\n")
+
+	rec := &recorder{}
+
+	err := Test(t.Context(), dir, Options{}, rec)
+	if err == nil || !strings.Contains(err.Error(), "broken on purpose") {
+		t.Fatalf("err = %v, want the failing test's output", err)
+	}
+
+	var failed bool
+
+	for _, ev := range rec.events {
+		if ev.Kind == event.RepoDone && ev.Err != "" {
+			failed = true
+		}
+	}
+
+	if !failed {
+		t.Errorf("no repo_done carried the failure: %+v", rec.events)
+	}
+
+	if _, statErr := os.Stat(filepath.Join(dir, maintain.DefinitionPath)); !errors.Is(statErr, os.ErrNotExist) {
+		t.Errorf("a failing run recorded a definition: %v", statErr)
+	}
+}
