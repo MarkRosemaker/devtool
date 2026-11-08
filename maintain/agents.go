@@ -252,7 +252,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 	}, nil
 }
 
-// interactionsPath is openapi-enrich's input, and Claude Design's mock data.
+// interactionsPath is openapi-enrich's input, and the frontend's mock data.
 const interactionsPath = "api/interactions.json"
 
 // openAPIEnrichDirective matches a go:generate line that runs openapi-enrich,

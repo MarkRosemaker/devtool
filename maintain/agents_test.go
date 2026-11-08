@@ -279,7 +279,7 @@ func TestGenerateAgents(t *testing.T) {
 		for _, want := range []string{
 			"`api/openapi.json` is partly generated",
 			"is also the frontend's mock data",
-			"`frontend/mocks.json`",
+			"the smoke tests answer from the interactions",
 		} {
 			if !strings.Contains(got, want) {
 				t.Errorf("missing %q:\n%s", want, got)
@@ -288,7 +288,7 @@ func TestGenerateAgents(t *testing.T) {
 	})
 
 	// The kind decides, not the directory: a frontend/ in a repository
-	// recorded as something else is not Claude Design's.
+	// recorded as something else is not a web app's.
 	t.Run("a frontend directory alone is not a web app", func(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "api/interactions.json", "{}\n")

@@ -21,7 +21,7 @@ const (
 	// KindCLI is a command, whether or not it is also a library.
 	KindCLI Kind = "cli"
 
-	// KindWebapp is a Go backend with a frontend designed in Claude Design.
+	// KindWebapp is a Go backend with a frontend.
 	KindWebapp Kind = "webapp"
 
 	// KindAPILib is an API client library under go-api-libs.
