@@ -1,10 +1,14 @@
 package run
 
 import (
+	"context"
+	"fmt"
+
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/gorepo"
 	"github.com/go-git/go-git/v6"
 	"github.com/spf13/afero"
+	"golang.org/x/mod/modfile"
 )
 
 // repository is one of my repositories, as both the engine and this package
@@ -33,3 +37,49 @@ func (r *repository) Fs() afero.Fs { return r.Repository.Fs }
 // Supplying the constant is this side's job.
 func (r *repository) HardReset() error { return r.GitReset(git.HardReset) }
 func (r *repository) Clean() error     { return r.GitClean() }
+
+// maintainedRepo is what a run needs of one repository: what the engine asks
+// for, its module's requirements, a commit of named files, and its sequence.
+type maintainedRepo interface {
+	engine.Repo
+	Dependencies() ([]*modfile.Require, error)
+	Commit(paths []string, message string) error
+	sequence(version string) engine.Sequence
+}
+
+// repoSource opens repositories and loads their owners' metadata.
+type repoSource interface {
+	open(ctx context.Context, owner, name string) (maintainedRepo, error)
+	prefetch(ctx context.Context, owner string, isOrg bool) error
+}
+
+// gitHub is the [repoSource] a run uses: clones under the home directory, with
+// their metadata on GitHub.
+type gitHub struct{ *gorepo.Service }
+
+func (g gitHub) open(ctx context.Context, owner, name string) (maintainedRepo, error) {
+	repo, err := g.NewRepository(ctx, owner, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &repository{Repository: repo}, nil
+}
+
+// prefetch loads an owner's repository metadata in one request, so that opening
+// each repository afterwards does not cost one of its own.
+func (g gitHub) prefetch(ctx context.Context, owner string, isOrg bool) error {
+	if isOrg {
+		if err := g.PrefetchOrgRepositories(ctx, owner); err != nil {
+			return fmt.Errorf("prefetching repositories for organisation %q: %w", owner, err)
+		}
+
+		return nil
+	}
+
+	if err := g.PrefetchUserRepositories(ctx, owner); err != nil {
+		return fmt.Errorf("prefetching repositories for user %q: %w", owner, err)
+	}
+
+	return nil
+}

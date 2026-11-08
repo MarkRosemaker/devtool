@@ -2,8 +2,12 @@ package main
 
 import (
 	"flag"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/MarkRosemaker/devtool/internal/run"
 )
 
 // TestSelfUpdateIsASubcommand keeps "devtool self-update" working without a
@@ -225,5 +229,44 @@ func TestUpdateAllReachesTheList(t *testing.T) {
 	// the positional never sees -config.
 	if strings.Contains(err.Error(), "naming a repository needs -config") {
 		t.Errorf("the flags after the positional were ignored: %v", err)
+	}
+}
+
+// TestTestTakesNoArguments: "devtool test" measures the repository it stands
+// in, so a word after it is a mistake to report, not a target.
+func TestTestTakesNoArguments(t *testing.T) {
+	// Somewhere empty, so a regression measures nothing rather than this suite.
+	t.Chdir(t.TempDir())
+
+	err := dispatch(t.Context(), []string{"test", "-json", "elsewhere"})
+	if err == nil || !strings.Contains(err.Error(), "elsewhere") {
+		t.Fatalf("err = %v, want the argument named", err)
+	}
+}
+
+// TestAListedRunNeedsAToken: a list held in a GitHub repository gets as far as
+// asking for the token, and stops there without one.
+func TestAListedRunNeedsAToken(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	t.Setenv(run.TokenEnv, "")
+
+	cmd := exec.CommandContext(t.Context(), "git", "init", "-q", dir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+
+	cmd = exec.CommandContext(t.Context(), "git", "-C", dir, "remote", "add", "origin",
+		"https://github.com/alice/portfolio.git")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git remote add: %v: %s", err, out)
+	}
+
+	for _, target := range []string{"all", "alice/lib"} {
+		err := maintained(t.Context(), filepath.Join(dir, "config.json"), target, true, false, nil)
+		if err == nil || !strings.Contains(err.Error(), run.TokenEnv) {
+			t.Errorf("%s: err = %v, want the missing token named", target, err)
+		}
 	}
 }

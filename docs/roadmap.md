@@ -197,11 +197,3 @@ the portfolio has never seen at all is assumed personal, because there is no
 cheap way to ask GitHub which kind of account a name belongs to without listing
 every one of its repositories. Fine for the common case; a new organisation
 still needs one manual edit to `config.json` the first time.
-
-## Test coverage
-
-What is untested is what touches a repository from the outside:
-`internal/run`'s failure to open one, which `open` records on the unit.
-
-`internal/local` is covered where it matters, including the refusal to touch a
-dirty worktree.

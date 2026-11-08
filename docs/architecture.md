@@ -40,7 +40,9 @@ catastrophic for the one somebody is working in.
 others, orders them with the engine's dependency graph, and maintains them as
 parallel as that order allows. A required repository of an owner in
 `config.json` that is not in it is a gap, reported as an `unmaintained` event
-on every run.
+on every run. It reaches GitHub only through `repoSource`, which opens a
+repository and lists an owner's, so its tests stand in local repositories
+for GitHub's.
 
 Both emit the same event stream, so one repository reports exactly like one
 row of a full run. Who reads it is the caller's choice. By default
