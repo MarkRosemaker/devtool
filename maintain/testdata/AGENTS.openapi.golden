@@ -115,6 +115,31 @@ The library serves the rest, the same way in every web app:
 - **The server:** it listens on `$PORT` where the host sets it. On a signal
   it finishes the requests in flight before `setup`'s closing function runs.
 
+It also adds `window.Webapp` to the page, for the app's scripts to use
+rather than write again. Each part reports through events, and the app
+shows them in its own way:
+
+- **`Webapp.wake`:** `ready` resolves once a sleeping server answers.
+  `webapp:waking` fires when that takes more than two seconds, and
+  `webapp:awake` once the app is back after a while away.
+- **`Webapp.version`:** compares the page's build with the server's.
+  `webapp:version` says when they differ, and `update()` reloads into the
+  newer one.
+- **`Webapp.notify`:** system notifications, through the service worker.
+  `ask()` asks for the permission, and `show(title, {body, tag, url})`
+  resolves false where nothing was shown, for the app to fall back to its
+  own toast.
+- **`Webapp.socket`:** connects the client generated as `frontend/src/ws.js`,
+  where there is one. `on(type, fn)` gets each message, `opened(ms)` waits
+  for the connection, and `simulate(type, payload)` stands in for the server
+  in development.
+- **The tweaks panel:** Claude Design's, loaded with
+  `<script type="text/babel" src="/webapp/tweaks-panel.jsx">` in place of a
+  copy of its own.
+
+Where `window.ENV` is `"development"`, they ping and dial nothing. The
+library's `docs/architecture.md` has each in full.
+
 What every web app would want belongs in the library, not here: a fix to
 the installed app, sign-in or the server, or a piece of frontend proven in
 this app. Change it there, in a pull request of its own, and every app has
