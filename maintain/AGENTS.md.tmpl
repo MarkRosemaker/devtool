@@ -208,9 +208,6 @@ shows them in its own way:
   where there is one. `on(type, fn)` gets each message, `opened(ms)` waits
   for the connection, and `simulate(type, payload)` stands in for the server
   in development.
-- **The tweaks panel:** loaded with
-  `<script type="text/babel" src="/webapp/tweaks-panel.jsx">` in place of a
-  copy of its own.
 {{- if .Auth }}
 - **Sign-in on the page:** a signed-out page goes to `/login` before it asks
   the server anything, even one the service worker kept.
