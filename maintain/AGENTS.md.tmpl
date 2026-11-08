@@ -76,7 +76,21 @@ Edit the directory, never the file:
 {{ range .Generated }}
 - `{{ .File }}` → `{{ .Dir }}`
 {{- end }}
-{{ if .OpenAPIEnrich }}
+{{ if .OpenAPIGenerator }}
+`api/openapi.json` is generated whole: `go generate` runs
+`{{ .OpenAPIGenerator }}`, which builds it anew from the upstream
+specification copied into `api/`, and fills in types, formats and examples
+from `api/interactions.json`. An edit to it is lost on the next run, so make
+the change in `{{ .OpenAPIGenerator }}` instead.
+{{- if .OpenAPIFetch }} Outside a Claude Code session,
+each run first replaces the copy with the newest, so its diff is what
+changed upstream.
+{{- end }}
+
+An interaction still decides types: change one and the spec follows on the
+next run, and remove one and what only it showed goes with it. After
+`make ready`, read the diff of `api/openapi.json`.
+{{ else if .OpenAPIEnrich }}
 `api/openapi.json` is partly generated: `openapi-enrich` fills in types,
 formats and examples from `api/interactions.json` and writes them into
 the spec. What it writes is kept: a later run does not remove it, even
@@ -87,13 +101,13 @@ So change a type in both files, in the same commit. After `make ready`,
 read the diff of `api/openapi.json`. Put back any edit enrich reverted,
 and delete any example it inferred from an interaction that no longer
 exists.
-{{ if .Frontend }}
+{{ end }}{{ if .Frontend }}
 `api/interactions.json` is also the frontend's mock data. Claude Design
 copies it to `frontend/mocks.json`, and the generated `api.js` serves
 responses from that file in development. An interaction that is stale
 or missing means a mocked screen that is wrong or empty. Keep each one
 to what the handler actually returns.
-{{ end }}{{ end }}{{ if .Gitignore }}
+{{ end }}{{ if .Gitignore }}
 `.gitignore` is the exception: only the marked block at its head is
 generated. Your own rules go below that block, where they win — in a
 `.gitignore` the last matching pattern decides.
