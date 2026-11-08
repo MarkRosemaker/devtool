@@ -118,6 +118,39 @@ To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
 to `resources.databases` in `devtool.json`, write
 `databases/<name>/migrations/001_initial.up.sql`, and run `make generate`.
 
+## The web app
+
+`main.go` is generated from `devtool.json`: `name`, `description` and the
+`webapp` section (`port`, `themeColor`, `backgroundColor`, `auth`). Change
+those there, then run `make generate`. It hands them to `webapp.Main`, from
+`github.com/MarkRosemaker/webapp`, with `setup` in `app.go`: the app's own
+code, where it opens what it needs, registers its API on the mux under
+`/api`, and returns a function that closes what it opened. That function runs
+once the server has stopped. `setup` may also return a handler wrapping the
+mux, to put middleware in front of everything.
+
+The library serves the rest, the same way in every web app:
+
+- **`/health`:** always open, for the host's health check.
+- **The frontend:** `frontend/` as an installable app. The manifest, the
+  service worker, the theme colour and the build are added to the page as it
+  is served, so the frontend carries none of them. It supplies its files and
+  its icons, under the names a favicon generator gives them
+  (`android-chrome-192x192.png`, `apple-touch-icon.png`, and so on).
+- **Sign-in:** in the cloud, as the one user named by `AUTH_USER` and
+  `AUTH_PASSWORD`. Without both the app refuses to start, rather than start
+  open. `SESSION_SECRET`, where it is set, signs the session. Locally the app
+  is open.
+- **The server:** it listens on `$PORT` where the host sets it. On a signal
+  it finishes the requests in flight before `setup`'s closing function runs.
+
+What every web app would want belongs in the library, not here: a fix to
+the installed app, sign-in or the server, or a piece of frontend proven in
+this app. Change it there, in a pull request of its own, and every app has
+it with the next dependency bump. Only then remove this app's copy. What
+only this app does stays here. The library's `docs/architecture.md` says
+how it works, and its roadmap what it is to take on next.
+
 ## Keeping the documents true
 
 - Say what is, concisely. Not what was or how it came to be: that is git's.

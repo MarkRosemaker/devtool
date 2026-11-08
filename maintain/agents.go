@@ -77,6 +77,10 @@ type agentsData struct {
 	// Roadmap is true where docs/roadmap.md exists, which then has rules of
 	// its own.
 	Roadmap bool
+
+	// Webapp is true where devtool.json has a webapp section, whose main.go is
+	// generated, and Auth where it asks for sign-in.
+	Webapp, Auth bool
 }
 
 // generatedRoot is one generated root file and the directory it is built
@@ -222,6 +226,8 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		Frontend:      openAPIEnrich && def.Kind == KindWebapp,
 		Smoke:         smoke,
 		Roadmap:       roadmap,
+		Webapp:        def.Webapp != nil,
+		Auth:          def.Webapp != nil && def.Webapp.Auth,
 		Databases:     databaseNames(def, ""),
 		SQLite:        databaseNames(def, sqlite),
 		Postgres:      databaseNames(def, postgres),

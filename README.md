@@ -2,9 +2,9 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/MarkRosemaker/devtool.svg)](https://pkg.go.dev/github.com/MarkRosemaker/devtool) ![Code Coverage](https://img.shields.io/badge/coverage-74%25-yellowgreen) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Brings Go repositories up to a standard and keeps them there: it writes the
-README, the Makefile, the `.gitignore`, the `AGENTS.md` and the code that
-opens and migrates its SQLite databases, updates the dependencies and the
-pinned tools, formats and lints, and commits each kind of change on its own
+README, the Makefile, the `.gitignore`, the `AGENTS.md`, a web app's
+`main.go`, and the code that opens and migrates its databases, updates the
+dependencies and the pinned tools, formats and lints, and commits each kind of change on its own
 so the history stays readable.
 
 Run it in a repository to rebuild that one's generated files, or give it a list

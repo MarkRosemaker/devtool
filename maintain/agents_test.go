@@ -390,6 +390,8 @@ func TestAgentsGolden(t *testing.T) {
 			Databases: []string{"world", "user", "tasks"},
 			SQLite:    []string{"world", "user"},
 			Postgres:  []string{"tasks"},
+			Webapp:    true,
+			Auth:      true,
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},
@@ -407,6 +409,7 @@ func TestAgentsGolden(t *testing.T) {
 			OpenAPIEnrich: true,
 			Frontend:      true,
 			Smoke:         true,
+			Webapp:        true,
 		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

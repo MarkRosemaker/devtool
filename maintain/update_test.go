@@ -27,7 +27,8 @@ func TestDescribeUpdate(t *testing.T) {
 		},
 		// A name that only starts like a directory is not in it.
 		{"not a fragment", []string{"README.md.orig"}, []string{"update"}},
-		{"something unclaimed", []string{"README.md", "main.go"}, []string{"readme", "update"}},
+		{"something unclaimed", []string{"README.md", "logging.go"}, []string{"readme", "update"}},
+		{"a web app's server", []string{"main.go", "app.go", "AGENTS.md"}, []string{"webapp", "agents"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := describeUpdate(tc.files); !slices.Equal(got, tc.want) {
