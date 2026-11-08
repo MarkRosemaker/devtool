@@ -84,6 +84,10 @@ var owners = []struct{ path, part string }{
 	{claudePath, "claude"},
 	{lintfilePath, "lintgen"},
 	{databasesDir + "/", "databases"},
+	// What adding a database's driver changes.
+	{"go.mod", "databases"},
+	{"go.sum", "databases"},
+	{"vendor/", "databases"},
 }
 
 // describeUpdate names the parts of [UpdateTask] a commit's files came from,
@@ -184,9 +188,9 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //     really there.
 //   - A web app's main.go before AGENTS.md, which reads its go:generate
 //     lines.
-//   - The databases last: a part that can refuse for want of
-//     something only a person can write, a migration or a driver, and the
-//     files above are worth having regardless.
+//   - The databases last: the part that reaches the network, adding a driver
+//     where go.mod has none, and can refuse a declaration it cannot lay out,
+//     and the files above are worth having regardless.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
