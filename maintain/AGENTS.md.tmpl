@@ -107,10 +107,6 @@ where `window.ENV` is `"development"`, the generated `api.js` answers from
 `/mocks.json`, and the smoke tests answer from the interactions. An
 interaction that is stale or missing means a mocked screen that is wrong
 or empty. Keep each one to what the handler actually returns.
-
-The frontend is edited here. Its first version came from a Claude Design
-export, and nothing has been synced with Claude Design since: no import,
-no export, no project to keep in step.
 {{ end }}{{ if .Gitignore }}
 `.gitignore` is the exception: only the marked block at its head is
 generated. Your own rules go below that block, where they win — in a
@@ -212,7 +208,7 @@ shows them in its own way:
   where there is one. `on(type, fn)` gets each message, `opened(ms)` waits
   for the connection, and `simulate(type, payload)` stands in for the server
   in development.
-- **The tweaks panel:** Claude Design's, loaded with
+- **The tweaks panel:** loaded with
   `<script type="text/babel" src="/webapp/tweaks-panel.jsx">` in place of a
   copy of its own.
 {{- if .Auth }}

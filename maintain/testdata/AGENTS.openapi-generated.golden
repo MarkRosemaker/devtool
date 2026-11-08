@@ -85,10 +85,6 @@ where `window.ENV` is `"development"`, the generated `api.js` answers from
 interaction that is stale or missing means a mocked screen that is wrong
 or empty. Keep each one to what the handler actually returns.
 
-The frontend is edited here. Its first version came from a Claude Design
-export, and nothing has been synced with Claude Design since: no import,
-no export, no project to keep in step.
-
 `.gitignore` is the exception: only the marked block at its head is
 generated. Your own rules go below that block, where they win — in a
 `.gitignore` the last matching pattern decides.
