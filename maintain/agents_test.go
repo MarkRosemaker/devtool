@@ -449,6 +449,21 @@ func TestAgentsGolden(t *testing.T) {
 			OpenAPIFetch:     true,
 			Frontend:         true,
 		}},
+		// An API library, whose interactions are recorded calls: enriched in
+		// place, and built whole.
+		{"apilib", agentsData{
+			Generated:     generatedRootDirs[:1],
+			Gitignore:     true,
+			OpenAPIEnrich: true,
+			Recorded:      true,
+		}},
+		{"apilib-generated", agentsData{
+			Generated:        generatedRootDirs[:1],
+			Gitignore:        true,
+			OpenAPIGenerator: "./cmd/generate",
+			OpenAPIFetch:     true,
+			Recorded:         true,
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := renderAgents(tc.data)

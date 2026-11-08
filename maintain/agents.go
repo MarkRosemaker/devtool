@@ -82,6 +82,11 @@ type agentsData struct {
 	// interaction means a wrong mock too.
 	Frontend bool
 
+	// Recorded is true where OpenAPIEnrich or OpenAPIGenerator also holds and this is an API
+	// library, whose api/interactions.json is recorded calls to the real API: the evidence its
+	// types rest on, never written by hand.
+	Recorded bool
+
 	// Smoke is true for a web app with a smoke test, which make ready runs.
 	Smoke bool
 
@@ -242,6 +247,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		OpenAPIGenerator: generator,
 		OpenAPIFetch:     fetch,
 		Frontend:         (openAPIEnrich || generator != "") && def.Kind == KindWebapp,
+		Recorded:         (openAPIEnrich || generator != "") && def.Kind == KindAPILib,
 		Smoke:            smoke,
 		Roadmap:          roadmap,
 		Webapp:           def.Webapp != nil,
