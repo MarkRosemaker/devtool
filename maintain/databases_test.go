@@ -201,24 +201,9 @@ func TestDatabasesRefuses(t *testing.T) {
 			want: "letters only",
 		},
 		{
-			name:   "no initial migration",
-			remove: "databases/user/migrations/001_initial.up.sql",
-			want:   "001_initial.up.sql",
-		},
-		{
-			name: "no driver to open it with",
-			file: "go.mod", content: "module example.com/app\n\ngo 1.27\n",
-			want: "modernc.org/sqlite",
-		},
-		{
 			name: "a type devtool does not know",
 			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "mysql"}]}}`,
 			want: "no kind of database",
-		},
-		{
-			name: "Postgres without its driver",
-			file: DefinitionPath, content: `{"resources": {"databases": [{"name": "user", "type": "postgres"}]}}`,
-			want: "github.com/jackc/pgx/v5",
 		},
 		{
 			name: "Postgres with a copy per something",
@@ -440,4 +425,147 @@ func TestPerHasToBeAParameterName(t *testing.T) {
 			t.Errorf("per %q was accepted", per)
 		}
 	}
+}
+
+// A database declared and nothing more is all it takes: devtool writes an
+// example migration and queries, which say they are one, adds the driver and
+// tidies the module, so that make generate builds it at once.
+func TestADatabaseDeclaredAloneIsScaffolded(t *testing.T) {
+	for _, tc := range []struct {
+		name, definition, driver string
+		vendor                   bool
+		migration, queries, open []string
+	}{
+		{
+			name:       "sqlite",
+			definition: `{"resources": {"databases": [{"name": "data", "type": "sqlite"}]}}`,
+			driver:     "modernc.org/sqlite",
+			migration:  []string{"This is an example", "002_<title>.up.sql", "CREATE TABLE notes (", "id INTEGER PRIMARY KEY"},
+			queries:    []string{"This is an example", "-- name: CreateNote :one", "VALUES (?, ?) RETURNING *;", "-- name: ListNotes :many"},
+			open:       []string{`_ "modernc.org/sqlite"`},
+		},
+		{
+			name:       "encrypted, vendored",
+			definition: `{"resources": {"databases": [{"name": "data", "type": "sqlite", "encrypted": true}]}}`,
+			driver:     ncrucesModule,
+			vendor:     true,
+			migration:  []string{"CREATE TABLE notes ("},
+			queries:    []string{"VALUES (?, ?) RETURNING *;"},
+			open:       []string{ncrucesModule + "/driver", ncrucesModule + "/vfs/adiantum"},
+		},
+		{
+			name:       "postgres",
+			definition: `{"resources": {"databases": [{"name": "data", "type": "postgres"}]}}`,
+			driver:     pgxModule,
+			migration:  []string{"id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY", "timestamptz"},
+			queries:    []string{"VALUES ($1, $2) RETURNING *;", "WHERE id = $1;"},
+			open:       []string{"func Open(ctx context.Context) (*DB, error)"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &fakeRepo{}
+			fs := repo.Fs()
+
+			writeFile(t, fs, "go.mod", "module example.com/app\n\ngo 1.27\n")
+			writeFile(t, fs, DefinitionPath, tc.definition)
+
+			if tc.vendor {
+				writeFile(t, fs, "vendor/modules.txt", "")
+			}
+
+			if err := runDatabases(t, repo); err != nil {
+				t.Fatal(err)
+			}
+
+			for file, wants := range map[string][]string{
+				"databases/data/migrations/001_initial.up.sql": tc.migration,
+				"databases/data/queries/notes.sql":             tc.queries,
+				"databases/data/open.go":                       tc.open,
+			} {
+				got := readFile(t, fs, file)
+
+				for _, want := range wants {
+					if !strings.Contains(got, want) {
+						t.Errorf("%s lacks %q:\n%s", file, want, got)
+					}
+				}
+
+				for i, r := range got {
+					if r > 127 {
+						t.Errorf("%s is not ASCII at %d, which sqlc's SQLite parser misreads", file, i)
+						break
+					}
+				}
+			}
+
+			want := []string{"go get " + tc.driver, "go mod tidy"}
+			if tc.vendor {
+				want = append(want, "go mod vendor")
+			}
+
+			if strings.Join(repo.commands, "; ") != strings.Join(want, "; ") {
+				t.Errorf("ran %q, want %q", repo.commands, want)
+			}
+		})
+	}
+}
+
+// The example is written once: a migration of the database's own, or queries,
+// are never touched, and a driver go.mod has is not added again.
+func TestTheExampleIsWrittenOnce(t *testing.T) {
+	repo := databaseRepo(t)
+	fs := repo.Fs()
+
+	if err := runDatabases(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	if ok, _ := afero.Exists(fs, "databases/user/queries/notes.sql"); ok {
+		t.Error("example queries beside the database's own migration")
+	}
+
+	if len(repo.commands) != 0 {
+		t.Errorf("ran %q with the driver already in go.mod", repo.commands)
+	}
+
+	t.Run("its own queries, kept, with an example migration", func(t *testing.T) {
+		repo := databaseRepo(t)
+		if err := repo.Fs().Remove("databases/user/migrations/001_initial.up.sql"); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := runDatabases(t, repo); err != nil {
+			t.Fatal(err)
+		}
+
+		if ok, _ := afero.Exists(repo.Fs(), "databases/user/queries/notes.sql"); ok {
+			t.Error("example queries beside the database's own")
+		}
+
+		if !strings.Contains(readFile(t, repo.Fs(), "databases/user/migrations/001_initial.up.sql"), "This is an example") {
+			t.Error("no example migration")
+		}
+	})
+
+	t.Run("the example, once edited, stays as edited", func(t *testing.T) {
+		repo := &fakeRepo{}
+		fs := repo.Fs()
+		writeFile(t, fs, "go.mod", "module example.com/app\n\ngo 1.27\n\nrequire modernc.org/sqlite v1.0.0\n")
+		writeFile(t, fs, DefinitionPath, `{"resources": {"databases": [{"name": "data"}]}}`)
+
+		if err := runDatabases(t, repo); err != nil {
+			t.Fatal(err)
+		}
+
+		own := "CREATE TABLE films (id INTEGER PRIMARY KEY);\n"
+		writeFile(t, fs, "databases/data/migrations/001_initial.up.sql", own)
+
+		if err := runDatabases(t, repo); err != nil {
+			t.Fatal(err)
+		}
+
+		if got := readFile(t, fs, "databases/data/migrations/001_initial.up.sql"); got != own {
+			t.Errorf("the migration was rewritten:\n%s", got)
+		}
+	})
 }

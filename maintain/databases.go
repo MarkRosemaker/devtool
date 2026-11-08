@@ -132,23 +132,37 @@ const generateGo = goGenerated + "\n\npackage %s\n\n" +
 // there; migrate.go, which embeds the migrations and applies them; and
 // open.go, which opens a database file and migrates it. sqlc's own output
 // comes from go generate, which make generate runs after this.
+//
+// A database declared with no migrations gets an example of each, so that
+// declaring it is all it takes to generate and build: see [writeStarter].
+// Where go.mod requires no driver to open it with, the task adds one and
+// tidies the module, vendoring it where the repository vendors.
 func DatabasesTask(repo engine.Repo) engine.Task {
 	return engine.Task{
 		Name:  "databases",
 		Short: "databases",
-		Run: func(context.Context) error {
+		Run: func(ctx context.Context) error {
 			def, _, err := LoadDefinition(repo.Fs())
 			if err != nil {
 				return err
 			}
 
+			added := false
+
 			for _, db := range def.Resources.Databases {
-				if err := writeDatabase(repo, db, len(def.Resources.Databases) == 1); err != nil {
+				got, err := writeDatabase(ctx, repo, db, len(def.Resources.Databases) == 1)
+				if err != nil {
 					return fmt.Errorf("database %q: %w", db.Name, err)
 				}
+
+				added = added || got
 			}
 
-			return nil
+			if !added {
+				return nil
+			}
+
+			return settleModules(ctx, repo)
 		},
 	}
 }
@@ -158,48 +172,85 @@ var databaseName = regexp.MustCompile(`^[a-z]+$`)
 // pathNames are the names open.go's Path uses, which its argument cannot share.
 var pathNames = []string{"err", "filepath", "home", "os"}
 
-func writeDatabase(repo engine.Repo, db Database, only bool) error {
+// writeDatabase writes one database's files, and reports whether it added a
+// driver to go.mod, which then needs tidying once they are written.
+func writeDatabase(ctx context.Context, repo engine.Repo, db Database, only bool) (bool, error) {
 	name := db.Name
 	if !databaseName.MatchString(name) {
-		return errors.New("a database's name has to be lower-case letters only, since it names the package")
+		return false, errors.New("a database's name has to be lower-case letters only, since it names the package")
 	}
 
 	if db.Per != "" && (!databaseName.MatchString(db.Per) || token.IsKeyword(db.Per) || slices.Contains(pathNames, db.Per)) {
-		return fmt.Errorf("per %q cannot name Path's argument: it has to be lower-case letters, "+
+		return false, fmt.Errorf("per %q cannot name Path's argument: it has to be lower-case letters, "+
 			"and neither a Go keyword nor one of %s", db.Per, strings.Join(pathNames, ", "))
 	}
 
 	fs, dir := repo.Fs(), path.Join(databasesDir, name)
 
-	// Caught here rather than by go:embed, whose complaint about a pattern
-	// matching nothing says nothing about what to add.
-	if up, err := afero.Glob(fs, path.Join(dir, "migrations", "*.up.sql")); err != nil {
-		return err
-	} else if len(up) == 0 {
-		return fmt.Errorf("%s has no migrations: add %s/migrations/001_initial.up.sql, "+
-			"which creates the schema", dir, dir)
+	switch db.Type {
+	case sqlite, postgres:
+	default:
+		return false, fmt.Errorf("type %q is no kind of database devtool knows: %s or %s", db.Type, sqlite, postgres)
+	}
+
+	if db.Type == postgres {
+		switch {
+		case db.Per != "":
+			return false, errors.New("a Postgres database is one server's, reached at its address: it has no copy per anything")
+		case db.Encrypted:
+			return false, errors.New("a Postgres database is encrypted by its server, not opened with a key")
+		}
+	}
+
+	if err := writeStarter(fs, dir, db.Type); err != nil {
+		return false, err
 	}
 
 	if err := removeOrphans(fs, dir); err != nil {
-		return err
+		return false, err
 	}
 
-	switch db.Type {
-	case sqlite:
-	case postgres:
-		return writePostgres(fs, dir, db, envURL(repo.Name(), db.Name, only))
-	default:
-		return fmt.Errorf("type %q is no kind of database devtool knows: %s or %s", db.Type, sqlite, postgres)
+	if db.Type == postgres {
+		added := false
+
+		if ok, err := requires(fs, pgxModule); err != nil {
+			return false, err
+		} else if !ok {
+			if err := goGet(ctx, repo, pgxModule); err != nil {
+				return false, err
+			}
+
+			added = true
+		}
+
+		return added, writePostgres(fs, dir, db, envURL(repo.Name(), db.Name, only))
 	}
 
 	driver, imports, err := sqliteDriver(fs)
-	if err != nil {
-		return err
+	added := false
+
+	switch {
+	case errors.Is(err, errNoDriver):
+		// The one that can encrypt where it has to, else the one in pure Go.
+		module := "modernc.org/sqlite"
+		if db.Encrypted {
+			module = ncrucesModule
+		}
+
+		d := sqliteDrivers[slices.IndexFunc(sqliteDrivers, func(d sqliteDriverInfo) bool { return d.module == module })]
+
+		if err := goGet(ctx, repo, d.module); err != nil {
+			return false, err
+		}
+
+		driver, imports, added = d.driver, d.imports, true
+	case err != nil:
+		return false, err
 	}
 
 	if db.Encrypted {
 		if driver != ncrucesDriver {
-			return fmt.Errorf("an encrypted database needs %s, which can encrypt; "+
+			return false, fmt.Errorf("an encrypted database needs %s, which can encrypt; "+
 				"modernc.org/sqlite cannot", ncrucesModule)
 		}
 
@@ -227,34 +278,21 @@ func writeDatabase(repo engine.Repo, db Database, only bool) error {
 	for _, f := range files {
 		b, err := f.body()
 		if err != nil {
-			return fmt.Errorf("%s: %w", f.name, err)
+			return false, fmt.Errorf("%s: %w", f.name, err)
 		}
 
 		if err := afero.WriteFile(fs, path.Join(dir, f.name), b, 0o644); err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return added, nil
 }
 
 // writePostgres writes the files of a Postgres database: it is reached at an
 // address given when it is opened, so it has no path, nor a copy per
 // anything, and the server encrypts what it keeps.
 func writePostgres(fs afero.Fs, dir string, db Database, env string) error {
-	switch {
-	case db.Per != "":
-		return errors.New("a Postgres database is one server's, reached at its address: it has no copy per anything")
-	case db.Encrypted:
-		return errors.New("a Postgres database is encrypted by its server, not opened with a key")
-	}
-
-	if ok, err := requires(fs, pgxModule); err != nil {
-		return err
-	} else if !ok {
-		return fmt.Errorf("go.mod requires no Postgres driver to open it with; add %s", pgxModule)
-	}
-
 	files := map[string]func() ([]byte, error){
 		"sqlc.yaml":   func() ([]byte, error) { return fmt.Appendf(nil, sqlcPostgresConfig, db.Name), nil },
 		"generate.go": func() ([]byte, error) { return fmt.Appendf(nil, generateGo, db.Name), nil },
@@ -362,12 +400,16 @@ const (
 	ncrucesDriver = "sqlite3"
 )
 
-// sqliteDrivers are the database/sql drivers open.go knows, by module: the
-// name each registers, and what has to be imported for it.
-var sqliteDrivers = []struct {
+// sqliteDriverInfo is one driver: its module, the name it registers, and what
+// has to be imported for it.
+type sqliteDriverInfo struct {
 	module, driver string
 	imports        []string
-}{
+}
+
+// sqliteDrivers are the database/sql drivers open.go knows, by module: the
+// name each registers, and what has to be imported for it.
+var sqliteDrivers = []sqliteDriverInfo{
 	{"modernc.org/sqlite", "sqlite", []string{"modernc.org/sqlite"}},
 	{ncrucesModule, ncrucesDriver, []string{ncrucesModule + "/driver"}},
 }
@@ -399,9 +441,11 @@ func sqliteDriver(fs afero.Fs) (string, []string, error) {
 		names[i] = d.module
 	}
 
-	return "", nil, fmt.Errorf("go.mod requires no SQLite driver to open it with; add %s",
-		strings.Join(names, " or "))
+	return "", nil, fmt.Errorf("%w: %s", errNoDriver, strings.Join(names, " or "))
 }
+
+// errNoDriver is go.mod requiring none of the SQLite drivers open.go knows.
+var errNoDriver = errors.New("go.mod requires no SQLite driver to open it with")
 
 func render(tmpl *template.Template, data any) ([]byte, error) {
 	buf := &bytes.Buffer{}

@@ -2,6 +2,7 @@ package maintain
 
 import (
 	"context"
+	"strings"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/spf13/afero"
@@ -30,6 +31,9 @@ type fakeRepo struct {
 
 	// calls records every method with an effect, in the order it was called.
 	calls []string
+
+	// commands records every command it was asked to run, with its arguments.
+	commands []string
 }
 
 func (r *fakeRepo) Owner() string {
@@ -54,8 +58,9 @@ func (r *fakeRepo) Fs() afero.Fs {
 
 func (r *fakeRepo) record(name string) { r.calls = append(r.calls, name) }
 
-func (r *fakeRepo) ExecCommand(_ context.Context, name string, _ ...string) ([]byte, error) {
+func (r *fakeRepo) ExecCommand(_ context.Context, name string, args ...string) ([]byte, error) {
 	r.record("exec " + name)
+	r.commands = append(r.commands, strings.Join(append([]string{name}, args...), " "))
 
 	return r.output, nil
 }
