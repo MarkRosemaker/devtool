@@ -203,6 +203,9 @@ A database declared `"type": "postgres"` lives on a server, reached at a
 `devtool.json` says where. The variable is named after the repository,
 `LIFEFLOW_DATABASE_URL`, and after the database too where a repository has
 more than one, `LIFEFLOW_TASKS_DATABASE_URL`; `open.go` has it as `EnvURL`.
+A test reads its database from another, with `TEST` before `DATABASE`
+(`LIFEFLOW_TEST_DATABASE_URL`, `TestEnvURL`), so it never writes to the live
+one; `TestURL()` refuses the two naming the same database.
 The files are the same, with three differences. `sqlc.yaml` has sqlc
 generate for `pgx/v5`, emitting an interface and pointers for null columns,
 and gives a `date` column `civil.Date`, a `timestamptz` one `time.Time` and

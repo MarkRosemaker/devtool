@@ -111,8 +111,10 @@ and `Close`. The URL is the pooled one where the server has a pooler; the
 direct one is derived from it, so there is one variable to set. Statements
 go through the pool unprepared, so that a transaction pooler can serve them.
 A field is a column and a list a table of its own: never `json` or `jsonb`.
-A test opens a real database rather than mocking it, setting `EnvURL` to one
-the environment gives, and skips where it gives none.
+A test opens a real database rather than mocking it, and never the live one:
+it reads the URL from the variable `TestEnvURL` names (`TestURL()`, which
+refuses the live database's), sets `EnvURL` to it, and skips where it is not
+set.
 
 To add a database, add `{"name": "…", "type": "sqlite"}` (or `"postgres"`)
 to `resources.databases` in `devtool.json` and run `make generate`. devtool

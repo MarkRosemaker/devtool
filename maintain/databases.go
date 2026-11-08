@@ -306,7 +306,7 @@ func writePostgres(fs afero.Fs, dir string, db Database, env string) error {
 		"generate.go": func() ([]byte, error) { return fmt.Appendf(nil, generateGo, db.Name), nil },
 		"migrate.go":  func() ([]byte, error) { return render(migratePostgresTmpl, struct{ Package string }{db.Name}) },
 		"open.go": func() ([]byte, error) {
-			return render(openPostgresTmpl, struct{ Package, Env string }{db.Name, env})
+			return render(openPostgresTmpl, struct{ Package, Env, TestEnv string }{db.Name, env, testEnvURL(env)})
 		},
 	}
 
@@ -342,6 +342,12 @@ func envURL(repo, name string, only bool) string {
 	}, strings.Join(parts, "_"))
 
 	return strings.ToUpper(key) + "_DATABASE_URL"
+}
+
+// testEnvURL is the environment variable a test reads its database's URL
+// from: env with TEST before DATABASE, as LIFEFLOW_TEST_DATABASE_URL.
+func testEnvURL(env string) string {
+	return strings.TrimSuffix(env, "_DATABASE_URL") + "_TEST_DATABASE_URL"
 }
 
 // requires reports whether go.mod requires module. Indirect counts: there is

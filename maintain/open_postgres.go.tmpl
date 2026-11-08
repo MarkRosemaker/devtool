@@ -19,6 +19,11 @@ import (
 // from: a postgres:// URL, the pooled one where the server has a pooler.
 const EnvURL = "{{.Env}}"
 
+// TestEnvURL names the environment variable a test reads its database's
+// address from. It is never EnvURL: a test writes rows, and the database
+// EnvURL names is the live one.
+const TestEnvURL = "{{.TestEnv}}"
+
 // maxConns bounds the pool: a hosted Postgres's free tier allows few
 // connections, and one server needs few.
 const maxConns = 5
@@ -40,8 +45,10 @@ type DB struct {
 // else goes through the pool, unprepared, so the pooler never meets a
 // statement prepared on another connection.
 //
-// A test opens one of its own the same way, given a database to use:
+// A test opens the one [TestURL] gives the same way, and skips where it gives
+// none:
 //
+//	url, err := {{.Package}}.TestURL()
 //	t.Setenv({{.Package}}.EnvURL, url)
 //	db, err := {{.Package}}.Open(ctx)
 func Open(ctx context.Context) (*DB, error) {
@@ -76,6 +83,17 @@ func Open(ctx context.Context) (*DB, error) {
 	}
 
 	return &DB{Queries: New(pool), pool: pool}, nil
+}
+
+// TestURL is the address of the database a test may write to, from
+// [TestEnvURL], or "" where it is not set. It refuses the live database's.
+func TestURL() (string, error) {
+	url := os.Getenv(TestEnvURL)
+	if url != "" && url == os.Getenv(EnvURL) {
+		return "", fmt.Errorf("{{.Package}}: %s names the same database as %s, which is the live one: tests write to theirs", TestEnvURL, EnvURL)
+	}
+
+	return url, nil
 }
 
 // migrateAt migrates the database at dsn over one connection, closed after.

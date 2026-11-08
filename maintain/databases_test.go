@@ -93,7 +93,8 @@ func TestPostgresDatabase(t *testing.T) {
 		},
 		"databases/user/open.go": {
 			"package user\n", "func Open(ctx context.Context) (*DB, error)", "pool.Ping(ctx)",
-			`const EnvURL = "GOREPO_DATABASE_URL"`, "migrateAt(ctx, direct(dsn))", `strings.CutSuffix(label, "-pooler")`,
+			`const EnvURL = "GOREPO_DATABASE_URL"`, `const TestEnvURL = "GOREPO_TEST_DATABASE_URL"`,
+			"func TestURL() (string, error)", "migrateAt(ctx, direct(dsn))", `strings.CutSuffix(label, "-pooler")`,
 			"cfg.MaxConns, cfg.MinConns = maxConns, 0", "pgx.QueryExecModeExec",
 			"func (d *DB) Close()", "func (d *DB) WithTx(",
 		},
@@ -132,6 +133,19 @@ func TestEnvURL(t *testing.T) {
 	} {
 		if got := envURL(tc.repo, tc.name, tc.only); got != tc.want {
 			t.Errorf("envURL(%q, %q, %t) = %q, want %q", tc.repo, tc.name, tc.only, got, tc.want)
+		}
+	}
+}
+
+// A test's database is named apart from the live one, so a test never writes
+// to it.
+func TestTestEnvURL(t *testing.T) {
+	for env, want := range map[string]string{
+		"LIFEFLOW_DATABASE_URL":       "LIFEFLOW_TEST_DATABASE_URL",
+		"LIFEFLOW_TASKS_DATABASE_URL": "LIFEFLOW_TASKS_TEST_DATABASE_URL",
+	} {
+		if got := testEnvURL(env); got != want {
+			t.Errorf("testEnvURL(%q) = %q, want %q", env, got, want)
 		}
 	}
 }
