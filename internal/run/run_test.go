@@ -253,6 +253,7 @@ func TestRecordCoverage(t *testing.T) {
 	}{
 		{"a clean run records its figure", nil, 79.6},
 		{"a fall below the floor is recorded", fmt.Errorf("%w 80%%: 84.2%% → 79.6%%", engine.ErrCoverageFell), 79.6},
+		{"a public repository short of it is recorded", fmt.Errorf("%w 80%% coverage, and this has 79.6%%", engine.ErrPublicCoverage), 79.6},
 		{"any other failure keeps the old figure", errors.New("tests failed"), 84.2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -3,10 +3,11 @@
 Work not yet done. Entries about the event stream and the runner are on
 `devtool-engine`'s roadmap, and entries about the chat are on `patchpal`'s.
 
-## Publish a repository that reaches the coverage floor
+## Coverage before a repository joins the portfolio
 
-Treat a repository at or above `maintain.CoverageFloor` as ready to publish,
-and make sure it is.
+A repository added to `portfolio`'s list should have good coverage, at or
+above `maintain.CoverageFloor`, before it joins. The repositories listed now
+are fine as they are.
 
 ## The figure a badge shows is one run behind
 

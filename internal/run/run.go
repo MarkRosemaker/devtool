@@ -436,10 +436,12 @@ func (s *Service) maintain(
 // and discarded by the next run's prepare. devtool.json is written inside the
 // sequence instead.
 //
-// A fall below the floor is recorded too, so it fails one run: the next finds
-// the repository below already and only logs it.
+// A coverage failure is recorded too. A fall below the floor then fails one
+// run, and the next finds the repository below already and only logs it,
+// unless it is public, which fails every run until its coverage is up.
 func recordCoverage(ctx context.Context, u *unit, res event.Result) {
-	if res.Err == nil || errors.Is(res.Err, engine.ErrCoverageFell) {
+	if res.Err == nil || errors.Is(res.Err, engine.ErrCoverageFell) ||
+		errors.Is(res.Err, engine.ErrPublicCoverage) {
 		u.cfg.Coverage = res.Coverage
 	}
 
@@ -467,6 +469,7 @@ func (s *Service) spec(ctx context.Context, u *unit) engine.Spec {
 
 	spec := withDefinition(u.cfg.Spec(), def, found)
 	spec.CoverageFloor = maintain.CoverageFloor
+	spec.PublicCoverage = maintain.CoverageFloor
 
 	return spec
 }
