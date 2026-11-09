@@ -81,15 +81,29 @@ generated. Your own rules go below that block, where they win — in a
   correcting it is part of the work, not a separate errand.
 - `docs/architecture.md` describes the architecture as it stands. Update it
   in the same commit that changes the architecture.
-- `docs/roadmap.md` is work not yet done. Delete an entry when it is done.
-  Something worth doing but outside the current change goes here instead of
-  widening that change.
 - `mk/*.mk` is where a make target goes.
 - `AGENTS/*.md` is this file's repository-specific half, and is held to the
   same standard: true, worth the reading, and never a restatement of what is
   above. A fragment that repeats the generated text costs every reader twice
   and drifts from it the first time the template changes. Say so rather than
   leaving one in place.
+
+## The roadmap
+
+`docs/roadmap.md`, with the files in `docs/roadmap/` it links to, is what
+will be: the work not yet done, and nothing else. The owner adds plans and
+ideas to it outside any conversation.
+
+- A pull request that implements an item removes it in the same pull
+  request: the whole entry or file, or the part that is done.
+- An item you find already implemented, by earlier work or by the owner,
+  goes too, in the pull request at hand.
+- Where part of an item still says something true about the repository,
+  move it into the document that describes what is, such as
+  `docs/architecture.md` or `README/`, rewritten to say what is. Otherwise
+  delete it. Keep no record of what was done: that is git's.
+- Work worth doing outside the current change goes here, rather than
+  widening the change.
 
 ## Code
 

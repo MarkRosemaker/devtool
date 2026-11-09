@@ -216,7 +216,7 @@ func (r *Repository) CommitAll(msg string) error {
 // Push pushes to the default remote.
 func (r *Repository) Push(ctx context.Context) error {
 	if err := r.gitrepo.PushContext(ctx, &git.PushOptions{
-		RemoteURL:     fmt.Sprintf("https://github.com/%s/%s.git", r.owner, r.name),
+		RemoteURL:     r.s.remoteURL(r.owner, r.name),
 		ClientOptions: r.s.gitOpts,
 	}); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return fmt.Errorf("push failed: %w", err)

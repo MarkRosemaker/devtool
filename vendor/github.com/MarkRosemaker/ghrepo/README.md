@@ -7,6 +7,7 @@
 ## Additional Information
 
 - [**Go Reference**](https://pkg.go.dev/github.com/MarkRosemaker/ghrepo): API documentation.
+- [**Roadmap**](docs/roadmap.md): what is planned and not yet done.
 
 ## Contributing
 

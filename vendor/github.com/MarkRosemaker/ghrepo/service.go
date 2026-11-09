@@ -26,6 +26,7 @@ const maxPerPage = 100
 type Service struct {
 	githubToken string
 	github      *github.Client
+	gitURL      string // prefix of every git remote, e.g. "https://github.com/"
 	gitOpts     []client.Option
 	opts        []Option
 
@@ -39,6 +40,7 @@ func NewService(ctx context.Context, githubToken string, opts ...Option) *Servic
 		github: github.NewClient(oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: githubToken},
 		))),
+		gitURL: "https://github.com/",
 		gitOpts: []client.Option{
 			client.WithHTTPAuth(&githttp.BasicAuth{
 				// Can be anything non-empty for token auth
@@ -90,7 +92,7 @@ func (s *Service) NewRepository(ctx context.Context, owner, name string, opts ..
 
 		if cfg.cloneGit {
 			r.gitrepo, err = git.PlainCloneContext(ctx, path, &git.CloneOptions{
-				URL:           fmt.Sprintf("https://github.com/%s/%s.git", owner, name),
+				URL:           s.remoteURL(owner, name),
 				ClientOptions: s.gitOpts,
 				Progress:      os.Stdout,
 			})
@@ -147,7 +149,7 @@ func (s *Service) NewRepository(ctx context.Context, owner, name string, opts ..
 		// Add correct HTTPS remote
 		if r.remote, err = r.gitrepo.CreateRemote(&config.RemoteConfig{
 			Name: remoteName,
-			URLs: []string{fmt.Sprintf("https://github.com/%s/%s.git", owner, name)},
+			URLs: []string{s.remoteURL(owner, name)},
 		}); err != nil {
 			return nil, fmt.Errorf("failed to create origin remote: %w", err)
 		}
@@ -255,4 +257,9 @@ func (s *Service) getRepo(owner, name string) *github.Repository {
 	}
 
 	return nil
+}
+
+// remoteURL returns the git URL of the repository on GitHub.
+func (s *Service) remoteURL(owner, name string) string {
+	return fmt.Sprintf("%s%s/%s.git", s.gitURL, owner, name)
 }

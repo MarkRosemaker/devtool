@@ -135,7 +135,6 @@ func (r *Repository) zipBinary(fi io.Reader, info fs.FileInfo, suffix string) (s
 
 	// Initialize zip writer.
 	zw := zip.NewWriter(tmp)
-	defer closeAndLog(zw, "zip writer")
 
 	// Create the single entry in the zip.
 	h, err := zw.CreateHeader(fh)
