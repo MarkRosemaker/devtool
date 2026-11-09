@@ -84,7 +84,7 @@ func New(
 
 // Run makes one pass over the portfolio.
 func (s *Service) Run(ctx context.Context) error {
-	cfg, err := config.Load(s.cfg.Path)
+	cfg, err := s.loadConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -140,7 +140,7 @@ func (s *Service) Run(ctx context.Context) error {
 // only carried in the event stream — this is most often run by a person at a
 // terminal watching for the exit code, not unattended.
 func (s *Service) RunOne(ctx context.Context, owner, name string) error {
-	cfg, err := config.Load(s.cfg.Path)
+	cfg, err := s.loadConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -546,6 +546,22 @@ func (s *Service) saveConfig(ctx context.Context, cfg config.Config) error {
 	}
 
 	return s.commitConfig(ctx)
+}
+
+// loadConfig pulls the repository holding the list, then reads it. The list is
+// not on itself, so nothing else pulls it: without this, a change merged there
+// leaves the run's coverage commit on a stale branch, and its push is refused.
+func (s *Service) loadConfig(ctx context.Context) (config.Config, error) {
+	repo, err := s.repos.open(ctx, s.cfg.Owner, s.cfg.Name)
+	if err != nil {
+		return nil, fmt.Errorf("opening the repository holding the config: %w", err)
+	}
+
+	if err := repo.Pull(ctx); err != nil {
+		return nil, fmt.Errorf("pulling the config: %w", err)
+	}
+
+	return config.Load(s.cfg.Path)
 }
 
 // commitConfig commits the coverage figures this run measured, so the next run

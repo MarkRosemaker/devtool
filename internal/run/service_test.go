@@ -36,6 +36,7 @@ type fakeSource struct {
 	public      map[string]bool
 	tasks       map[string]func(r *fakeRepo) []engine.Task
 	opened      map[string]*fakeRepo
+	onPull      map[string]func()
 	ran         []string
 }
 
@@ -56,6 +57,7 @@ func newFakeSource(t *testing.T) *fakeSource {
 		public:      map[string]bool{},
 		tasks:       map[string]func(r *fakeRepo) []engine.Task{},
 		opened:      map[string]*fakeRepo{},
+		onPull:      map[string]func(){},
 	}
 }
 
@@ -146,7 +148,17 @@ type fakeRepo struct {
 	description string
 }
 
-func (r *fakeRepo) Pull(context.Context) error { return nil }
+func (r *fakeRepo) Pull(context.Context) error {
+	r.src.mu.Lock()
+	pull := r.src.onPull[r.key]
+	r.src.mu.Unlock()
+
+	if pull != nil {
+		pull()
+	}
+
+	return nil
+}
 
 func (r *fakeRepo) Push(context.Context) error {
 	r.mu.Lock()
@@ -477,6 +489,34 @@ func TestRunStopsWhenAnOwnerCannotBeListed(t *testing.T) {
 	err := svc.Run(t.Context())
 	if err == nil || !strings.Contains(err.Error(), "rate limited") {
 		t.Fatalf("err = %v, want the listing failure", err)
+	}
+}
+
+// The list is pulled before it is read: what was merged where it lives is what
+// the run maintains, and the coverage commit lands on top of it.
+func TestRunPullsItsList(t *testing.T) {
+	svc, src, rec := portfolio(t, portfolioJSON)
+
+	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+	src.add("alice", "lib", map[string]string{"go.mod": goMod("github.com/alice/lib")})
+
+	listDir := filepath.Dir(svc.cfg.Path)
+	src.onPull["alice/portfolio"] = func() {
+		writeFile(t, svc.cfg.Path, `{"alice": {"repositories": {"app": {}, "lib": {}}}}`)
+		gitRun(t, listDir, "commit", "-qam", "stop maintaining tool")
+	}
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if starts := rec.of(event.RunStart); len(starts) != 1 ||
+		!slices.Equal(starts[0].Repos, []string{"alice/app", "alice/lib"}) {
+		t.Errorf("run_start = %+v, want the pulled list", starts)
+	}
+
+	if got := gitRun(t, listDir, "log", "-2", "--format=%s"); got != "update config\nstop maintaining tool" {
+		t.Errorf("the list's history reads %q, want the coverage on top of what was pulled", got)
 	}
 }
 
