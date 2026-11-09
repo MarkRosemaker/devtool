@@ -35,8 +35,9 @@ dirty worktree, because the engine's runner starts by discarding whatever it
 finds uncommitted. That is correct for a checkout it owns on a server and
 catastrophic for the one somebody is working in.
 
-**`internal/run`** is the list. It opens every repository named in
-`config.json`, reads each `go.mod` to work out which of them depend on which
+**`internal/run`** is the list. It pulls the repository holding
+`config.json` before reading it, since the list is not on itself and nothing
+else would, then opens every repository named in it, reads each `go.mod` to work out which of them depend on which
 others, orders them with the engine's dependency graph, and maintains them as
 parallel as that order allows. A required repository of an owner in
 `config.json` that is not in it is a gap, reported as an `unmaintained` event
