@@ -7,8 +7,8 @@ wrong.
 
 `devtool` brings Go repositories up to a standard and keeps them there. It
 writes the files an owner would otherwise write by hand — `LICENSE`,
-`README.md`, `Makefile`, `.gitignore`, `AGENTS.md`, the golangci-lint config
-— and, when asked to, tests, commits and pushes them.
+`README.md`, `Makefile`, `.gitignore`, `AGENTS.md`, the golangci-lint config,
+the workflow that tests a pull request — and, when asked to, tests, commits and pushes them.
 
 It is one of three:
 
@@ -57,7 +57,8 @@ asks for. `-jsonl` is an alias for `-json`, and a caller can use either.
 `maintain` holds them, one per file devtool owns, and `UpdateTask` runs them
 all as a single `engine.Task` named `devtool update` — `devtool.json` first,
 then licence, README, the roadmap's links, Makefile, `.gitignore`, a web
-app's `main.go`, `AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
+app's `main.go`, the test workflow (only where the repository vendors, since a
+runner reads no private module), `AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
 declared databases last. That one task is the whole of a local rebuild and
 the first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.

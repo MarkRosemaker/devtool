@@ -188,6 +188,8 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //     really there.
 //   - A web app's main.go before AGENTS.md, which reads its go:generate
 //     lines.
+//   - The test workflow before AGENTS.md, which mentions it only where it
+//     was written.
 //   - The databases last: the part that reaches the network, adding a driver
 //     where go.mod has none, and can refuse a declaration it cannot lay out,
 //     and the files above are worth having regardless.
@@ -199,6 +201,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		MakefileTask(repo),
 		GitignoreTask(repo),
 		WebappTask(repo),
+		WorkflowTask(repo),
 		AgentsTask(repo),
 		ClaudeTask(repo),
 		GenLintfile(repo),

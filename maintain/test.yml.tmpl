@@ -1,0 +1,17 @@
+# {{ .Stamp }} — add a workflow of your own beside it instead.
+name: Test
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go install {{ .Lint }}
+      - run: golangci-lint run
+      - run: go test -race ./...
