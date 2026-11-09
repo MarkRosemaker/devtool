@@ -23,8 +23,8 @@ func (r *Repository) GoTestCover(ctx context.Context) (float64, error) {
 	if _, err := r.ExecCommand(
 		ctx, "go", "test", "./...",
 		"-race", // enable race detection
-		// enable coverage and write to cover.out
-		"-cover", "-covermode=atomic", "-coverprofile="+coverFile,
+		// coverage of every package a test reaches, not only its own, written to cover.out
+		"-cover", "-covermode=atomic", "-coverpkg=./...", "-coverprofile="+coverFile,
 		"-shuffle=on", // shuffle tests
 	); err != nil {
 		const noTestPackagesMsg = "go: warning: \"./...\" matched no packages\nno packages to test"
