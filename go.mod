@@ -3,10 +3,10 @@ module github.com/MarkRosemaker/devtool
 go 1.27.0
 
 require (
-	github.com/MarkRosemaker/devtool-engine v0.0.0-20261109120521-376c80e20f79
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261109161618-d02f09d307b5
-	github.com/MarkRosemaker/golangci-json v0.0.0-20261109161145-4f1bd2b25a7a
-	github.com/MarkRosemaker/gorepo v0.0.0-20261109161923-bc1aa010de03
+	github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261109170232-1ffd8be2c5e2
+	github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14
+	github.com/MarkRosemaker/gorepo v0.0.0-20261109170555-af74a84d3326
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261109120454-26f22c55639c
 	github.com/MarkRosemaker/openapi v0.0.0-20261109161642-725ef5aabe58
@@ -15,7 +15,7 @@ require (
 	github.com/golangci/golangci-lint/v2 v2.15.0
 	github.com/google/go-github/v80 v80.0.0
 	github.com/spf13/afero v1.15.0
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -60,5 +60,5 @@ require (
 	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )

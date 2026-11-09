@@ -1,7 +1,7 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
-# github.com/MarkRosemaker/devtool-engine v0.0.0-20261109120521-376c80e20f79
+# github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/devtool-engine/depgraph
 github.com/MarkRosemaker/devtool-engine/event
@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261109161618-d02f09d307b5
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261109170232-1ffd8be2c5e2
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261109161145-4f1bd2b25a7a
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261109161923-bc1aa010de03
+# github.com/MarkRosemaker/gorepo v0.0.0-20261109170555-af74a84d3326
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8
@@ -319,7 +319,7 @@ golang.org/x/crypto/ssh/knownhosts
 # golang.org/x/exp v0.0.0-20261106192419-47ce03d25ef0
 ## explicit; go 1.26.0
 golang.org/x/exp/maps
-# golang.org/x/mod v0.42.0
+# golang.org/x/mod v0.43.0
 ## explicit; go 1.26.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
@@ -342,7 +342,7 @@ golang.org/x/sync/singleflight
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.43.0
+# golang.org/x/text v0.44.0
 ## explicit; go 1.26.0
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
