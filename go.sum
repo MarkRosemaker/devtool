@@ -8,8 +8,8 @@ github.com/MarkRosemaker/ghrepo v0.0.0-20261109120548-f12d3708db80 h1:keHtDAQZrx
 github.com/MarkRosemaker/ghrepo v0.0.0-20261109120548-f12d3708db80/go.mod h1:EMalqyP52rdz+vYAVy5ePXzO53O4zkdlfEWD56Sm6Zw=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261109120525-7a8a7abb8f5f h1:wD73+34kpGe2vUra9ea24vgn7Chdd+dX1OYhPL9CLuY=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261109120525-7a8a7abb8f5f/go.mod h1:RgVy4YFaks6tw58bHVOKYsMyHZZBjTx5tjURnEN1Aa4=
-github.com/MarkRosemaker/gorepo v0.0.0-20261109120905-466114e97541 h1:bYgqhureDAS++L7tJ21ucDu1r2u4id3oUcrsX5Di28Q=
-github.com/MarkRosemaker/gorepo v0.0.0-20261109120905-466114e97541/go.mod h1:AITlJXH2KWHPDB/KNC9KVNy/q1x2o8RUbP1zRV2Sb14=
+github.com/MarkRosemaker/gorepo v0.0.0-20261109123040-65808da4f71e h1:cOcnwYaIfc4fzGgt4JhRdYOucqZZtNMexPvyCCJmk3A=
+github.com/MarkRosemaker/gorepo v0.0.0-20261109123040-65808da4f71e/go.mod h1:AITlJXH2KWHPDB/KNC9KVNy/q1x2o8RUbP1zRV2Sb14=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8 h1:kZvQlxy2u7OzPYxBv35KC13QtNCwix0RIoCC7IjGZCI=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261109120454-26f22c55639c h1:Q2xr91dMSLMVvRPzjULO2BMdZdgJFN81fuT0Co9EKa4=

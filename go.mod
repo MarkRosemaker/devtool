@@ -6,7 +6,7 @@ require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261109120521-376c80e20f79
 	github.com/MarkRosemaker/ghrepo v0.0.0-20261109120548-f12d3708db80
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261109120525-7a8a7abb8f5f
-	github.com/MarkRosemaker/gorepo v0.0.0-20261109120905-466114e97541
+	github.com/MarkRosemaker/gorepo v0.0.0-20261109123040-65808da4f71e
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261109120454-26f22c55639c
 	github.com/MarkRosemaker/openapi v0.0.0-20261109120606-4fca17eacf0c
