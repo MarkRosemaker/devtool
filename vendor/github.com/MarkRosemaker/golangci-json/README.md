@@ -116,21 +116,33 @@ strictly better than a config file that goes quietly wrong.
 
 A field is written only when it differs from what leaving it out of a real
 config file would mean. For most fields that's the Go zero value — but
-several booleans across golangci-lint's linters default to `true` (`usetesting`'s
-`os-chdir`, `tagalign`'s `align` and `sort`, several `unused` checks, and
-others), cross-checked against golangci-lint's own `defaultLintersSettings`
-and `defaultFormatterSettings`. For those, the shadow type omits no zero
-value: an explicit `false` is always written, so it can never be confused
-with "not set" and silently replaced by golangci-lint's own default.
+golangci-lint gives many fields a default that isn't: booleans that default
+to `true` (`usetesting`'s `os-chdir`, `tagalign`'s `align` and `sort`,
+several `unused` checks), lists such as `decorder`'s `dec-order` or `gci`'s
+`sections`, and strings such as `wsl_v5`'s `default`, as listed in
+golangci-lint's own `defaultLintersSettings` and `defaultFormatterSettings`.
+For those, a zero value means what it says where Go can tell it from "not
+set", and is left out where it cannot:
+
+- a boolean or a number is always written, so an explicit `false` or `0` is
+  never replaced by golangci-lint's default;
+- a list is left out while it is nil, so golangci-lint keeps its default,
+  and written as `[]` when it is set empty, which replaces it;
+- a string is left out while it is `""`, so golangci-lint keeps its default.
+
+The tests hold the package to this: they fill every field of every type,
+leave each one at its zero value in turn, and read the output back through
+viper with golangci-lint's own decode hooks and defaults, expecting that
+zero, or golangci-lint's default for a list or a string left unset.
 
 One consequence follows directly from using plain Go values: a settings
 struct is itself omitted when *every* one of its fields happens to be the Go
 zero value, because a value type has no way to represent "this key was
 present with every field at its default" separately from "this key was
 absent" — golangci-lint's own decoder has the identical limitation, for the
-identical reason. In practice this means: set every field of a settings
-struct whose true default you want to keep, not only the ones you're
-changing — leaving a field off is Go zero, never "keep the default".
+identical reason. In practice this means: a boolean or a number you leave
+off is its Go zero, not golangci-lint's default, so set those whose default
+you want to keep.
 
 ## Types that embed via `,squash`
 

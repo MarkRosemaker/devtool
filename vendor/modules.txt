@@ -10,14 +10,14 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261109134431-c69b68fdab4f
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261109161618-d02f09d307b5
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261109135008-6879cd61cff7
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261109161145-4f1bd2b25a7a
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261109135248-4178160a27cc
-## explicit; go 1.26.0
+# github.com/MarkRosemaker/gorepo v0.0.0-20261109161923-bc1aa010de03
+## explicit; go 1.27.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8
 ## explicit; go 1.27
@@ -25,13 +25,13 @@ github.com/MarkRosemaker/json2yaml
 # github.com/MarkRosemaker/jsonutil v0.0.0-20261109120454-26f22c55639c
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261109135105-2a95a2dad154
+# github.com/MarkRosemaker/openapi v0.0.0-20261109161642-725ef5aabe58
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
 # github.com/MarkRosemaker/ordmap v0.0.0-20261109120513-91fe4bc7e3db
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
-# github.com/MarkRosemaker/yaml v0.0.0-20261109134148-916ecfa7e164
+# github.com/MarkRosemaker/yaml v0.0.0-20261109161623-86a6a512ccb9
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml
 # github.com/MarkRosemaker/yaml2json v0.0.0-20261109120453-1b901dbf7e8f

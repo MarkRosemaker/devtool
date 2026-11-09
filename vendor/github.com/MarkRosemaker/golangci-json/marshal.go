@@ -4,6 +4,7 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"io"
+	"time"
 
 	config "github.com/golangci/golangci-lint/v2/pkg/config"
 )
@@ -35,6 +36,7 @@ func init() {
 	jsonOpts = json.JoinOptions(
 		json.WithMarshalers(json.JoinMarshalers(
 			json.MarshalToFunc(marshalConfig),
+			json.MarshalToFunc(marshalDuration),
 			json.MarshalToFunc(func(enc *jsontext.Encoder, v config.AsasalintSettings) error {
 				return json.MarshalEncode(enc, asasalintSettings(v))
 			}),
@@ -460,6 +462,11 @@ func marshalConfig(enc *jsontext.Encoder, cfg config.Config) error {
 		Severity:   cfg.Severity,
 		Formatters: cfg.Formatters,
 	})
+}
+
+// marshalDuration writes a duration as golangci-lint's decoder parses it, e.g. "1m30s": encoding/json/v2 has no default representation for one.
+func marshalDuration(enc *jsontext.Encoder, d time.Duration) error {
+	return enc.WriteToken(jsontext.String(d.String()))
 }
 
 // MarshalWrite encodes cfg as JSON, writing it to w.

@@ -21,9 +21,12 @@ import (
 // omitzero/omitempty is applied per field, not uniformly: it is present only
 // where the Go zero value matches golangci-lint's own default for that field
 // (cross-checked against defaultLintersSettings and defaultFormatterSettings
-// in the vendored source). Where the zero value is NOT the default — several
-// booleans default to true — the tag omits omitzero, so an explicit false is
-// always written rather than being indistinguishable from "unset".
+// in the vendored source). A boolean whose default is true has no omitzero, so
+// an explicit false is always written rather than being indistinguishable from
+// "unset". A list whose default is not empty, such as decorder's dec-order, is
+// omitzero, not omitempty: nil, unset, is left out and golangci-lint keeps its
+// default, while an empty list someone set is written as [] and replaces it. A
+// string, which cannot tell unset from "", is left out when empty.
 //
 // Types embedding another via mapstructure:",squash" are not here: an embedded
 // field is promoted using its own field names, bypassing any marshaler
@@ -83,7 +86,7 @@ type cyclopSettings struct {
 }
 
 type decorderSettings struct {
-	DecOrder                  []string `json:"dec-order,omitempty"`
+	DecOrder                  []string `json:"dec-order,omitzero"`
 	IgnoreUnderscoreVars      bool     `json:"ignore-underscore-vars,omitzero"`
 	DisableDecNumCheck        bool     `json:"disable-dec-num-check"`
 	DisableTypeDecNumCheck    bool     `json:"disable-type-dec-num-check,omitzero"`
@@ -157,7 +160,7 @@ type errorLintSettings struct {
 }
 
 type exhaustiveSettings struct {
-	Check                      []string `json:"check,omitempty"`
+	Check                      []string `json:"check,omitzero"`
 	ExplicitExhaustive         bool     `json:"explicit-exhaustive,omitzero"`
 	OnlyTypes                  []string `json:"only-types,omitempty"`
 	IgnoreTypes                []string `json:"ignore-types,omitempty"`
@@ -261,7 +264,7 @@ type funlenSettings struct {
 }
 
 type gciSettings struct {
-	Sections         []string `json:"sections,omitempty"`
+	Sections         []string `json:"sections,omitzero"`
 	NoInlineComments bool     `json:"no-inline-comments,omitzero"`
 	NoPrefixComments bool     `json:"no-prefix-comments,omitzero"`
 	CustomOrder      bool     `json:"custom-order,omitzero"`
@@ -298,7 +301,7 @@ type goConstSettings struct {
 	ParseNumbers         bool     `json:"numbers,omitzero"`
 	NumberMin            int      `json:"min"`
 	NumberMax            int      `json:"max"`
-	ExcludeTypes         []string `json:"exclude-types,omitempty"`
+	ExcludeTypes         []string `json:"exclude-types,omitzero"`
 	FindDuplicates       bool     `json:"find-duplicates,omitzero"`
 	EvalConstExpressions bool     `json:"eval-const-expressions,omitzero"`
 	IgnoreFunctions      []string `json:"ignore-functions,omitempty"`
@@ -439,7 +442,7 @@ type godoclintSettings struct {
 }
 
 type godotSettings struct {
-	Scope   string   `json:"scope"`
+	Scope   string   `json:"scope,omitzero"`
 	Exclude []string `json:"exclude,omitempty"`
 	Capital bool     `json:"capital,omitzero"`
 	Period  bool     `json:"period"`
@@ -452,7 +455,7 @@ type godoxSettings struct {
 type gosmopolitanSettings struct {
 	AllowTimeLocal  bool     `json:"allow-time-local,omitzero"`
 	EscapeHatches   []string `json:"escape-hatches,omitempty"`
-	WatchForScripts []string `json:"watch-for-scripts,omitempty"`
+	WatchForScripts []string `json:"watch-for-scripts,omitzero"`
 }
 
 type govetSettings struct {
@@ -938,8 +941,8 @@ type testifylintSuiteExtraAssertCall struct {
 }
 
 type testpackageSettings struct {
-	SkipRegexp    string   `json:"skip-regexp"`
-	AllowPackages []string `json:"allow-packages,omitempty"`
+	SkipRegexp    string   `json:"skip-regexp,omitzero"`
+	AllowPackages []string `json:"allow-packages,omitzero"`
 }
 
 type thelperOptions struct {
@@ -1056,11 +1059,11 @@ type wSLv4Settings struct {
 	AllowTrailingComment             bool     `json:"allow-trailing-comment,omitzero"`
 	AllowSeparatedLeadingComment     bool     `json:"allow-separated-leading-comment,omitzero"`
 	AllowCuddleDeclaration           bool     `json:"allow-cuddle-declarations,omitzero"`
-	AllowCuddleWithCalls             []string `json:"allow-cuddle-with-calls,omitempty"`
-	AllowCuddleWithRHS               []string `json:"allow-cuddle-with-rhs,omitempty"`
+	AllowCuddleWithCalls             []string `json:"allow-cuddle-with-calls,omitzero"`
+	AllowCuddleWithRHS               []string `json:"allow-cuddle-with-rhs,omitzero"`
 	AllowCuddleUsedInBlock           bool     `json:"allow-cuddle-used-in-block,omitzero"`
 	ForceCuddleErrCheckAndAssign     bool     `json:"force-err-cuddling,omitzero"`
-	ErrorVariableNames               []string `json:"error-variable-names,omitempty"`
+	ErrorVariableNames               []string `json:"error-variable-names,omitzero"`
 	ForceExclusiveShortDeclarations  bool     `json:"force-short-decl-cuddling,omitzero"`
 }
 
