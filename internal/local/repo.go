@@ -161,7 +161,7 @@ func (r *repo) GoTestCover(ctx context.Context) (float64, error) {
 	defer func() { _ = os.Remove(profile) }()
 
 	if out, err := r.ExecCommand(ctx,
-		"go", "test", "-coverprofile="+coverProfile, "./..."); err != nil {
+		"go", "test", "-coverpkg=./...", "-coverprofile="+coverProfile, "./..."); err != nil {
 		return 0, fmt.Errorf("tests failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 

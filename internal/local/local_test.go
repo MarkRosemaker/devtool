@@ -85,6 +85,31 @@ func write(t *testing.T, dir, name, content string) {
 	}
 }
 
+// A test covers code in other packages too: app's only test covers all of lib.
+func TestGoTestCoverCountsEveryPackage(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, sub := range []string{"lib", "app"} {
+		if err := os.Mkdir(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write(t, dir, "go.mod", "module example.com/test\n\ngo 1.26\n")
+	write(t, dir, "lib/lib.go", "package lib\n\nfunc Double(n int) int { return 2 * n }\n")
+	write(t, dir, "app/app.go", "package app\n\nimport \"example.com/test/lib\"\n\nfunc Four() int { return lib.Double(2) }\n")
+	write(t, dir, "app/app_test.go", "package app\n\nimport \"testing\"\n\nfunc TestFour(t *testing.T) {\n\tif Four() != 4 {\n\t\tt.Fatal(Four())\n\t}\n}\n")
+
+	got, err := (&repo{dir: dir}).GoTestCover(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got != 100 {
+		t.Errorf("coverage = %v, want 100: lib is covered by app's test", got)
+	}
+}
+
 func TestTotalCoverage(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
