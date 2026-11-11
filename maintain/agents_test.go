@@ -421,6 +421,7 @@ func TestAgentsGolden(t *testing.T) {
 			Postgres:  []string{"tasks"},
 			Webapp:    true,
 			Auth:      true,
+			Workflow:  true,
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},

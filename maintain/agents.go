@@ -97,6 +97,9 @@ type agentsData struct {
 	// Webapp is true where devtool.json has a webapp section, whose main.go is
 	// generated, and Auth where it asks for sign-in.
 	Webapp, Auth bool
+
+	// Workflow is true where [WorkflowTask] wrote the test workflow.
+	Workflow bool
 }
 
 // generatedRoot is one generated root file and the directory it is built
@@ -239,6 +242,11 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		return agentsData{}, err
 	}
 
+	workflow, err := hasGeneratedWorkflow(fs)
+	if err != nil {
+		return agentsData{}, err
+	}
+
 	return agentsData{
 		Generated:        generated,
 		Fragments:        fragments,
@@ -255,6 +263,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		Databases:        databaseNames(def, ""),
 		SQLite:           databaseNames(def, sqlite),
 		Postgres:         databaseNames(def, postgres),
+		Workflow:         workflow,
 	}, nil
 }
 
