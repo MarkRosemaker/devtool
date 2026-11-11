@@ -1,5 +1,8 @@
 # Roadmap
 
+See also:
+- [What is left to take from devtool-legacy](roadmap/devtool-legacy.md)
+
 Work not yet done. Entries about the event stream and the runner are on
 `devtool-engine`'s roadmap, and entries about the chat are on `patchpal`'s.
 
@@ -127,69 +130,12 @@ in the task that writes `AGENTS.md` rather than in the one that writes
 `CLAUDE.md`, since only the former can link the fragment in the same run — done
 from the latter it would lag a run behind.
 
-## Pre-commit hooks
-
-Check that each repository has pre-commit configured, and add it where missing.
-A natural task: idempotent, writes a file, commits only when it changed.
-`devtool-legacy`'s `githooks.go` and its `PreCommitHook.tpl` are the design.
-
 ## Cap a repository's outside dependencies
 
 Check `go.mod` against a maximum number of dependencies outside this owner's
 own modules. A repository that has
 grown past it is worth knowing about, and a task that reports rather than
 enforces is the place to start.
-
-## Cannibalising devtool-legacy
-
-`MarkRosemaker/devtool-legacy` is a fork of an earlier tool solving the same
-problem, kept to compare implementations against and shrunk as each feature is
-replaced. Its `commands.yaml` is the inventory.
-
-Worth taking and not yet here: `release <level>` (a semver bump plus assets),
-`version-file`, `apply-version-upgrades` with `gomod_update.go` and
-`internal/version/`, `init`/`new <name>` with `repository.go`, `update.go` and
-`github.go`.
-
-`self-update` is here, done differently from the fork — see `devtool-engine`.
-So `release <level>` is not needed to ship a fix; it is worth having for
-people who are not us, and nothing is waiting on it.
-
-Two files are not what their names suggest:
-
-- `internal/cmd/smart_command.go` is not `required:` predicate machinery worth
-  porting. It is ten lines wrapping `cobra.Command` with an
-  `IsRequired func() bool`. Take the idea; there is no code to take.
-- `internal/golangci/golangci.go` is not superseded by the lint config
-  generator, and stays. Of the 75 linters it enables, 62 still exist
-  in golangci-lint v2 and 13 do not: `deadcode`, `structcheck`, `varcheck`,
-  `ifshort`, `exhaustivestruct` and `typecheck` are gone outright,
-  `exportloopref` is now `copyloopvar`, `gosimple` and `stylecheck` folded into
-  `staticcheck`, `tenv` into `usetesting`, `goerr113` into `err113`, `gomnd`
-  into `mnd`, and `wsl` into `wsl_v5`. Its `printfFuncs` names another
-  organisation's logger and is worth nothing here.
-
-  The two files take opposite postures, which is the real difference:
-  `golangci.go` starts from `config.NewDefault()` and opts *out*, while ours
-  starts from `Default: none` and opts *in* to seven. The settings worth
-  reading before extending ours are `nolintlint` (`RequireExplanation`,
-  `RequireSpecific`), `godot` (`Scope: all`, `Capital`, which is close to what
-  the comment conventions ask for anyway), `errcheck`
-  (`CheckAssignToBlank`, `CheckTypeAssertions`), `unparam.CheckExported`, and
-  the complexity ceilings — `cyclop` 10, `gocognit`/`gocyclo` 20, `nestif` 4,
-  `nakedret` 10. `exhaustive.DefaultSignifiesExhaustive` and `tagalign` we
-  already set the same way.
-
-**Out of scope for now, not forever.** `devtool-legacy` has no microservice,
-CI or website generators because this portfolio has no microservices in it
-today, not because generating a CircleCI config, a Dockerfile or a service
-skeleton is a bad idea. They are readable at `devtool-legacy@293f881`, on
-`master`'s own history. When one
-of them is wanted, a generator graduates to its own `devtool-<name>` repository
-rather than reverting into the fork — `devtool-circleci` or `devtool-service`
-is the shape. The `required:` predicates above are the other half of that:
-`repo.IsMicroservice` is precisely the condition such a generator would run
-under.
 
 ## Report the goal
 
