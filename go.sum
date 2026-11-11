@@ -12,10 +12,10 @@ github.com/MarkRosemaker/gorepo v0.0.0-20261109170555-af74a84d3326 h1:oSYIBZCoQe
 github.com/MarkRosemaker/gorepo v0.0.0-20261109170555-af74a84d3326/go.mod h1:5Gd5G8JccCF4gmxwjh3BfU16TZAUoJXlSppLvSg06m4=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8 h1:kZvQlxy2u7OzPYxBv35KC13QtNCwix0RIoCC7IjGZCI=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
-github.com/MarkRosemaker/jsonutil v0.0.0-20261111050223-68d2dd492e9f h1:nzy44tVsq8Xxtq9lBpOhDFFkE8ttA3Jb4DoxD6H4Z0s=
-github.com/MarkRosemaker/jsonutil v0.0.0-20261111050223-68d2dd492e9f/go.mod h1:SzjJlgYFlzpbFGvUUoQgfEsWlbai63bvhDPK8J0MNYM=
-github.com/MarkRosemaker/openapi v0.0.0-20261111050345-49f46392a86f h1:NyMJB9cbd+1Hoi8Qt+n+3Hnog8v8UkaOr00aeakuqvY=
-github.com/MarkRosemaker/openapi v0.0.0-20261111050345-49f46392a86f/go.mod h1:/np04bYbL6Yhf3LNZ3lYEn+VSKpzZuGu4QL5q/epJm4=
+github.com/MarkRosemaker/jsonutil v0.0.0-20261111150633-f9633ee2a58b h1:RHZtlXJlPuHljp1msKNGMSLo8dMnien7Y1D5+1iEqzM=
+github.com/MarkRosemaker/jsonutil v0.0.0-20261111150633-f9633ee2a58b/go.mod h1:SzjJlgYFlzpbFGvUUoQgfEsWlbai63bvhDPK8J0MNYM=
+github.com/MarkRosemaker/openapi v0.0.0-20261111150840-c64c59206c8a h1:FXSNwg8SuCQlIk9c4iQ6ICKnuenpydKMCMh0H9sED7E=
+github.com/MarkRosemaker/openapi v0.0.0-20261111150840-c64c59206c8a/go.mod h1:OkiQTSS4bg4FYt9537OiReitbLM6xv/u+cR+AKkHxBg=
 github.com/MarkRosemaker/ordmap v0.0.0-20261109211921-475c54164ef0 h1:YrUgwh9oq4KB8JPWSOHjEYvYBUdI8lh2LstELVwkg7s=
 github.com/MarkRosemaker/ordmap v0.0.0-20261109211921-475c54164ef0/go.mod h1:XXhOc1a+Y3nMzqh2U8Fl+LYRfjGFaQtG1u01tm1JIXA=
 github.com/MarkRosemaker/yaml v0.0.0-20261109161623-86a6a512ccb9 h1:+6pbWoI2lAea4+sDLwwcnVNR9PYTuoReEdUwUZrbA/g=
