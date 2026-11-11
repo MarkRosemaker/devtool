@@ -4,12 +4,12 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261109170232-1ffd8be2c5e2
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261111155235-6292abd5e761
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14
-	github.com/MarkRosemaker/gorepo v0.0.0-20261109170555-af74a84d3326
+	github.com/MarkRosemaker/gorepo v0.0.0-20261111155619-389f80e65218
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8
-	github.com/MarkRosemaker/jsonutil v0.0.0-20261111150633-f9633ee2a58b
-	github.com/MarkRosemaker/openapi v0.0.0-20261111150840-c64c59206c8a
+	github.com/MarkRosemaker/jsonutil v0.0.0-20261111155129-3eb35e1f56f9
+	github.com/MarkRosemaker/openapi v0.0.0-20261111155237-ec206989fd90
 	github.com/MarkRosemaker/ordmap v0.0.0-20261109211921-475c54164ef0
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
@@ -54,7 +54,7 @@ require (
 	github.com/stretchr/testify v1.12.1 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.38.0 // indirect
