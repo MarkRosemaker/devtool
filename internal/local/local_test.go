@@ -718,3 +718,58 @@ func TestTestReportsFailingTests(t *testing.T) {
 		t.Errorf("a failing run recorded a definition: %v", statErr)
 	}
 }
+
+// A command beside the library does not count: cmd/tool has no test, and lib is covered all the same.
+func TestGoTestCoverLeavesOutCommands(t *testing.T) {
+	dir := t.TempDir()
+
+	for _, sub := range []string{"lib", "cmd/tool"} {
+		if err := os.MkdirAll(filepath.Join(dir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	write(t, dir, "go.mod", "module example.com/test\n\ngo 1.26\n")
+	write(t, dir, "lib/lib.go", "package lib\n\nfunc Double(n int) int { return 2 * n }\n")
+	write(t, dir, "lib/lib_test.go", "package lib\n\nimport \"testing\"\n\nfunc TestDouble(t *testing.T) {\n\tif Double(2) != 4 {\n\t\tt.Fatal(Double(2))\n\t}\n}\n")
+	write(t, dir, "cmd/tool/main.go", "package main\n\nimport (\n\t\"fmt\"\n\n\t\"example.com/test/lib\"\n)\n\nfunc main() {\n\tfmt.Println(lib.Double(3))\n\tfmt.Println(lib.Double(4))\n}\n")
+
+	got, err := (&repo{dir: dir}).GoTestCover(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got != 100 {
+		t.Errorf("coverage = %v, want 100: the command does not count", got)
+	}
+}
+
+// A repository of nothing but a command counts it.
+func TestGoTestCoverCountsOnlyCommands(t *testing.T) {
+	dir := t.TempDir()
+
+	write(t, dir, "go.mod", "module example.com/test\n\ngo 1.26\n")
+	write(t, dir, "main.go", "package main\n\nfunc main() { println(half(4)) }\n\nfunc half(n int) int { return n / 2 }\n")
+	write(t, dir, "main_test.go", "package main\n\nimport \"testing\"\n\nfunc TestHalf(t *testing.T) {\n\tif half(4) != 2 {\n\t\tt.Fatal(half(4))\n\t}\n}\n")
+
+	got, err := (&repo{dir: dir}).GoTestCover(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got != 50 {
+		t.Errorf("coverage = %v, want 50: main is counted, and only half run", got)
+	}
+}
+
+func TestCoverPackages(t *testing.T) {
+	for listed, want := range map[string]string{
+		"lib:example.com/a/lib\nmain:example.com/a/cmd/x\napi:example.com/a\n": "example.com/a/lib,example.com/a",
+		"main:example.com/a\n": "./...",
+		"":                     "./...",
+	} {
+		if got := coverPackages(listed); got != want {
+			t.Errorf("coverPackages(%q) = %q, want %q", listed, got, want)
+		}
+	}
+}
