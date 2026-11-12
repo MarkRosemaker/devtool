@@ -4,8 +4,8 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2 h1:jE
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2/go.mod h1:MKxqsey44X84zYI2pmCfmgEUBo1ROTES84vo0ZSXvr8=
 github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73 h1:7Ck9Aagyl3mRqKfm3FmkCvWxTx7wZzSrg+14C0zFrc0=
 github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261111155235-6292abd5e761 h1:IYDdG7yDf6zJZcZqx2w2KmlYcqmwADSe/dKr1qNnblQ=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261111155235-6292abd5e761/go.mod h1:YexUtwO0vIrrPWOwOaFAkmtyqKbQkY8mAw4TS6JwPtw=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261112163900-8fb453642f10 h1:/GHz8oOnQXw1frNG+1X2oo8mMn/tq9s/N3/sxJFYCqM=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261112163900-8fb453642f10/go.mod h1:YexUtwO0vIrrPWOwOaFAkmtyqKbQkY8mAw4TS6JwPtw=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14 h1:v/JhGtxBYh9sRa4udM460ILJqX9qm/v/jyL7xz4vku8=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14/go.mod h1:GQvMvU3tgHtWgTDgLzCCt6UW2PTMvnNtEG0QxgLyBuA=
 github.com/MarkRosemaker/gorepo v0.0.0-20261111155619-389f80e65218 h1:3cMzYQ+pHkOZaEbjU4NlVnHBHa1FKQM/olGI8/DJwN0=

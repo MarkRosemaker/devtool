@@ -42,17 +42,21 @@ others, orders them with the engine's dependency graph, and maintains them as
 parallel as that order allows. A required repository of an owner in
 `config.json` that is not in it is a gap, reported as an `unmaintained` event
 on every run. It reaches GitHub only through `repoSource`, which opens a
-repository and lists an owner's, and `issueTracker`, so its tests stand in
-local repositories for GitHub's.
+repository and lists an owner's, so its tests stand in local repositories for
+GitHub's.
 
-A repository whose tests fail, on `main` or after one of the run's tasks, gets
-an issue (`testissue.go`, written from `testissue.md.tmpl`): what failed, the
-commit, Go version and command to reproduce it, the change that broke it, and
-how to resolve it, for an agent to pick up. A comment at its top fingerprints
-the failure by repository, task and failing tests, and a later run that finds
-an open issue with the same fingerprint files no other. `GITHUB_TOKEN` needs
-permission to write issues for this; a failure to file is logged, never the
-run's.
+A repository whose tests fail, on `main` or after one of the run's tasks, or
+whose coverage slips below its floor, gets an issue (`issue.go`, written from
+`issue_tests.md.tmpl` or `issue_coverage.md.tmpl`): what failed, the commit, Go
+version and command to reproduce it, the change that broke it, and how to
+resolve it, for an agent to pick up. Every such issue carries the label
+`devtool`, and one of `coverage`, `failing on main`, `dependency update breaks
+build` or `tests`, or `devtool breaks build` or `tests`, which the run creates
+where a repository lacks it. A comment at its top identifies the problem (for
+failing tests, by task and failing tests), and a later run that finds an open
+issue with it refreshes that issue rather than filing another. `GITHUB_TOKEN`
+needs permission to write issues and labels for this; a failure to file is
+logged, never the run's.
 
 Both emit the same event stream, so one repository reports exactly like one
 row of a full run. Who reads it is the caller's choice. By default

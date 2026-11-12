@@ -1,5 +1,6 @@
 <!-- {{ .Marker }} -->
-A maintained run of devtool found this repository's tests failing
+A maintained run of devtool found this repository
+{{- if .Build }} failing to build{{ else }}'s tests failing{{ end }}
 {{- if .Task }} after its task **{{ .Task }}** changed the repository. The
 change was not committed, and the run discarded it: `main` is as it was, and
 the work is to make it take the change.
@@ -33,7 +34,7 @@ Only what failed is shown; the packages that passed are left out.
 - `make test-race` runs the same suite, without the coverage profile.
 {{- if .Task }}
 
-## The change that broke them
+## The change that broke it
 
 The task **{{ .Task }}** made this change, which the run tested before
 committing it:
@@ -59,6 +60,7 @@ The next run makes those commits again.
 - Open a pull request that says `Fixes` and this issue's number, so that
   merging it closes this issue.
 - devtool files no second issue for this failure while this one is open: it
-  finds this one by the comment at the top. Leave that comment as it is.
+  finds this one by the comment at the top, and brings it up to date each
+  time the failure comes back. Leave that comment as it is.
 
-Reported by devtool {{ .Version }} at {{ .Time }}.
+Last seen by devtool {{ .Version }} at {{ .Time }}.

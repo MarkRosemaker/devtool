@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/MarkRosemaker/devtool-engine v0.0.0-20261109170215-2f7226d022d2
-	github.com/MarkRosemaker/ghrepo v0.0.0-20261111155235-6292abd5e761
+	github.com/MarkRosemaker/ghrepo v0.0.0-20261112163900-8fb453642f10
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14
 	github.com/MarkRosemaker/gorepo v0.0.0-20261111155619-389f80e65218
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261109120452-2329987d7bc8

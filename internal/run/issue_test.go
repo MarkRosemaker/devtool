@@ -1,0 +1,194 @@
+package run
+
+import (
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+	"testing"
+
+	"github.com/MarkRosemaker/devtool-engine/event"
+	engine "github.com/MarkRosemaker/devtool-engine/maintain"
+	"github.com/MarkRosemaker/ghrepo"
+	"github.com/google/go-github/v80/github"
+)
+
+// testCommand is the command gorepo runs, and failingOutput what it says about
+// a failure once gorepo has left out what passed.
+const (
+	testCommand   = "go test ./... -race -cover -covermode=atomic -coverpkg=./... -coverprofile=cover.out -shuffle=on"
+	failingOutput = "-test.shuffle 1794492933930643719\n" +
+		"--- FAIL: TestBad (0.00s)\n" +
+		"    b_test.go:4: boom\n" +
+		"FAIL\n" +
+		"FAIL\texample.com/app/b\t0.011s"
+	brokenOutput = "# example.com/app/b\n" +
+		"b/b.go:3:2: undefined: gone\n" +
+		"FAIL\texample.com/app/b [build failed]"
+)
+
+func testsFail(out string) error {
+	return ghrepo.ExecError{Cmd: testCommand, Out: out, Err: errors.New("exit status 1")}
+}
+
+// app is a portfolio of one repository, alice/app.
+func app(t *testing.T, cfg string) (*Service, *fakeSource) {
+	t.Helper()
+
+	svc, src, _ := portfolio(t, `{"alice": {"repositories": {"app": {`+cfg+`}}}}`)
+	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+
+	return svc, src
+}
+
+func labelNames(issue *github.Issue) []string {
+	var names []string
+	for _, l := range issue.Labels {
+		names = append(names, l.GetName())
+	}
+
+	return names
+}
+
+// Tests failing on main are filed once, and the open issue is brought up to
+// date by every run that finds them still failing.
+func TestFailingTestsOnMainAreFiledOnce(t *testing.T) {
+	svc, src := app(t, "")
+
+	for _, out := range []string{failingOutput, strings.Replace(failingOutput, "boom", "boom again", 1)} {
+		src.coverErrs["alice/app"] = []error{testsFail(out)}
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	issues := src.issues["alice/app"]
+	if len(issues) != 1 {
+		t.Fatalf("filed %d issues over two runs, want 1", len(issues))
+	}
+
+	issue := issues[0]
+	if got := issue.GetTitle(); got != "Tests fail on main: TestBad" {
+		t.Errorf("title = %q", got)
+	}
+
+	if got, want := labelNames(issue), []string{"devtool", "failing on main"}; !slices.Equal(got, want) {
+		t.Errorf("labels = %v, want %v", got, want)
+	}
+
+	for _, want := range []string{
+		"<!-- devtool:test-failure ", "`main` itself is broken", "- `TestBad`", "boom again",
+		testCommand, "`-shuffle=1794492933930643719`", "make test-race", "AGENTS.md",
+	} {
+		if !strings.Contains(issue.GetBody(), want) {
+			t.Errorf("the issue lacks %q:\n%s", want, issue.GetBody())
+		}
+	}
+}
+
+// Tests a task's change breaks are filed against that task, with the change,
+// and labelled by whose task it was and whether the build broke.
+func TestATaskThatBreaksTheTestsIsFiledWithItsChange(t *testing.T) {
+	for _, tc := range []struct {
+		task, out, label, title string
+	}{
+		{"write go.sum", failingOutput, "devtool breaks tests", `Tests fail after "write go.sum": TestBad`},
+		{updateDependencies, brokenOutput, "dependency update breaks build", `Build fails after "update dependencies": example.com/app/b`},
+	} {
+		t.Run(tc.label, func(t *testing.T) {
+			svc, src := app(t, "")
+
+			src.tasks["alice/app"] = func(r *fakeRepo) []engine.Task {
+				change := writeTask(r, "go.sum", "changed\n")
+				change.Name = tc.task
+
+				return []engine.Task{writeTask(r, "NOTES", "changed\n"), change}
+			}
+			// The suite passes before any change and after the first task, and
+			// fails after the second.
+			src.coverErrs["alice/app"] = []error{nil, nil, testsFail(tc.out)}
+
+			if err := svc.Run(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+
+			issues := src.issues["alice/app"]
+			if len(issues) != 1 {
+				t.Fatalf("filed %d issues, want 1", len(issues))
+			}
+
+			issue := issues[0]
+			if issue.GetTitle() != tc.title {
+				t.Errorf("title = %q, want %q", issue.GetTitle(), tc.title)
+			}
+
+			if got, want := labelNames(issue), []string{"devtool", tc.label}; !slices.Equal(got, want) {
+				t.Errorf("labels = %v, want %v", got, want)
+			}
+
+			for _, want := range []string{"**" + tc.task + "**", "changed: go.sum", "**write NOTES**", tc.out} {
+				if !strings.Contains(issue.GetBody(), want) {
+					t.Errorf("the issue lacks %q:\n%s", want, issue.GetBody())
+				}
+			}
+		})
+	}
+}
+
+// Coverage fallen below the floor is filed, with the figures.
+func TestCoverageBelowTheFloorIsFiled(t *testing.T) {
+	svc, src := app(t, `"coverage": 85`)
+	src.coverage["alice/app"] = 70
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	issues := src.issues["alice/app"]
+	if len(issues) != 1 {
+		t.Fatalf("filed %d issues, want 1", len(issues))
+	}
+
+	issue := issues[0]
+	if want := "Coverage fell below 80%: 85.0% → 70.0%"; issue.GetTitle() != want {
+		t.Errorf("title = %q, want %q", issue.GetTitle(), want)
+	}
+
+	if got, want := labelNames(issue), []string{"devtool", "coverage"}; !slices.Equal(got, want) {
+		t.Errorf("labels = %v, want %v", got, want)
+	}
+
+	for _, want := range []string{"<!-- devtool:coverage fell -->", "from 85.0% to 70.0%", "make cover", "-coverpkg=./..."} {
+		if !strings.Contains(issue.GetBody(), want) {
+			t.Errorf("the issue lacks %q:\n%s", want, issue.GetBody())
+		}
+	}
+}
+
+// Only failing tests and coverage are filed: a run that fails otherwise, or
+// does not fail, files nothing.
+func TestOtherOutcomesAreNotFiled(t *testing.T) {
+	for _, err := range []error{
+		nil,
+		errors.New("pushing: rejected"),
+		fmt.Errorf("testing before any changes: %w", errors.New("no go.mod")),
+		ghrepo.ExecError{Cmd: "go mod tidy", Err: errors.New("exit status 1")},
+	} {
+		if _, ok, _ := reportOf(event.Result{Err: err}, engine.Spec{}, facts{}); ok {
+			t.Errorf("%v was filed", err)
+		}
+	}
+}
+
+// The marker names the failure, not the run: timings and seeds do not change it.
+func TestTheMarkerIgnoresWhatVariesBetweenRuns(t *testing.T) {
+	again := strings.NewReplacer("0.011s", "0.020s", "1794492933930643719", "42").Replace(failingOutput)
+
+	a, _ := parseTestFailure(fmt.Errorf("testing before any changes: %w", testsFail(failingOutput)))
+	b, _ := parseTestFailure(fmt.Errorf("testing before any changes: %w", testsFail(again)))
+
+	if a.marker() != b.marker() {
+		t.Errorf("the same failure reads as two: %s and %s", a.marker(), b.marker())
+	}
+}

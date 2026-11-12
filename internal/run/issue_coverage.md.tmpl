@@ -1,0 +1,30 @@
+<!-- {{ .Marker }} -->
+A maintained run of devtool found this repository's test coverage
+{{- if .Public }} at {{ printf "%.1f" .Coverage }}%, below the {{ .Floor }}% a public repository needs.
+{{- else }} fallen below the floor of {{ .Floor }}%, from {{ printf "%.1f" .Prev }}% to {{ printf "%.1f" .Coverage }}%.
+{{- end }}
+The run's other work was done and pushed: coverage is what is left.
+
+## Measuring it
+
+- **Commit:** [`{{ .ShortCommit }}`](https://github.com/{{ .Owner }}/{{ .Name }}/commit/{{ .Commit }}), `main` as the run found it.
+- **Go:** {{ .GoVersion }}
+- `make cover` prints each function's coverage and the total, measured as the
+  run measures it: `-coverpkg=./...` counts code a test covers in any package of
+  the module, not only in its own.
+- `go tool cover -func=cover.out | sort -k3 -n | head -30`, after `make cover`,
+  lists the least covered functions first.
+
+## Resolving it
+
+- `AGENTS.md`, at the repository root, says how to work here. `make ready`
+  passes before every commit.
+- Test what the code is for: a test that runs lines without checking what they
+  do raises the figure and catches nothing.
+- Open a pull request that says `Fixes` and this issue's number, so that
+  merging it closes this issue.
+- devtool files no second issue about coverage while this one is open: it
+  finds this one by the comment at the top, and brings it up to date each
+  time it measures again. Leave that comment as it is.
+
+Last seen by devtool {{ .Version }} at {{ .Time }}.
