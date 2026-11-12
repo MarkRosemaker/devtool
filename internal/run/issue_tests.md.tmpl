@@ -58,7 +58,8 @@ The next run makes those commits again.
   passes before every commit.
 - Fix the cause. Do not skip, disable or loosen a test to make it pass.
 - Open a pull request that says `Fixes` and this issue's number, so that
-  merging it closes this issue.
+  merging it closes this issue. Otherwise devtool closes it, with a comment,
+  on the first run that finds the tests passing.
 - devtool files no second issue for this failure while this one is open: it
   finds this one by the comment at the top, and brings it up to date each
   time the failure comes back. Leave that comment as it is.

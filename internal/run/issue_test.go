@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -37,10 +38,31 @@ func testsFail(out string) error {
 func app(t *testing.T, cfg string) (*Service, *fakeSource) {
 	t.Helper()
 
-	svc, src, _ := portfolio(t, `{"alice": {"repositories": {"app": {`+cfg+`}}}}`)
-	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+	svc, src, _ := appWithEvents(t, cfg)
 
 	return svc, src
+}
+
+func appWithEvents(t *testing.T, cfg string) (*Service, *fakeSource, *recorder) {
+	t.Helper()
+
+	svc, src, rec := portfolio(t, `{"alice": {"repositories": {"app": {`+cfg+`}}}}`)
+	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+
+	return svc, src, rec
+}
+
+// issueEvents are the issue events recorded, as "kind issue: title".
+func issueEvents(rec *recorder) []string {
+	var got []string
+
+	for _, ev := range rec.events {
+		if ev.Kind == event.IssueFiled || ev.Kind == event.IssueClosed {
+			got = append(got, string(ev.Kind)+" "+ev.Issue+": "+ev.Title)
+		}
+	}
+
+	return got
 }
 
 func labelNames(issue *github.Issue) []string {
@@ -233,5 +255,101 @@ func TestTheMarkerIgnoresWhatVariesBetweenRuns(t *testing.T) {
 
 	if a.marker() != b.marker() {
 		t.Errorf("the same failure reads as two: %s and %s", a.marker(), b.marker())
+	}
+}
+
+// Failing tests are filed and told; once a run finds them passing, the issue
+// is closed, with a comment saying where, and told too.
+func TestAFixedFailureIsClosed(t *testing.T) {
+	svc, src, rec := appWithEvents(t, "")
+
+	for range 2 {
+		src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	issue := src.issues["alice/app"][0]
+
+	const url = "https://github.com/alice/app/issues/1"
+
+	want := []string{
+		"issue_filed " + url + ": Tests fail on main: TestBad",
+		"issue_filed " + url + ": Tests fail on main: TestBad",
+	}
+	if got := issueEvents(rec); !slices.Equal(got, want) {
+		t.Fatalf("after two failing runs, events = %q\nwant %q", got, want)
+	}
+
+	if issue.GetState() != "open" {
+		t.Fatal("the issue was closed while the tests still failed")
+	}
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if issue.GetState() != "closed" {
+		t.Fatal("the issue stayed open once the tests passed")
+	}
+
+	if got := issueEvents(rec); got[len(got)-1] != "issue_closed "+url+": Tests fail on main: TestBad" {
+		t.Errorf("events = %q, want the closing last", got)
+	}
+
+	if comment := src.comments[url]; !strings.Contains(comment, "Fixed: devtool v1.0.0 found that the tests pass at") {
+		t.Errorf("closed with %q", comment)
+	}
+}
+
+// Coverage that slipped stays reported while it is below the floor, though no
+// run fails over it again, and is closed once it is back.
+func TestCoverageIsClosedOnlyOnceBackAtTheFloor(t *testing.T) {
+	svc, src := app(t, `"coverage": 85`)
+
+	for _, cov := range []float64{70, 75, 82} {
+		src.coverage["alice/app"] = cov
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+
+		issues := src.issues["alice/app"]
+		if len(issues) != 1 {
+			t.Fatalf("at %v%%, %d issues, want 1", cov, len(issues))
+		}
+
+		if want := map[bool]string{true: "closed", false: "open"}[cov >= 80]; issues[0].GetState() != want {
+			t.Errorf("at %v%%, the issue is %s, want %s", cov, issues[0].GetState(), want)
+		}
+	}
+
+	if comment := src.comments["https://github.com/alice/app/issues/1"]; !strings.Contains(comment, "coverage is 82.0%, back at the 80% floor") {
+		t.Errorf("closed with %q", comment)
+	}
+}
+
+// A run that fails for another reason shows nothing fixed, and closes nothing.
+func TestAnUnrelatedFailureClosesNothing(t *testing.T) {
+	svc, src := app(t, "")
+	src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	// The tests pass now, but a task fails: no issue is about that.
+	src.tasks["alice/app"] = func(*fakeRepo) []engine.Task {
+		return []engine.Task{{Name: "go vet", Run: func(context.Context) error { return errors.New("vet: bad") }}}
+	}
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if state := src.issues["alice/app"][0].GetState(); state != "open" {
+		t.Errorf("the issue is %s after a run that failed otherwise, want open", state)
 	}
 }

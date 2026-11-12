@@ -9,13 +9,14 @@ import (
 	"github.com/google/go-github/v80/github"
 )
 
-// FindOpenIssue returns the first open issue whose body contains text, or nil
-// where there is none. With labels, only issues carrying all of them are
-// read. Pull requests, which GitHub lists as issues too, are passed over.
-func (r *Repository) FindOpenIssue(ctx context.Context, text string, labels ...string) (*github.Issue, error) {
+// OpenIssues returns the open issues, with labels only those carrying all of
+// them. Pull requests, which GitHub lists as issues too, are left out.
+func (r *Repository) OpenIssues(ctx context.Context, labels ...string) ([]*github.Issue, error) {
 	opts := &github.IssueListByRepoOptions{
 		State: "open", Labels: labels, ListOptions: github.ListOptions{PerPage: 100},
 	}
+
+	var open []*github.Issue
 
 	for {
 		issues, resp, err := r.s.github.Issues.ListByRepo(ctx, r.owner, r.name, opts)
@@ -24,17 +25,50 @@ func (r *Repository) FindOpenIssue(ctx context.Context, text string, labels ...s
 		}
 
 		for _, issue := range issues {
-			if !issue.IsPullRequest() && strings.Contains(issue.GetBody(), text) {
-				return issue, nil
+			if !issue.IsPullRequest() {
+				open = append(open, issue)
 			}
 		}
 
 		if resp.NextPage == 0 {
-			return nil, nil
+			return open, nil
 		}
 
 		opts.ListOptions.Page = resp.NextPage
 	}
+}
+
+// FindOpenIssue returns the first open issue whose body contains text, or nil
+// where there is none, reading only those carrying all the labels given.
+func (r *Repository) FindOpenIssue(ctx context.Context, text string, labels ...string) (*github.Issue, error) {
+	issues, err := r.OpenIssues(ctx, labels...)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, issue := range issues {
+		if strings.Contains(issue.GetBody(), text) {
+			return issue, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// CloseIssue closes an issue as completed, first commenting why where comment
+// says.
+func (r *Repository) CloseIssue(ctx context.Context, number int, comment string) error {
+	if comment != "" {
+		if _, _, err := r.s.github.Issues.CreateComment(ctx, r.owner, r.name, number,
+			&github.IssueComment{Body: &comment}); err != nil {
+			return err
+		}
+	}
+
+	_, _, err := r.s.github.Issues.Edit(ctx, r.owner, r.name, number,
+		&github.IssueRequest{State: new("closed"), StateReason: new("completed")})
+
+	return err
 }
 
 // CreateIssue opens an issue with the labels given, which must exist (see

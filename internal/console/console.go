@@ -75,6 +75,10 @@ func (c *Console) Emit(ev event.Event) {
 		c.repoDone(ev)
 	case event.RunDone:
 		c.runDone()
+	case event.IssueFiled:
+		c.line(ev.Repo, "📋", "filed "+ev.Issue+": "+ev.Title)
+	case event.IssueClosed:
+		c.line(ev.Repo, "✅", "closed "+ev.Issue+": "+ev.Title)
 	case event.TaskStart:
 	}
 }

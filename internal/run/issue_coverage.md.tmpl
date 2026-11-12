@@ -22,7 +22,8 @@ The run's other work was done and pushed: coverage is what is left.
 - Test what the code is for: a test that runs lines without checking what they
   do raises the figure and catches nothing.
 - Open a pull request that says `Fixes` and this issue's number, so that
-  merging it closes this issue.
+  merging it closes this issue. Otherwise devtool closes it, with a comment,
+  on the first run that measures coverage at the floor again.
 - devtool files no second issue about coverage while this one is open: it
   finds this one by the comment at the top, and brings it up to date each
   time it measures again. Leave that comment as it is.

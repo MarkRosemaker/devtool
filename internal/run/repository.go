@@ -52,6 +52,8 @@ type maintainedRepo interface {
 	CreateIssue(ctx context.Context, title, body string, labels ...string) (*github.Issue, error)
 	EditIssue(ctx context.Context, number int, title, body string) (*github.Issue, error)
 	EnsureLabel(ctx context.Context, name, color, description string) error
+	OpenIssues(ctx context.Context, labels ...string) ([]*github.Issue, error)
+	CloseIssue(ctx context.Context, number int, comment string) error
 }
 
 // repoSource opens repositories and loads their owners' metadata.
