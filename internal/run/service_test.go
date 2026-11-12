@@ -33,6 +33,9 @@ type fakeSource struct {
 	prefetchErr map[string]error
 	openErr     map[string]error
 	coverage    map[string]float64
+	coverErrs   map[string][]error
+	issues      map[string][]*github.Issue
+	labels      map[string][]string
 	public      map[string]bool
 	tasks       map[string]func(r *fakeRepo) []engine.Task
 	opened      map[string]*fakeRepo
@@ -54,6 +57,9 @@ func newFakeSource(t *testing.T) *fakeSource {
 		prefetchErr: map[string]error{},
 		openErr:     map[string]error{},
 		coverage:    map[string]float64{},
+		coverErrs:   map[string][]error{},
+		issues:      map[string][]*github.Issue{},
+		labels:      map[string][]string{},
 		public:      map[string]bool{},
 		tasks:       map[string]func(r *fakeRepo) []engine.Task{},
 		opened:      map[string]*fakeRepo{},
@@ -180,11 +186,96 @@ func (r *fakeRepo) SetDescription(_ context.Context, descr string) error {
 
 func (r *fakeRepo) SetTopics(context.Context, []string) error { return nil }
 
+// ExecCommand answers go version itself: run for real, with HOME a temporary
+// directory, it fetches a toolchain and records telemetry into it after the
+// test has ended.
+func (r *fakeRepo) ExecCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
+	if name == "go" && slices.Equal(args, []string{"version"}) {
+		return []byte("go version go1.27.0 linux/amd64\n"), nil
+	}
+
+	return r.repository.ExecCommand(ctx, name, args...)
+}
+
+func (r *fakeRepo) EnsureLabel(_ context.Context, name, _, _ string) error {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	if !slices.Contains(r.src.labels[r.key], name) {
+		r.src.labels[r.key] = append(r.src.labels[r.key], name)
+	}
+
+	return nil
+}
+
+func (r *fakeRepo) FindOpenIssue(_ context.Context, text string, labels ...string) (*github.Issue, error) {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	for _, issue := range r.src.issues[r.key] {
+		if issue.GetState() == "open" && strings.Contains(issue.GetBody(), text) && hasLabels(issue, labels) {
+			return issue, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (r *fakeRepo) CreateIssue(_ context.Context, title, body string, labels ...string) (*github.Issue, error) {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	issue := &github.Issue{
+		Number: new(len(r.src.issues[r.key]) + 1), State: new("open"), Title: &title, Body: &body,
+	}
+
+	for _, name := range labels {
+		if !slices.Contains(r.src.labels[r.key], name) {
+			return nil, errors.New("no label " + name)
+		}
+
+		issue.Labels = append(issue.Labels, &github.Label{Name: new(name)})
+	}
+
+	r.src.issues[r.key] = append(r.src.issues[r.key], issue)
+
+	return issue, nil
+}
+
+func (r *fakeRepo) EditIssue(_ context.Context, number int, title, body string) (*github.Issue, error) {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	issue := r.src.issues[r.key][number-1]
+	issue.Title, issue.Body = &title, &body
+
+	return issue, nil
+}
+
+func hasLabels(issue *github.Issue, names []string) bool {
+	for _, name := range names {
+		if !slices.ContainsFunc(issue.Labels, func(l *github.Label) bool { return l.GetName() == name }) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (r *fakeRepo) Private() bool { return !r.src.public[r.key] }
 
+// GoTestCover fails with each of the source's errors for the repository in
+// turn, nil among them passing, and passes once they are used up.
 func (r *fakeRepo) GoTestCover(context.Context) (float64, error) {
 	r.src.mu.Lock()
 	defer r.src.mu.Unlock()
+
+	if errs := r.src.coverErrs[r.key]; len(errs) > 0 {
+		r.src.coverErrs[r.key] = errs[1:]
+		if errs[0] != nil {
+			return 0, errs[0]
+		}
+	}
 
 	return r.src.coverage[r.key], nil
 }

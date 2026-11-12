@@ -1,0 +1,66 @@
+<!-- {{ .Marker }} -->
+A maintained run of devtool found this repository
+{{- if .Build }} failing to build{{ else }}'s tests failing{{ end }}
+{{- if .Task }} after its task **{{ .Task }}** changed the repository. The
+change was not committed, and the run discarded it: `main` is as it was, and
+the work is to make it take the change.
+{{- else }} on `main`, before the run changed anything: `main` itself is broken.
+{{- end }}
+
+## What failed
+
+{{ range .Failing }}- `{{ . }}`
+{{ end }}
+Only what failed is shown; the packages that passed are left out.
+
+```text
+{{ .Output }}
+```
+
+## Reproducing it
+
+- **Commit:** [`{{ .ShortCommit }}`](https://github.com/{{ .Owner }}/{{ .Name }}/commit/{{ .Commit }}), `main` as the run found it.
+- **Go:** {{ .GoVersion }}
+- **Command**, run at the repository root:
+
+  ```sh
+  {{ .Command }}
+  ```
+{{- if .Seed }}
+
+  The tests ran in a shuffled order. `-shuffle={{ .Seed }}` in place of
+  `-shuffle=on` runs them in the same order again.
+{{- end }}
+- `make test-race` runs the same suite, without the coverage profile.
+{{- if .Task }}
+
+## The change that broke it
+
+The task **{{ .Task }}** made this change, which the run tested before
+committing it:
+
+```text
+{{ .Changes }}
+```
+
+Making the same change on a branch brings the failure back.
+{{- end }}
+{{- if .Unpushed }}
+
+Earlier tasks in the same run committed, but nothing was pushed, because the
+run stopped here: {{ range $i, $c := .Unpushed }}{{ if $i }}, {{ end }}**{{ $c }}**{{ end }}.
+The next run makes those commits again.
+{{- end }}
+
+## Resolving it
+
+- `AGENTS.md`, at the repository root, says how to work here. `make ready`
+  passes before every commit.
+- Fix the cause. Do not skip, disable or loosen a test to make it pass.
+- Open a pull request that says `Fixes` and this issue's number, so that
+  merging it closes this issue.
+- devtool files no second issue for this failure while this one is open: it
+  finds this one by the comment at the top, and brings it up to date each
+  time the failure comes back. Leave that comment as it is.
+
+Last seen by devtool {{ .Version }} at {{ .Time }}.

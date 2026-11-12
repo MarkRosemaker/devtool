@@ -402,6 +402,8 @@ func (s *Service) maintain(
 
 	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence(s.version), events)
 
+	s.fileIssue(ctx, u, spec, res)
+
 	recordCoverage(ctx, u, res)
 
 	s.pruneOccasionally(ctx, u.repo)

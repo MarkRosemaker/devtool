@@ -7,6 +7,7 @@ import (
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/gorepo"
 	"github.com/go-git/go-git/v6"
+	"github.com/google/go-github/v80/github"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/modfile"
 )
@@ -45,6 +46,12 @@ type maintainedRepo interface {
 	Dependencies() ([]*modfile.Require, error)
 	Commit(paths []string, message string) error
 	sequence(version string) engine.Sequence
+
+	// The issues a run files about the repository, and their labels.
+	FindOpenIssue(ctx context.Context, text string, labels ...string) (*github.Issue, error)
+	CreateIssue(ctx context.Context, title, body string, labels ...string) (*github.Issue, error)
+	EditIssue(ctx context.Context, number int, title, body string) (*github.Issue, error)
+	EnsureLabel(ctx context.Context, name, color, description string) error
 }
 
 // repoSource opens repositories and loads their owners' metadata.
