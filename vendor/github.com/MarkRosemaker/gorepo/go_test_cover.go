@@ -86,18 +86,57 @@ func getTotalLine(sc *bufio.Scanner) (string, error) {
 
 // failures is go test's output without what passed, so a failure reads as only
 // what failed.
+//
+// A package that does not compile fails every package that imports it, each
+// with a line of its own. Where the output names the broken packages under
+// their "# package" header, those lines say nothing more and collapse into
+// one per reason, in the place of the first.
 func failures(out string) string {
-	var kept []string
+	explained := strings.HasPrefix(out, "# ") || strings.Contains(out, "\n# ")
+
+	var (
+		kept  []string
+		count = map[int]int{} // packages collapsed into the kept line at that index
+		at    = map[string]int{}
+	)
 
 	for line := range strings.Lines(out) {
 		line = strings.TrimSuffix(line, "\n")
-		if !passed(line) {
-			kept = append(kept, line)
+		if passed(line) {
+			continue
 		}
+
+		if m := notBuilt.FindStringSubmatch(line); explained && m != nil {
+			i, ok := at[m[1]]
+			if !ok {
+				i = len(kept)
+				at[m[1]] = i
+				kept = append(kept, m[1])
+			}
+
+			count[i]++
+
+			continue
+		}
+
+		kept = append(kept, line)
+	}
+
+	for i, n := range count {
+		packages := "packages"
+		if n == 1 {
+			packages = "package"
+		}
+
+		kept[i] = fmt.Sprintf("FAIL: %d %s %s", n, packages, kept[i])
 	}
 
 	return strings.Join(kept, "\n")
 }
+
+// notBuilt is go test's line for a package that did not build, its reason in
+// brackets.
+var notBuilt = regexp.MustCompile(`^FAIL\t\S+ (\[(?:build|setup) failed\])$`)
 
 // passed reports whether line is go test's word on a package with nothing to
 // look at: one that passed, has no tests, or only states its coverage.
