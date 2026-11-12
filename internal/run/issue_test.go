@@ -3,6 +3,8 @@ package run
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -133,6 +135,47 @@ func TestATaskThatBreaksTheTestsIsFiledWithItsChange(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// A build broken by a dependency update, as a maintained run of lso reported
+// it in Telegram, names the package that does not compile, not the nineteen
+// that import it.
+func TestABrokenBuildNamesThePackageThatDoesNotCompile(t *testing.T) {
+	text, err := os.ReadFile(filepath.Join("testdata", "lso-build-failure.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	head, rest, _ := strings.Cut(strings.TrimSuffix(string(text), "\n"), "\ncommand ")
+	task, changes, _ := strings.Cut(head, failedAfterChanges)
+	out := strings.TrimSuffix(rest[strings.Index(rest, "\n")+1:], "\nexit status 1")
+
+	failure := fmt.Errorf("%s%s%s\n%w", task, failedAfterChanges, changes, testsFail(out))
+	if failure.Error() != strings.TrimSuffix(string(text), "\n") {
+		t.Fatalf("the error rebuilt from the message reads differently:\n%s", failure)
+	}
+
+	r, ok, err := reportOf(event.Result{Err: failure}, engine.Spec{}, facts{Owner: "MarkRosemaker", Name: "lso"})
+	if err != nil || !ok {
+		t.Fatalf("reportOf = %v, %v", ok, err)
+	}
+
+	if want := `Build fails after "update dependencies": internal/handler`; r.title != want {
+		t.Errorf("title = %q, want %q", r.title, want)
+	}
+
+	if r.label != depsBreakBuild {
+		t.Errorf("label = %q, want %q", r.label.name, depsBreakBuild.name)
+	}
+
+	for _, want := range []string{
+		"failing to build", "- `github.com/MarkRosemaker/lso/internal/handler`\n\nOnly",
+		"mismatched types civil.Date and untyped nil", "golang.org/x/crypto v0.58.0 => v0.59.0",
+	} {
+		if !strings.Contains(r.body, want) {
+			t.Errorf("the issue lacks %q:\n%s", want, r.body)
+		}
 	}
 }
 

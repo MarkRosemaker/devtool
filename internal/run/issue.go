@@ -118,18 +118,20 @@ func parseTestFailure(err error) (testFailure, bool) {
 
 var (
 	failedTest    = regexp.MustCompile(`(?m)^\s*--- FAIL: (\S+)`)
-	failedPackage = regexp.MustCompile(`(?m)^FAIL\t(\S+)`)
+	brokenPackage = regexp.MustCompile(`(?m)^# (\S+)`)
+	failedPackage = regexp.MustCompile(`(?m)^FAIL[ \t]+(\S+)`)
 	failedBuild   = regexp.MustCompile(`\[(build|setup) failed\]`)
 	shuffleSeed   = regexp.MustCompile(`(?m)^-test\.shuffle (\d+)`)
 	digits        = regexp.MustCompile(`\d+`)
 )
 
-// failingTests names what failed: the tests, or the packages where no test is
-// named, as when one does not build.
+// failingTests names what failed: the tests; where none is named, the
+// packages that do not compile, rather than every package that imports them;
+// failing those, the packages that failed.
 func failingTests(out string) []string {
 	var names []string
 
-	for _, re := range []*regexp.Regexp{failedTest, failedPackage} {
+	for _, re := range []*regexp.Regexp{failedTest, brokenPackage, failedPackage} {
 		for _, m := range re.FindAllStringSubmatch(out, -1) {
 			if !slices.Contains(names, m[1]) {
 				names = append(names, m[1])
@@ -184,7 +186,12 @@ func (f testFailure) marker() string {
 const maxTitled = 3
 
 func (f testFailure) title() string {
-	names := strings.Join(f.Failing[:min(len(f.Failing), maxTitled)], ", ")
+	short := make([]string, 0, min(len(f.Failing), maxTitled))
+	for _, name := range f.Failing[:cap(short)] {
+		short = append(short, strings.TrimPrefix(name, "github.com/"+f.Owner+"/"+f.Name+"/"))
+	}
+
+	names := strings.Join(short, ", ")
 	if more := len(f.Failing) - maxTitled; more > 0 {
 		names += fmt.Sprintf(" and %d more", more)
 	}

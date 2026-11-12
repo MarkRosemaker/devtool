@@ -1,0 +1,49 @@
+update dependencies: testing after changes:
+changed: go.mod, go.sum, vendor/
+github.com/MarkRosemaker/cassette v0.0.0-20261111150821-c1aacdd69c8d => v0.0.0-20261111155207-3bee9a17aeeb
+github.com/MarkRosemaker/jsonutil v0.0.0-20261111150633-f9633ee2a58b => v0.0.0-20261111155129-3eb35e1f56f9
+github.com/MarkRosemaker/openapi v0.0.0-20261111150840-c64c59206c8a => v0.0.0-20261112162126-f853e838175d
+github.com/MarkRosemaker/openapi-codegen v0.0.0-20261111151843-e4e809c004cc => v0.0.0-20261112163116-42dc918ba3d5
+github.com/MarkRosemaker/openapi-compare v0.0.0-20261111150954-d52dfcd17894 => v0.0.0-20261112162234-45b138a1d5ab
+github.com/MarkRosemaker/openapi-compress v0.0.0-20261111151250-d4b10689e566 => v0.0.0-20261112162518-e7e0b82d9c2e
+github.com/MarkRosemaker/openapi-edit v0.0.0-20261111150956-e8fa1f9acda8 => v0.0.0-20261112162236-a2824d5b95e1
+github.com/MarkRosemaker/openapi-enrich v0.0.0-20261111151153-3931c01307b5 => v0.0.0-20261112162415-528831d94645
+github.com/MarkRosemaker/openapi-flatten v0.0.0-20261111150957-1cfa86f6217b => v0.0.0-20261112162235-3adfaf5c7b08
+github.com/MarkRosemaker/openapi-merge v0.0.0-20261111150953-481b88fd1c12 => v0.0.0-20261112162234-a5ec8a48dfe6
+github.com/MarkRosemaker/ordmap v0.0.0-20261109211921-475c54164ef0 => v0.0.0-20261112162023-d7f4218a519a
+github.com/MarkRosemaker/stockdata v0.0.0-20261111152904-54e772cb0340 => v0.0.0-20261112163457-b2d6519a53d7
+github.com/MarkRosemaker/webapp v0.0.0-20261111150935-4a637f21a357 => v0.0.0-20261111170225-45bca20ad4e8
+github.com/go-api-libs/api v0.0.0-20261109120454-35fbf0e61179 => v0.0.0-20261111181121-bc153be31ced
+github.com/go-api-libs/finnhub v0.0.0-20261111152514-3854356ac15e => v0.0.0-20261112163311-b8c96b231ca9
+github.com/go-api-libs/ibkr v0.0.0-20261111142534-6f388a966958 => v0.0.0-20261112163243-27c78a411324
+github.com/go-api-libs/sec-edgar v0.0.0-20261111152338-02c37ef0afbf => v0.0.0-20261112163343-f0b108f1bf45
+github.com/go-api-libs/yahoo-finance v0.0.0-20261111152254-fa6574dc3d1a => v0.0.0-20261112163257-dbd7ed4d81bb
+golang.org/x/crypto v0.58.0 => v0.59.0
+golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 => v0.0.0-20261112162710-dab199d8bf38
+golang.org/x/exp/shiny v0.0.0-20261109185158-a52e3aef5920 => v0.0.0-20261112162710-dab199d8bf38
+google.golang.org/api v0.312.0 => v0.313.0
+command "go test ./... -race -cover -covermode=atomic -coverpkg=./... -coverprofile=cover.out -shuffle=on" failed:
+# github.com/MarkRosemaker/lso/internal/handler
+internal/handler/accounts.go:165:77: invalid operation: p.Expiry == nil (mismatched types civil.Date and untyped nil)
+internal/handler/accounts.go:180:20: invalid operation: cannot indirect p.Expiry (variable of struct type civil.Date)
+FAIL github.com/MarkRosemaker/lso [build failed]
+FAIL github.com/MarkRosemaker/lso/cmd/lso [build failed]
+FAIL github.com/MarkRosemaker/lso/databases/data [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/cmd [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/data [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/date [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/events [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/fundamentals [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/handler [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/hub [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/ibkr [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/livecache [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/log [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/service [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/setup [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/sheets [build failed]
+FAIL github.com/MarkRosemaker/lso/internal/yahoo [build failed]
+FAIL github.com/MarkRosemaker/lso/pkg/api [build failed]
+FAIL github.com/MarkRosemaker/lso/pkg/scanner [build failed]
+FAIL
+exit status 1
