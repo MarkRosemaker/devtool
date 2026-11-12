@@ -28,12 +28,19 @@ func (r *Repository) GoTestCover(ctx context.Context) (float64, error) {
 		"-shuffle=on", // shuffle tests
 	); err != nil {
 		const noTestPackagesMsg = "go: warning: \"./...\" matched no packages\nno packages to test"
-		if execErr := (ghrepo.ExecError{}); errors.As(err, &execErr) &&
-			execErr.Out == noTestPackagesMsg {
+
+		execErr, ok := errors.AsType[ghrepo.ExecError](err)
+		if !ok {
+			return 0, err
+		}
+
+		if execErr.Out == noTestPackagesMsg {
 			return 0, nil
 		}
 
-		return 0, err
+		execErr.Out = failures(execErr.Out)
+
+		return 0, execErr
 	}
 
 	// get coverage from the go test
@@ -75,4 +82,28 @@ func getTotalLine(sc *bufio.Scanner) (string, error) {
 	}
 
 	return "", errors.New("no 'total:' line found in coverage report")
+}
+
+// failures is go test's output without what passed, so a failure reads as only
+// what failed.
+func failures(out string) string {
+	var kept []string
+
+	for line := range strings.Lines(out) {
+		line = strings.TrimSuffix(line, "\n")
+		if !passed(line) {
+			kept = append(kept, line)
+		}
+	}
+
+	return strings.Join(kept, "\n")
+}
+
+// passed reports whether line is go test's word on a package with nothing to
+// look at: one that passed, has no tests, or only states its coverage.
+func passed(line string) bool {
+	return strings.HasPrefix(line, "ok  \t") ||
+		strings.HasPrefix(line, "?   \t") ||
+		strings.HasPrefix(line, "coverage: ") ||
+		strings.HasPrefix(line, "\t") && strings.Contains(line, "\tcoverage: ")
 }
