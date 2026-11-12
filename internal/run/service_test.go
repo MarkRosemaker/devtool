@@ -33,6 +33,7 @@ type fakeSource struct {
 	prefetchErr map[string]error
 	openErr     map[string]error
 	coverage    map[string]float64
+	coverErrs   map[string][]error
 	public      map[string]bool
 	tasks       map[string]func(r *fakeRepo) []engine.Task
 	opened      map[string]*fakeRepo
@@ -54,6 +55,7 @@ func newFakeSource(t *testing.T) *fakeSource {
 		prefetchErr: map[string]error{},
 		openErr:     map[string]error{},
 		coverage:    map[string]float64{},
+		coverErrs:   map[string][]error{},
 		public:      map[string]bool{},
 		tasks:       map[string]func(r *fakeRepo) []engine.Task{},
 		opened:      map[string]*fakeRepo{},
@@ -182,9 +184,18 @@ func (r *fakeRepo) SetTopics(context.Context, []string) error { return nil }
 
 func (r *fakeRepo) Private() bool { return !r.src.public[r.key] }
 
+// GoTestCover fails with each of the source's errors for the repository in
+// turn, nil among them passing, and passes once they are used up.
 func (r *fakeRepo) GoTestCover(context.Context) (float64, error) {
 	r.src.mu.Lock()
 	defer r.src.mu.Unlock()
+
+	if errs := r.src.coverErrs[r.key]; len(errs) > 0 {
+		r.src.coverErrs[r.key] = errs[1:]
+		if errs[0] != nil {
+			return 0, errs[0]
+		}
+	}
 
 	return r.src.coverage[r.key], nil
 }

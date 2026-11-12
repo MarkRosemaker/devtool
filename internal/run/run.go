@@ -26,6 +26,7 @@ import (
 	"github.com/MarkRosemaker/devtool/maintain"
 	"github.com/MarkRosemaker/ghrepo"
 	"github.com/MarkRosemaker/gorepo"
+	"github.com/google/go-github/v80/github"
 	"golang.org/x/mod/modfile"
 )
 
@@ -47,6 +48,9 @@ type Service struct {
 	// a run measures is written back there, so the next run on any machine
 	// starts from it.
 	cfg ConfigFile
+
+	// issues is where a repository's failing tests are reported, or nil.
+	issues issueTracker
 }
 
 // New builds a service that emits its progress to events.
@@ -79,6 +83,7 @@ func New(
 		verbose: verbose,
 		version: version,
 		cfg:     cfg,
+		issues:  gitHubIssues{github.NewClient(nil).WithAuthToken(token)},
 	}, nil
 }
 
@@ -401,6 +406,8 @@ func (s *Service) maintain(
 	spec := s.spec(ctx, u)
 
 	res := s.runner.Update(ctx, u.repo, spec, u.repo.sequence(s.version), events)
+
+	s.reportTestFailure(ctx, u, res)
 
 	recordCoverage(ctx, u, res)
 
