@@ -258,20 +258,21 @@ func TestTheMarkerIgnoresWhatVariesBetweenRuns(t *testing.T) {
 	}
 }
 
-// Failing tests are filed and told; once a run finds them passing, the issue
-// is closed, with a comment saying where, and told too.
-func TestAFixedFailureIsClosed(t *testing.T) {
+// Failing tests on main are filed and told, and refreshed while they fail; a
+// run that finds them passing leaves the issue open, since a test failing now
+// and then passes too.
+func TestAFailureOnMainStaysOpen(t *testing.T) {
 	svc, src, rec := appWithEvents(t, "")
 
-	for range 2 {
-		src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+	for _, fails := range []bool{true, true, false} {
+		if fails {
+			src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+		}
 
 		if err := svc.Run(t.Context()); err != nil {
 			t.Fatal(err)
 		}
 	}
-
-	issue := src.issues["alice/app"][0]
 
 	const url = "https://github.com/alice/app/issues/1"
 
@@ -280,26 +281,52 @@ func TestAFixedFailureIsClosed(t *testing.T) {
 		"issue_filed " + url + ": Tests fail on main: TestBad",
 	}
 	if got := issueEvents(rec); !slices.Equal(got, want) {
-		t.Fatalf("after two failing runs, events = %q\nwant %q", got, want)
+		t.Errorf("events = %q\nwant %q", got, want)
 	}
 
-	if issue.GetState() != "open" {
-		t.Fatal("the issue was closed while the tests still failed")
+	if state := src.issues["alice/app"][0].GetState(); state != "open" {
+		t.Errorf("the issue is %s after a passing run, want open", state)
+	}
+}
+
+// brokenChange is a task whose change the tests reject on the first run: it
+// passes before any change, and fails after the change.
+func brokenChange(src *fakeSource) {
+	src.tasks["alice/app"] = func(r *fakeRepo) []engine.Task {
+		return []engine.Task{writeTask(r, "go.sum", "changed\n")}
+	}
+	src.coverErrs["alice/app"] = []error{nil, testsFail(failingOutput)}
+}
+
+// The tests a task's change broke are closed for, with a comment, and told,
+// on the run whose change goes in.
+func TestABrokenChangeIsClosedOnceItGoesIn(t *testing.T) {
+	svc, src, rec := appWithEvents(t, "")
+	brokenChange(src)
+
+	for range 2 {
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	if err := svc.Run(t.Context()); err != nil {
-		t.Fatal(err)
-	}
-
+	issue := src.issues["alice/app"][0]
 	if issue.GetState() != "closed" {
-		t.Fatal("the issue stayed open once the tests passed")
+		t.Fatal("the issue stayed open once the change went in")
 	}
 
-	if got := issueEvents(rec); got[len(got)-1] != "issue_closed "+url+": Tests fail on main: TestBad" {
-		t.Errorf("events = %q, want the closing last", got)
+	const url = "https://github.com/alice/app/issues/1"
+
+	want := []string{
+		"issue_filed " + url + `: Tests fail after "write go.sum": TestBad`,
+		"issue_closed " + url + `: Tests fail after "write go.sum": TestBad`,
+	}
+	if got := issueEvents(rec); !slices.Equal(got, want) {
+		t.Errorf("events = %q\nwant %q", got, want)
 	}
 
-	if comment := src.comments[url]; !strings.Contains(comment, "Fixed: devtool v1.0.0 found that the tests pass at") {
+	if comment := src.comments[url]; !strings.Contains(comment, "Fixed: devtool v1.0.0 found that the change goes in, "+
+		"with the build and the tests passing at") {
 		t.Errorf("closed with %q", comment)
 	}
 }
@@ -334,15 +361,18 @@ func TestCoverageIsClosedOnlyOnceBackAtTheFloor(t *testing.T) {
 // A run that fails for another reason shows nothing fixed, and closes nothing.
 func TestAnUnrelatedFailureClosesNothing(t *testing.T) {
 	svc, src := app(t, "")
-	src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+	brokenChange(src)
 
 	if err := svc.Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 
-	// The tests pass now, but a task fails: no issue is about that.
-	src.tasks["alice/app"] = func(*fakeRepo) []engine.Task {
-		return []engine.Task{{Name: "go vet", Run: func(context.Context) error { return errors.New("vet: bad") }}}
+	// The change goes in now, but a later task fails: no issue is about that.
+	src.tasks["alice/app"] = func(r *fakeRepo) []engine.Task {
+		return []engine.Task{
+			writeTask(r, "go.sum", "changed\n"),
+			{Name: "go vet", Run: func(context.Context) error { return errors.New("vet: bad") }},
+		}
 	}
 
 	if err := svc.Run(t.Context()); err != nil {

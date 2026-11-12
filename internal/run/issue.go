@@ -384,9 +384,10 @@ func fileReport(ctx context.Context, repo maintainedRepo, r report) (*github.Iss
 }
 
 // closeFixed closes the open issues devtool filed whose problem the result
-// shows gone, and returns them. The tests passed where the run succeeded or
-// failed only on coverage, which is measured after them: then no test failure
-// is left. Coverage that slipped is gone only once it is back at its floor,
+// shows gone, and returns them. A task's change that broke the build or the
+// tests is tried again every run, so a run that succeeds, or fails only on
+// coverage, measured after the tests, shows it gone in. A failure on main is
+// left for a person to close: it may be a test that fails now and then. Coverage that slipped is gone only once it is back at its floor,
 // which a later run that succeeds does not show by itself, since coverage
 // below the floor fails a run only when it falls there.
 func closeFixed(ctx context.Context, repo maintainedRepo, spec engine.Spec, res event.Result, run func() facts) ([]*github.Issue, error) {
@@ -405,8 +406,12 @@ func closeFixed(ctx context.Context, repo maintainedRepo, spec engine.Spec, res 
 		var why string
 
 		switch body := issue.GetBody(); {
+		case hasLabel(issue, failingOnMain.name):
+			// One run passing is no proof: a test that fails on main now and
+			// then would be closed and filed again without end.
+			continue
 		case strings.Contains(body, "<!-- devtool:test-failure "):
-			why = "the tests pass"
+			why = "the change goes in, with the build and the tests passing"
 		case strings.Contains(body, "<!-- devtool:coverage fell -->") && res.Coverage >= spec.CoverageFloor:
 			why = fmt.Sprintf("coverage is %.1f%%, back at the %g%% floor", res.Coverage, spec.CoverageFloor)
 		case strings.Contains(body, "<!-- devtool:coverage public -->") && res.Coverage >= spec.PublicCoverage:
@@ -439,4 +444,9 @@ func commandOutput(ctx context.Context, repo maintainedRepo, name string, args .
 	}
 
 	return strings.TrimSpace(string(out))
+}
+
+// hasLabel reports whether the issue carries the label named.
+func hasLabel(issue *github.Issue, name string) bool {
+	return slices.ContainsFunc(issue.Labels, func(l *github.Label) bool { return l.GetName() == name })
 }
