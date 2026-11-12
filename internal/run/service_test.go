@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -36,6 +37,7 @@ type fakeSource struct {
 	coverErrs   map[string][]error
 	issues      map[string][]*github.Issue
 	labels      map[string][]string
+	comments    map[string]string
 	public      map[string]bool
 	tasks       map[string]func(r *fakeRepo) []engine.Task
 	opened      map[string]*fakeRepo
@@ -60,6 +62,7 @@ func newFakeSource(t *testing.T) *fakeSource {
 		coverErrs:   map[string][]error{},
 		issues:      map[string][]*github.Issue{},
 		labels:      map[string][]string{},
+		comments:    map[string]string{},
 		public:      map[string]bool{},
 		tasks:       map[string]func(r *fakeRepo) []engine.Task{},
 		opened:      map[string]*fakeRepo{},
@@ -225,8 +228,10 @@ func (r *fakeRepo) CreateIssue(_ context.Context, title, body string, labels ...
 	r.src.mu.Lock()
 	defer r.src.mu.Unlock()
 
+	n := len(r.src.issues[r.key]) + 1
 	issue := &github.Issue{
-		Number: new(len(r.src.issues[r.key]) + 1), State: new("open"), Title: &title, Body: &body,
+		Number: new(n), State: new("open"), Title: &title, Body: &body,
+		HTMLURL: new(fmt.Sprintf("https://github.com/%s/issues/%d", r.key, n)),
 	}
 
 	for _, name := range labels {
@@ -250,6 +255,33 @@ func (r *fakeRepo) EditIssue(_ context.Context, number int, title, body string) 
 	issue.Title, issue.Body = &title, &body
 
 	return issue, nil
+}
+
+func (r *fakeRepo) OpenIssues(_ context.Context, labels ...string) ([]*github.Issue, error) {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	var open []*github.Issue
+
+	for _, issue := range r.src.issues[r.key] {
+		if issue.GetState() == "open" && hasLabels(issue, labels) {
+			open = append(open, issue)
+		}
+	}
+
+	return open, nil
+}
+
+// CloseIssue closes the issue, keeping the comment as its last.
+func (r *fakeRepo) CloseIssue(_ context.Context, number int, comment string) error {
+	r.src.mu.Lock()
+	defer r.src.mu.Unlock()
+
+	issue := r.src.issues[r.key][number-1]
+	issue.State = new("closed")
+	r.src.comments[issue.GetHTMLURL()] = comment
+
+	return nil
 }
 
 func hasLabels(issue *github.Issue, names []string) bool {

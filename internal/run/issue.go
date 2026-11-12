@@ -12,12 +12,14 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
 	"github.com/MarkRosemaker/devtool-engine/event"
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/ghrepo"
+	"github.com/google/go-github/v80/github"
 )
 
 // label is a label devtool puts on the issues it files, created in a
@@ -301,67 +303,137 @@ func reportOf(res event.Result, spec engine.Spec, run facts) (report, bool, erro
 	return r, true, nil
 }
 
-// fileIssue reports a repository's failing tests or slipping coverage as an
-// issue on it, refreshing the open one where the same problem was reported
-// before. Reporting is not the run's work, so a failure to report is logged
-// rather than returned.
-func (s *Service) fileIssue(ctx context.Context, u *unit, spec engine.Spec, res event.Result) {
-	if res.Err == nil {
-		return
-	}
-
+// reportIssues brings a repository's issues in line with its result: the
+// problem it failed with filed, or the open issue about it refreshed, and the
+// issues about problems the run found gone closed. Each is told to events, and
+// none is the run's work, so a failure to report is logged rather than
+// returned.
+func (s *Service) reportIssues(ctx context.Context, u *unit, spec engine.Spec, res event.Result, events event.Emitter) {
 	log := slog.With("repo", u.key())
+	run := facts{Owner: u.owner, Name: u.name, Version: s.version, Time: time.Now().UTC().Format("2006-01-02 15:04 MST")}
 
-	r, ok, err := reportOf(res, spec, facts{
-		Owner: u.owner, Name: u.name, Version: s.version,
-		Commit:    commandOutput(ctx, u.repo, "git", "rev-parse", "@{upstream}"),
-		GoVersion: commandOutput(ctx, u.repo, "go", "version"),
-		Time:      time.Now().UTC().Format("2006-01-02 15:04 MST"),
+	// Only where something is filed or closed: go version can be slow.
+	once := sync.OnceFunc(func() {
+		run.Commit = commandOutput(ctx, u.repo, "git", "rev-parse", "@{upstream}")
+		run.GoVersion = commandOutput(ctx, u.repo, "go", "version")
 	})
-	if err != nil {
-		log.WarnContext(ctx, "could not write an issue", "error", err)
 
-		return
-	} else if !ok {
-		return
+	if res.Err != nil {
+		once()
+
+		r, ok, err := reportOf(res, spec, run)
+		if err != nil {
+			log.WarnContext(ctx, "could not write an issue", "error", err)
+		} else if ok {
+			issue, err := fileReport(ctx, u.repo, r)
+			if err != nil {
+				log.WarnContext(ctx, "could not file an issue", "title", r.title, "error", err)
+			} else {
+				event.Emit(events, event.Event{
+					Kind: event.IssueFiled, Repo: u.key(), Issue: issue.GetHTMLURL(), Title: issue.GetTitle(),
+				})
+			}
+		}
 	}
 
-	if err := s.fileReport(ctx, u.repo, r); err != nil {
-		log.WarnContext(ctx, "could not file an issue", "title", r.title, "error", err)
+	closed, err := closeFixed(ctx, u.repo, spec, res, func() facts { once(); return run })
+	for _, issue := range closed {
+		event.Emit(events, event.Event{
+			Kind: event.IssueClosed, Repo: u.key(), Issue: issue.GetHTMLURL(), Title: issue.GetTitle(),
+		})
+	}
+
+	if err != nil {
+		log.WarnContext(ctx, "could not close the issues the run found fixed", "error", err)
 	}
 }
 
-// fileReport files r on repo, or refreshes the open issue it was filed as.
-func (s *Service) fileReport(ctx context.Context, repo maintainedRepo, r report) error {
+// fileReport files r on repo, or refreshes the open issue it was filed as,
+// and returns the issue.
+func fileReport(ctx context.Context, repo maintainedRepo, r report) (*github.Issue, error) {
 	for _, l := range []label{reported, r.label} {
 		if err := repo.EnsureLabel(ctx, l.name, l.color, l.description); err != nil {
-			return fmt.Errorf("creating label %q: %w", l.name, err)
+			return nil, fmt.Errorf("creating label %q: %w", l.name, err)
 		}
 	}
 
 	open, err := repo.FindOpenIssue(ctx, r.marker, reported.name)
 	if err != nil {
-		return fmt.Errorf("looking for the issue: %w", err)
+		return nil, fmt.Errorf("looking for the issue: %w", err)
 	}
 
 	if open != nil {
-		if _, err := repo.EditIssue(ctx, open.GetNumber(), r.title, r.body); err != nil {
-			return fmt.Errorf("refreshing %s: %w", open.GetHTMLURL(), err)
+		issue, err := repo.EditIssue(ctx, open.GetNumber(), r.title, r.body)
+		if err != nil {
+			return nil, fmt.Errorf("refreshing %s: %w", open.GetHTMLURL(), err)
 		}
 
-		slog.InfoContext(ctx, "refreshed the issue", "repo", repo.String(), "issue", open.GetHTMLURL())
+		slog.InfoContext(ctx, "refreshed the issue", "repo", repo.String(), "issue", issue.GetHTMLURL())
 
-		return nil
+		return issue, nil
 	}
 
 	issue, err := repo.CreateIssue(ctx, r.title, r.body, reported.name, r.label.name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	slog.InfoContext(ctx, "filed an issue", "repo", repo.String(), "issue", issue.GetHTMLURL())
 
-	return nil
+	return issue, nil
+}
+
+// closeFixed closes the open issues devtool filed whose problem the result
+// shows gone, and returns them. A task's change that broke the build or the
+// tests is tried again every run, so a run that succeeds, or fails only on
+// coverage, measured after the tests, shows it gone in. A failure on main is
+// left for a person to close: it may be a test that fails now and then. Coverage that slipped is gone only once it is back at its floor,
+// which a later run that succeeds does not show by itself, since coverage
+// below the floor fails a run only when it falls there.
+func closeFixed(ctx context.Context, repo maintainedRepo, spec engine.Spec, res event.Result, run func() facts) ([]*github.Issue, error) {
+	if res.Err != nil && !errors.Is(res.Err, engine.ErrCoverageFell) && !errors.Is(res.Err, engine.ErrPublicCoverage) {
+		return nil, nil
+	}
+
+	open, err := repo.OpenIssues(ctx, reported.name)
+	if err != nil {
+		return nil, fmt.Errorf("listing the open issues: %w", err)
+	}
+
+	var closed []*github.Issue
+
+	for _, issue := range open {
+		var why string
+
+		switch body := issue.GetBody(); {
+		case hasLabel(issue, failingOnMain.name):
+			// One run passing is no proof: a test that fails on main now and
+			// then would be closed and filed again without end.
+			continue
+		case strings.Contains(body, "<!-- devtool:test-failure "):
+			why = "the change goes in, with the build and the tests passing"
+		case strings.Contains(body, "<!-- devtool:coverage fell -->") && res.Coverage >= spec.CoverageFloor:
+			why = fmt.Sprintf("coverage is %.1f%%, back at the %g%% floor", res.Coverage, spec.CoverageFloor)
+		case strings.Contains(body, "<!-- devtool:coverage public -->") && res.Coverage >= spec.PublicCoverage:
+			why = fmt.Sprintf("coverage is %.1f%%, at the %g%% a public repository needs", res.Coverage, spec.PublicCoverage)
+		default:
+			continue
+		}
+
+		f := run()
+		comment := fmt.Sprintf("Fixed: devtool %s found that %s at [`%s`](https://github.com/%s/%s/commit/%s), on %s.",
+			f.Version, why, f.ShortCommit(), f.Owner, f.Name, f.Commit, f.Time)
+
+		if err := repo.CloseIssue(ctx, issue.GetNumber(), comment); err != nil {
+			return closed, fmt.Errorf("closing %s: %w", issue.GetHTMLURL(), err)
+		}
+
+		slog.InfoContext(ctx, "closed the issue", "repo", repo.String(), "issue", issue.GetHTMLURL())
+
+		closed = append(closed, issue)
+	}
+
+	return closed, nil
 }
 
 // commandOutput is what a command says in the repository, or "unknown".
@@ -372,4 +444,9 @@ func commandOutput(ctx context.Context, repo maintainedRepo, name string, args .
 	}
 
 	return strings.TrimSpace(string(out))
+}
+
+// hasLabel reports whether the issue carries the label named.
+func hasLabel(issue *github.Issue, name string) bool {
+	return slices.ContainsFunc(issue.Labels, func(l *github.Label) bool { return l.GetName() == name })
 }

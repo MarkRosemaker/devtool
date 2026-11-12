@@ -1,6 +1,7 @@
 package run
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -37,10 +38,31 @@ func testsFail(out string) error {
 func app(t *testing.T, cfg string) (*Service, *fakeSource) {
 	t.Helper()
 
-	svc, src, _ := portfolio(t, `{"alice": {"repositories": {"app": {`+cfg+`}}}}`)
-	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+	svc, src, _ := appWithEvents(t, cfg)
 
 	return svc, src
+}
+
+func appWithEvents(t *testing.T, cfg string) (*Service, *fakeSource, *recorder) {
+	t.Helper()
+
+	svc, src, rec := portfolio(t, `{"alice": {"repositories": {"app": {`+cfg+`}}}}`)
+	src.add("alice", "app", map[string]string{"go.mod": goMod("github.com/alice/app")})
+
+	return svc, src, rec
+}
+
+// issueEvents are the issue events recorded, as "kind issue: title".
+func issueEvents(rec *recorder) []string {
+	var got []string
+
+	for _, ev := range rec.events {
+		if ev.Kind == event.IssueFiled || ev.Kind == event.IssueClosed {
+			got = append(got, string(ev.Kind)+" "+ev.Issue+": "+ev.Title)
+		}
+	}
+
+	return got
 }
 
 func labelNames(issue *github.Issue) []string {
@@ -233,5 +255,131 @@ func TestTheMarkerIgnoresWhatVariesBetweenRuns(t *testing.T) {
 
 	if a.marker() != b.marker() {
 		t.Errorf("the same failure reads as two: %s and %s", a.marker(), b.marker())
+	}
+}
+
+// Failing tests on main are filed and told, and refreshed while they fail; a
+// run that finds them passing leaves the issue open, since a test failing now
+// and then passes too.
+func TestAFailureOnMainStaysOpen(t *testing.T) {
+	svc, src, rec := appWithEvents(t, "")
+
+	for _, fails := range []bool{true, true, false} {
+		if fails {
+			src.coverErrs["alice/app"] = []error{testsFail(failingOutput)}
+		}
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	const url = "https://github.com/alice/app/issues/1"
+
+	want := []string{
+		"issue_filed " + url + ": Tests fail on main: TestBad",
+		"issue_filed " + url + ": Tests fail on main: TestBad",
+	}
+	if got := issueEvents(rec); !slices.Equal(got, want) {
+		t.Errorf("events = %q\nwant %q", got, want)
+	}
+
+	if state := src.issues["alice/app"][0].GetState(); state != "open" {
+		t.Errorf("the issue is %s after a passing run, want open", state)
+	}
+}
+
+// brokenChange is a task whose change the tests reject on the first run: it
+// passes before any change, and fails after the change.
+func brokenChange(src *fakeSource) {
+	src.tasks["alice/app"] = func(r *fakeRepo) []engine.Task {
+		return []engine.Task{writeTask(r, "go.sum", "changed\n")}
+	}
+	src.coverErrs["alice/app"] = []error{nil, testsFail(failingOutput)}
+}
+
+// The tests a task's change broke are closed for, with a comment, and told,
+// on the run whose change goes in.
+func TestABrokenChangeIsClosedOnceItGoesIn(t *testing.T) {
+	svc, src, rec := appWithEvents(t, "")
+	brokenChange(src)
+
+	for range 2 {
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	issue := src.issues["alice/app"][0]
+	if issue.GetState() != "closed" {
+		t.Fatal("the issue stayed open once the change went in")
+	}
+
+	const url = "https://github.com/alice/app/issues/1"
+
+	want := []string{
+		"issue_filed " + url + `: Tests fail after "write go.sum": TestBad`,
+		"issue_closed " + url + `: Tests fail after "write go.sum": TestBad`,
+	}
+	if got := issueEvents(rec); !slices.Equal(got, want) {
+		t.Errorf("events = %q\nwant %q", got, want)
+	}
+
+	if comment := src.comments[url]; !strings.Contains(comment, "Fixed: devtool v1.0.0 found that the change goes in, "+
+		"with the build and the tests passing at") {
+		t.Errorf("closed with %q", comment)
+	}
+}
+
+// Coverage that slipped stays reported while it is below the floor, though no
+// run fails over it again, and is closed once it is back.
+func TestCoverageIsClosedOnlyOnceBackAtTheFloor(t *testing.T) {
+	svc, src := app(t, `"coverage": 85`)
+
+	for _, cov := range []float64{70, 75, 82} {
+		src.coverage["alice/app"] = cov
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+
+		issues := src.issues["alice/app"]
+		if len(issues) != 1 {
+			t.Fatalf("at %v%%, %d issues, want 1", cov, len(issues))
+		}
+
+		if want := map[bool]string{true: "closed", false: "open"}[cov >= 80]; issues[0].GetState() != want {
+			t.Errorf("at %v%%, the issue is %s, want %s", cov, issues[0].GetState(), want)
+		}
+	}
+
+	if comment := src.comments["https://github.com/alice/app/issues/1"]; !strings.Contains(comment, "coverage is 82.0%, back at the 80% floor") {
+		t.Errorf("closed with %q", comment)
+	}
+}
+
+// A run that fails for another reason shows nothing fixed, and closes nothing.
+func TestAnUnrelatedFailureClosesNothing(t *testing.T) {
+	svc, src := app(t, "")
+	brokenChange(src)
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	// The change goes in now, but a later task fails: no issue is about that.
+	src.tasks["alice/app"] = func(r *fakeRepo) []engine.Task {
+		return []engine.Task{
+			writeTask(r, "go.sum", "changed\n"),
+			{Name: "go vet", Run: func(context.Context) error { return errors.New("vet: bad") }},
+		}
+	}
+
+	if err := svc.Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if state := src.issues["alice/app"][0].GetState(); state != "open" {
+		t.Errorf("the issue is %s after a run that failed otherwise, want open", state)
 	}
 }

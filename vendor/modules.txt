@@ -1,7 +1,7 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
-# github.com/MarkRosemaker/devtool-engine v0.0.0-20261112184308-b84ffdedd23c
+# github.com/MarkRosemaker/devtool-engine v0.0.0-20261112230857-db169bdf59fe
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/devtool-engine/depgraph
 github.com/MarkRosemaker/devtool-engine/event
@@ -10,7 +10,7 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261109120451-91cd29644c73
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261112181351-bd57475b9126
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261112230941-1de300994866
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20261109170355-1ad201ecdb14

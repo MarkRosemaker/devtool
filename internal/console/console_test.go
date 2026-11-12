@@ -42,8 +42,11 @@ func TestOneRepository(t *testing.T) {
 		event.Event{Kind: event.TaskDone, Repo: repo, Task: "vet"},
 		event.Event{
 			Kind: event.TaskDone, Repo: repo, Task: "deps",
-			Files:   []string{"go.mod", "go.sum"},
-			Modules: []event.ModuleChange{{Path: "golang.org/x/mod", From: "v0.40.0", To: "v0.41.0"}},
+			Files: []string{"go.mod", "go.sum"},
+			Modules: []event.ModuleChange{
+				{Path: "github.com/MarkRosemaker/ordmap", From: "v0.0.0-20261109211921-475c54164ef0", To: "v0.0.0-20261112170224-3309eab45f7b"},
+				{Path: "golang.org/x/mod", From: "v0.40.0", To: "v0.41.0"},
+			},
 		},
 		event.Event{Kind: event.RepoPushed, Repo: repo, Commits: []string{"readme", "deps"}},
 		event.Event{Kind: event.RepoDone, Repo: repo, Pushed: true, Coverage: 81.6, PrevCoverage: 80},
@@ -53,7 +56,8 @@ func TestOneRepository(t *testing.T) {
 	want := `📦 user/alpha
   ✏️  update: README.md, devtool.json
   ✏️  deps: go.mod, go.sum
-    ⬆️  golang.org/x/mod v0.40.0 → v0.41.0
+    ⬆️  MarkRosemaker/ordmap 2026-11-09 21:19 => 2026-11-12 17:02
+    ⬆️  golang.org/x/mod v0.40.0 => v0.41.0
   🚀 pushed readme, deps
   📊 coverage 81.6% (+1.6)
 🏁 done in 1.2s

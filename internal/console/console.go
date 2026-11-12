@@ -75,6 +75,10 @@ func (c *Console) Emit(ev event.Event) {
 		c.repoDone(ev)
 	case event.RunDone:
 		c.runDone()
+	case event.IssueFiled:
+		c.line(ev.Repo, "📋", "filed "+ev.Issue+": "+ev.Title)
+	case event.IssueClosed:
+		c.line(ev.Repo, "✅", "closed "+ev.Issue+": "+ev.Title)
 	case event.TaskStart:
 	}
 }
@@ -90,7 +94,7 @@ func (c *Console) taskDone(ev event.Event) {
 	c.line(ev.Repo, "✏️ ", ev.Task+": "+strings.Join(ev.Files, ", "))
 
 	for _, m := range ev.Modules {
-		c.line(ev.Repo, "  ⬆️ ", moduleLine(m))
+		c.line(ev.Repo, "  ⬆️ ", m.String())
 	}
 }
 
@@ -167,15 +171,4 @@ func coverage(now, before float64) string {
 	}
 
 	return s
-}
-
-func moduleLine(m event.ModuleChange) string {
-	switch {
-	case m.From == "":
-		return m.Path + " " + m.To + " (added)"
-	case m.To == "":
-		return m.Path + " " + m.From + " (removed)"
-	default:
-		return m.Path + " " + m.From + " → " + m.To
-	}
 }
