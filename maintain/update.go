@@ -190,9 +190,10 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 //     lines.
 //   - The test workflow before AGENTS.md, which mentions it only where it
 //     was written.
-//   - The databases last: the part that reaches the network, adding a driver
-//     where go.mod has none, and can refuse a declaration it cannot lay out,
-//     and the files above are worth having regardless.
+//   - The databases and stores last: the parts that reach the network,
+//     adding a driver or a client where go.mod has none, and can refuse a
+//     declaration they cannot lay out, and the files above are worth having
+//     regardless.
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
@@ -206,6 +207,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		ClaudeTask(repo),
 		GenLintfile(repo),
 		DatabasesTask(repo),
+		StoresTask(repo),
 	}
 }
 

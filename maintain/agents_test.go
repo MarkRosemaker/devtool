@@ -341,7 +341,7 @@ func TestGenerateAgents(t *testing.T) {
 		writeFile(t, fs, agentsPath, "# House rules\n")
 		writeFile(t, fs, "AGENTS/legacy.md", "something else already here\n")
 
-		err := generateAgents(fs)
+		err := generateAgents(fs, "gorepo")
 		if err == nil {
 			t.Fatal("expected an error rather than either file being overwritten")
 		}
@@ -357,7 +357,7 @@ func TestGenerateAgents(t *testing.T) {
 		fs := afero.NewMemMapFs()
 		writeFile(t, fs, "AGENTS/notes.txt", "not markdown\n")
 
-		if err := generateAgents(fs); err == nil {
+		if err := generateAgents(fs, "gorepo"); err == nil {
 			t.Fatal("expected an error for a file that is not a fragment, got nil")
 		}
 	})
@@ -377,7 +377,7 @@ func TestGenerateAgents(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := generateAgents(fs); err == nil {
+		if err := generateAgents(fs, "gorepo"); err == nil {
 			t.Fatal("expected an error for non-UTF-8 fragment content, got nil")
 		}
 	})
@@ -422,6 +422,7 @@ func TestAgentsGolden(t *testing.T) {
 			Webapp:    true,
 			Auth:      true,
 			Workflow:  true,
+			Stores:    []agentsStore{{"pictures", "assets", "GOREPO_STORAGE"}},
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},
@@ -529,7 +530,7 @@ func TestHasOpenAPIEnrichDirective(t *testing.T) {
 func generateAgentsAndRead(t *testing.T, fs afero.Fs) string {
 	t.Helper()
 
-	if err := generateAgents(fs); err != nil {
+	if err := generateAgents(fs, "gorepo"); err != nil {
 		t.Fatal(err)
 	}
 

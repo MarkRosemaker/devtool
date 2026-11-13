@@ -78,7 +78,7 @@ all as a single `engine.Task` named `devtool update` — `devtool.json` first,
 then licence, README, the roadmap's links, Makefile, `.gitignore`, a web
 app's `main.go`, the test workflow (only where the repository vendors, since a
 runner reads no private module), `AGENTS.md` (removing any `CLAUDE.md` link to it), the lint config, and the files that go with any
-declared databases last. That one task is the whole of a local rebuild and
+declared databases and stores last. That one task is the whole of a local rebuild and
 the first task of a maintained run, so the two paths cannot disagree about what
 devtool owns, and a maintained run commits all of it as one commit.
 
@@ -268,6 +268,30 @@ the same read a check that the database is not behind the code would make.
 devtool refuses to write one where `go.mod` does not require
 `github.com/jackc/pgx/v5`. An indirect requirement counts: `go get` marks it
 so until the code devtool writes imports it.
+
+## Stores
+
+A repository declares its stores of files in `devtool.json`, under
+`resources.stores`, by name, with `"bucket"` where the bucket is not named
+after it. Each is a bucket of object storage that speaks S3, kept in by the
+package `stores/<name>`, which `StoresTask` (`maintain/stores.go`) rewrites
+every run from `store.go.tmpl` and `storetest.go.tmpl`:
+
+- **`store.go`**: `Open`, which reaches the bucket with the endpoint,
+  region and key pair from the environment and refuses to start without them
+  or without the bucket; `Reach`, the same for a client of the caller's; and
+  `Has`, `Get`, `Read` and `Put` on the files. The client addresses the bucket
+  by path and computes only the checksums the API requires, since services
+  that speak S3 do not all take the streamed ones the SDK sends by default.
+- **`<name>test/`**: `Open(t)`, a store on a bucket the test serves itself,
+  which keeps what was put, with its headers, for the test to read back.
+
+The variables are named after the repository, and the store where there is
+more than one, as a database's URL is: `ATELIER_STORAGE_ENDPOINT`, or
+`ATELIER_PICTURES_STORAGE_ENDPOINT` among several. What is particular to a
+repository's files, such as naming them by their contents, goes in a file of
+its own beside the generated ones. Where `go.mod` requires no S3 client, the
+task adds it and tidies the module.
 
 ## Versions, and how a stale build does damage
 

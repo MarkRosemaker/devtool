@@ -74,6 +74,18 @@ type Definition struct {
 type Resources struct {
 	// Databases are laid out as [DatabasesTask] describes.
 	Databases []Database `json:"databases,omitempty"`
+
+	// Stores are laid out as [StoresTask] describes.
+	Stores []Store `json:"stores,omitempty"`
+}
+
+// Store is one bucket of object storage that speaks S3, kept in by the
+// package stores/<Name>.
+type Store struct {
+	Name string `json:"name"`
+
+	// Bucket is the bucket's name where it is not Name.
+	Bucket string `json:"bucket,omitempty"`
 }
 
 // Database is one database, which lives in databases/<Name>.
@@ -118,6 +130,7 @@ func (d Definition) equal(o Definition) bool {
 		d.Private == o.Private &&
 		maps.Equal(d.Tools, o.Tools) &&
 		slices.Equal(d.Resources.Databases, o.Resources.Databases) &&
+		slices.Equal(d.Resources.Stores, o.Resources.Stores) &&
 		(d.Webapp == o.Webapp || d.Webapp != nil && o.Webapp != nil && *d.Webapp == *o.Webapp)
 }
 
