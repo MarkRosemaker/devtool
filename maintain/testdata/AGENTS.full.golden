@@ -173,6 +173,10 @@ The library serves the rest, the same way in every web app:
   is served, so the frontend carries none of them. It supplies its files and
   its icons, under the names a favicon generator gives them
   (`android-chrome-192x192.png`, `apple-touch-icon.png`, and so on).
+  A browser installs it only with `android-chrome-192x192.png`,
+  `android-chrome-512x512.png`, `themeColor` and `backgroundColor`. devtool
+  sets `"pwa": true` once all four are there, and while it is set refuses to
+  run without them.
 - **Sign-in:** in the cloud, as the one user named by `AUTH_USER` and
   `AUTH_PASSWORD`. Without both the app refuses to start, rather than start
   open. `SESSION_SECRET`, where it is set, signs the session. Locally the app
