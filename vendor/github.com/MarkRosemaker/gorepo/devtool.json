@@ -1,6 +1,6 @@
 {
-	"coverage": 90.7,
-	"devtoolVersion": "v0.0.0-20261112233757-3a3c85709f5f",
+	"coverage": 91.1,
+	"devtoolVersion": "v0.0.0-20261114040503-1cd15f806f21",
 	"kind": "library",
 	"tools": {
 		"golangci-lint": "v2.15.0",
