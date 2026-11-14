@@ -80,12 +80,9 @@ type Resources struct {
 }
 
 // Store is one bucket of object storage that speaks S3, kept in by the
-// package stores/<Name>.
+// package stores/<Name>. The bucket has the package's name.
 type Store struct {
 	Name string `json:"name"`
-
-	// Bucket is the bucket's name where it is not Name.
-	Bucket string `json:"bucket,omitempty"`
 }
 
 // Database is one database, which lives in databases/<Name>.

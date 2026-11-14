@@ -2,7 +2,6 @@ package maintain
 
 import (
 	"bytes"
-	"cmp"
 	"context"
 	_ "embed"
 	"errors"
@@ -74,8 +73,8 @@ type agentsData struct {
 	// whose packages an agent needs to know how to change.
 	Databases []string
 
-	// Stores are the stores devtool.json declares, with the bucket each keeps
-	// its files in and what its variables' names begin with.
+	// Stores are the stores devtool.json declares, each with what its
+	// variables' names begin with.
 	Stores []agentsStore
 
 	// SQLite and Postgres split Databases by type, since each opens and is
@@ -550,16 +549,14 @@ func renderAgents(data agentsData) ([]byte, error) {
 }
 
 // agentsStore is one store, as AGENTS.md names it.
-type agentsStore struct{ Name, Bucket, Env string }
+type agentsStore struct{ Name, Env string }
 
 // agentsStores are the stores def declares, as [StoresTask] lays them out.
 func agentsStores(def Definition, repo string) []agentsStore {
 	stores := make([]agentsStore, 0, len(def.Resources.Stores))
 
 	for _, st := range def.Resources.Stores {
-		stores = append(stores, agentsStore{
-			st.Name, cmp.Or(st.Bucket, st.Name), envStorage(repo, st.Name, len(def.Resources.Stores) == 1),
-		})
+		stores = append(stores, agentsStore{st.Name, envStorage(repo, st.Name, len(def.Resources.Stores) == 1)})
 	}
 
 	return stores

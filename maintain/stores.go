@@ -1,10 +1,8 @@
 package maintain
 
 import (
-	"cmp"
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -69,19 +67,15 @@ func StoresTask(repo engine.Repo) engine.Task {
 	}
 }
 
-// bucketName is a bucket's name as S3 allows it.
-var bucketName = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`)
+// storeName is a store's name: a package's name that S3 also allows as a
+// bucket's.
+var storeName = regexp.MustCompile(`^[a-z]{3,63}$`)
 
 // writeStore writes the files of one store, reporting whether it added a
 // module to go.mod.
 func writeStore(ctx context.Context, repo engine.Repo, st Store, only bool) (bool, error) {
-	if !databaseName.MatchString(st.Name) {
-		return false, errors.New("a store's name has to be lower-case letters only, since it names the package")
-	}
-
-	bucket := cmp.Or(st.Bucket, st.Name)
-	if !bucketName.MatchString(bucket) {
-		return false, fmt.Errorf("bucket %q is no name S3 allows: 3 to 63 lower-case letters, digits, dots and hyphens", bucket)
+	if !storeName.MatchString(st.Name) {
+		return false, fmt.Errorf("store %q: a store's name is 3 to 63 lower-case letters, since it names both the package and the bucket", st.Name)
 	}
 
 	fs := repo.Fs()
@@ -115,7 +109,7 @@ func writeStore(ctx context.Context, repo engine.Repo, st Store, only bool) (boo
 		{path.Join(testPkg, testPkg+".go"), storetestTmpl},
 	}
 
-	data := struct{ Package, Module, Bucket, Env string }{st.Name, module, bucket, envStorage(repo.Name(), st.Name, only)}
+	data := struct{ Package, Module, Bucket, Env string }{st.Name, module, st.Name, envStorage(repo.Name(), st.Name, only)}
 
 	for _, f := range files {
 		b, err := render(f.tmpl, data)

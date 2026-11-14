@@ -422,7 +422,7 @@ func TestAgentsGolden(t *testing.T) {
 			Webapp:    true,
 			Auth:      true,
 			Workflow:  true,
-			Stores:    []agentsStore{{"pictures", "assets", "GOREPO_STORAGE"}},
+			Stores:    []agentsStore{{"pictures", "GOREPO_STORAGE"}},
 			Fragments: []agentsFragment{
 				{Title: "Conventions", Path: "AGENTS/conventions.md"},
 				{Title: "custom_instruction", Path: "AGENTS/custom_instruction.md"},

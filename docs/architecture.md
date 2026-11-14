@@ -272,9 +272,8 @@ so until the code devtool writes imports it.
 ## Stores
 
 A repository declares its stores of files in `devtool.json`, under
-`resources.stores`, by name, with `"bucket"` where the bucket is not named
-after it. Each is a bucket of object storage that speaks S3, kept in by the
-package `stores/<name>`, which `StoresTask` (`maintain/stores.go`) rewrites
+`resources.stores`, by name. Each is a bucket of object storage that speaks
+S3, kept in by the package `stores/<name>` of the same name, which `StoresTask` (`maintain/stores.go`) rewrites
 every run from `store.go.tmpl` and `storetest.go.tmpl`:
 
 - **`store.go`**: `Open`, which reaches the bucket with the endpoint,
