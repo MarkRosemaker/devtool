@@ -16,7 +16,7 @@ github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20261114003023-9bb434c46e2a
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261114003352-5b8235df460c
+# github.com/MarkRosemaker/gorepo v0.0.0-20261114033912-912d5ae6c25f
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261114002559-5de2992f679e

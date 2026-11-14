@@ -1,7 +1,8 @@
 Brings Go repositories up to a standard and keeps them there: it writes the
 README, the Makefile, the `.gitignore`, the `AGENTS.md`, the GitHub workflow
 that lints and tests each pull request, a web app's `main.go`, and the code
-that opens and migrates its databases, updates the
+that opens and migrates its databases and keeps files in its buckets,
+updates the
 dependencies and the pinned tools, formats and lints, and commits each kind of change on its own
 so the history stays readable.
 

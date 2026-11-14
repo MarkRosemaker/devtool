@@ -187,6 +187,30 @@ adds the driver to `go.mod`, and writes a first migration and queries for a
 `notes` table, which say they are an example: replace both with the
 database's own before anything relies on it. Its columns are the types that
 map cleanly to Go, each commented with its Go type: keep to those.
+{{ end }}{{ with .Stores }}
+## Stores
+
+`devtool.json` declares this repository's stores of files, each a package
+under `stores/` keeping its files in the bucket of the same name, in object
+storage that speaks S3: {{ range $i, $s := . }}{{ if $i }}, {{ end }}`stores/{{ $s.Name }}`{{ end }}.
+
+Everything in the package is generated, and `make generate` rewrites it:
+`store.go`, and the `<name>test` package beside it. Code of your own goes in
+a file of your own beside them.
+
+`Open(ctx)` reaches the bucket with the variables its `Env` constants name,
+{{ range $i, $s := . }}{{ if $i }}; {{ end }}`{{ $s.Env }}_ENDPOINT`, `_REGION`, `_ACCESS_KEY_ID` and `_SECRET_ACCESS_KEY`{{ end }},
+and refuses to start without them or without the bucket, which is created
+in the storage rather than by the code. It returns a `Store`: `Has`, `Get`
+(a reader to close), `Read`, and `Put` with the `Meta` a file is served with;
+a file the bucket does not have is `ErrNotFound`. A test never reaches real
+storage: `<name>test.Open(t)` serves a bucket of the test's own and returns
+the store on it, with the `Bucket` that says what it holds.
+
+To add a store, add `{"name": "…"}` to `resources.stores` in `devtool.json`,
+naming the bucket, and run `make generate`. Where the name clashes with
+another package, the importing file names the import.
+devtool adds the S3 client to `go.mod`.
 {{ end }}{{ if .Webapp }}
 ## The web app
 

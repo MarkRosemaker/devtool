@@ -73,6 +73,10 @@ type agentsData struct {
 	// whose packages an agent needs to know how to change.
 	Databases []string
 
+	// Stores are the stores devtool.json declares, each with what its
+	// variables' names begin with.
+	Stores []agentsStore
+
 	// SQLite and Postgres split Databases by type, since each opens and is
 	// tested differently.
 	SQLite, Postgres []string
@@ -138,19 +142,19 @@ func AgentsTask(repo engine.Repo) engine.Task {
 		Name:  "generate AGENTS.md",
 		Short: "agents",
 		Run: func(context.Context) error {
-			return generateAgents(repo.Fs())
+			return generateAgents(repo.Fs(), repo.Name())
 		},
 	}
 }
 
 // generateAgents is [AgentsTask]'s work, factored out so it can run against
 // an in-memory filesystem in tests without a real repository.
-func generateAgents(fs afero.Fs) error {
+func generateAgents(fs afero.Fs, name string) error {
 	if err := adoptExistingAgents(fs); err != nil {
 		return err
 	}
 
-	data, err := collectAgentsData(fs)
+	data, err := collectAgentsData(fs, name)
 	if err != nil {
 		return err
 	}
@@ -201,7 +205,7 @@ func adoptExistingAgents(fs afero.Fs) error {
 
 // collectAgentsData reads AGENTS/ and works out which root files this
 // repository has that were generated.
-func collectAgentsData(fs afero.Fs) (agentsData, error) {
+func collectAgentsData(fs afero.Fs, repoName string) (agentsData, error) {
 	fragments, err := readAgentsFragments(fs)
 	if err != nil {
 		return agentsData{}, err
@@ -261,6 +265,7 @@ func collectAgentsData(fs afero.Fs) (agentsData, error) {
 		Webapp:           def.Webapp != nil,
 		Auth:             def.Webapp != nil && def.Webapp.Auth,
 		Databases:        databaseNames(def, ""),
+		Stores:           agentsStores(def, repoName),
 		SQLite:           databaseNames(def, sqlite),
 		Postgres:         databaseNames(def, postgres),
 		Workflow:         workflow,
@@ -541,4 +546,18 @@ func renderAgents(data agentsData) ([]byte, error) {
 	}
 
 	return append(bytes.TrimSpace(buf.Bytes()), '\n'), nil
+}
+
+// agentsStore is one store, as AGENTS.md names it.
+type agentsStore struct{ Name, Env string }
+
+// agentsStores are the stores def declares, as [StoresTask] lays them out.
+func agentsStores(def Definition, repo string) []agentsStore {
+	stores := make([]agentsStore, 0, len(def.Resources.Stores))
+
+	for _, st := range def.Resources.Stores {
+		stores = append(stores, agentsStore{st.Name, envStorage(repo, st.Name, len(def.Resources.Stores) == 1)})
+	}
+
+	return stores
 }

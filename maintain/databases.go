@@ -406,20 +406,25 @@ var testPostgresBuilds = []postgresBuild{
 // the repository's name, then the database's where it has more than one, as
 // LIFEFLOW_DATABASE_URL or LIFEFLOW_TASKS_DATABASE_URL.
 func envURL(repo, name string, only bool) string {
+	return envKey(repo, name, only) + "_DATABASE_URL"
+}
+
+// envKey begins the name of an environment variable a resource is reached
+// with: the repository's name, and the resource's where there is more than one
+// of its kind, upper-cased, with anything but a letter or digit an underscore.
+func envKey(repo, name string, only bool) string {
 	parts := []string{repo}
 	if !only {
 		parts = append(parts, name)
 	}
 
-	key := strings.Map(func(r rune) rune {
+	return strings.ToUpper(strings.Map(func(r rune) rune {
 		if 'a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' {
 			return r
 		}
 
 		return '_'
-	}, strings.Join(parts, "_"))
-
-	return strings.ToUpper(key) + "_DATABASE_URL"
+	}, strings.Join(parts, "_")))
 }
 
 // requires reports whether go.mod requires module. Indirect counts: there is
