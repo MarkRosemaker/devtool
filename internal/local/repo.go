@@ -155,17 +155,23 @@ func (r *repo) GoModInit(ctx context.Context) error {
 	return err
 }
 
-// GoTestCover runs the tests and reports the total statement coverage.
+// GoTestCover runs the tests and reports the total statement coverage of the library: every package but the
+// commands, which a test of the library rarely runs (see [coverPackages]).
 func (r *repo) GoTestCover(ctx context.Context) (float64, error) {
 	profile := filepath.Join(r.dir, coverProfile)
 	defer func() { _ = os.Remove(profile) }()
 
+	out, err := r.ExecCommand(ctx, "go", "list", coverListFlag, "./...")
+	if err != nil {
+		return 0, fmt.Errorf("listing the packages: %w: %s", err, strings.TrimSpace(string(out)))
+	}
+
 	if out, err := r.ExecCommand(ctx,
-		"go", "test", "-coverpkg=./...", "-coverprofile="+coverProfile, "./..."); err != nil {
+		"go", "test", "-coverpkg="+coverPackages(string(out)), "-coverprofile="+coverProfile, "./..."); err != nil {
 		return 0, fmt.Errorf("tests failed: %w: %s", err, strings.TrimSpace(string(out)))
 	}
 
-	out, err := r.ExecCommand(ctx, "go", "tool", "cover", "-func="+coverProfile)
+	out, err = r.ExecCommand(ctx, "go", "tool", "cover", "-func="+coverProfile)
 	if err != nil {
 		return 0, fmt.Errorf("reading the coverage profile: %w: %s",
 			err, strings.TrimSpace(string(out)))
@@ -178,6 +184,30 @@ func (r *repo) GoTestCover(ctx context.Context) (float64, error) {
 // .gitignore already covers it, which is why it can go there rather than
 // somewhere temporary: "go tool cover" wants a path the module can see.
 const coverProfile = "cover.out"
+
+// coverListFlag has go list write each package as its name and import path, apart by a colon, which [coverPackages]
+// reads.
+const coverListFlag = "-f={{.Name}}:{{.ImportPath}}"
+
+// coverPackages is what -coverpkg takes from the packages go list writes as coverListFlag says: all but those named
+// main, the generators, tools and examples beside a library, which count against it otherwise; or all of them,
+// "./...", where there are only commands.
+func coverPackages(listed string) string {
+	var pkgs []string
+
+	for line := range strings.Lines(listed) {
+		name, path, ok := strings.Cut(strings.TrimSpace(line), ":")
+		if ok && name != "main" {
+			pkgs = append(pkgs, path)
+		}
+	}
+
+	if len(pkgs) == 0 {
+		return "./..."
+	}
+
+	return strings.Join(pkgs, ",")
+}
 
 // totalCoverage reads the figure off the last line of "go tool cover -func",
 // which is the total and is the only line worth keeping.

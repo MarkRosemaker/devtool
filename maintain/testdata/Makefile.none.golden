@@ -4,3 +4,9 @@
 # Bundles rely on their prerequisites running in order, so not with -j.
 .NOTPARALLEL:
 MAKEFLAGS += --no-print-directory
+
+# COVER_PKGS is what cover counts: every package but the commands, generators
+# and examples beside a library, or all of them where there is nothing else.
+# Set with =, so go list runs only for cover.
+cover_comma := ,
+COVER_PKGS = $(or $(subst $() ,$(cover_comma),$(strip $(foreach p,$(filter-out main:%,$(shell go list -f={{.Name}}:{{.ImportPath}} ./...)),$(word 2,$(subst :, ,$(p)))))),./...)

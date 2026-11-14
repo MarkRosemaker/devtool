@@ -22,6 +22,12 @@ else
 remove = rm -rf $1
 endif
 
+# COVER_PKGS is what cover counts: every package but the commands, generators
+# and examples beside a library, or all of them where there is nothing else.
+# Set with =, so go list runs only for cover.
+cover_comma := ,
+COVER_PKGS = $(or $(subst $() ,$(cover_comma),$(strip $(foreach p,$(filter-out main:%,$(shell go list -f={{.Name}}:{{.ImportPath}} ./...)),$(word 2,$(subst :, ,$(p)))))),./...)
+
 # A tool built with an older Go than this module targets refuses to analyse it.
 TOOL_GO := $(shell go env GOVERSION)
 tools: export GOTOOLCHAIN := $(TOOL_GO)
@@ -74,7 +80,7 @@ bench:
 	go test -run="^$$" -bench=. -benchmem ./...
 
 cover:
-	go test -coverpkg=./... -coverprofile=cover.out ./...
+	go test -coverpkg=$(COVER_PKGS) -coverprofile=cover.out ./...
 	go tool cover -func=cover.out
 
 format:

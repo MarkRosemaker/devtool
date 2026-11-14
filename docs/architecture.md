@@ -342,6 +342,11 @@ definition: the list holds what the last run measured, written back after
 every run, while `devtool.json` holds a copy. Preferring the copy would freeze
 every badge at the first figure recorded.
 
+The figure is the coverage of the library: every package but those named main,
+so the generators, tools and examples beside a library do not count against
+it. A repository of nothing but commands is measured whole. `make cover`
+counts the same packages.
+
 Coverage has a floor, `maintain.CoverageFloor`, 80%. A run that takes a
 repository from at or above it to below fails, through the engine's
 `Spec.CoverageFloor`, with the two figures: a regression, worth interrupting

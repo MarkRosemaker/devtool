@@ -254,7 +254,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		{
 			Name: "cover",
 			Recipe: []string{
-				"go test -coverpkg=./... -coverprofile=" + coverProfile + " ./...",
+				"go test -coverpkg=$(COVER_PKGS) -coverprofile=" + coverProfile + " ./...",
 				"go tool cover -func=" + coverProfile,
 			},
 		},
