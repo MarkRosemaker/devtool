@@ -114,8 +114,12 @@ JavaScript client in `frontend/src` and its server in `pkg/api` or `pkg/ws`.
 The first `main.go` comes with `app.go`, where the app's `setup` starts, and
 `app.go` is the app's from then on. A `main.go` without the generated header
 is refused rather than overwritten, as is a section without a `name`, a
-`port`, `frontend/` or the library in `go.mod`. It comes before `AGENTS.md`,
-which reads its `go:generate` lines.
+`port`, `frontend/` or the library in `go.mod`. A browser installs the app
+only with the icons `frontend/android-chrome-192x192.png` and
+`android-chrome-512x512.png` and both colours, so the task sets `"pwa": true`
+once all four are there and refuses to go on while it is set and one is
+missing, naming which. It comes before `AGENTS.md`, which reads its
+`go:generate` lines.
 
 The generated Makefile runs on Windows as well, in `cmd.exe` or Git Bash:
 the binary takes `go env GOEXE` as its extension, the PATH it extends keeps

@@ -324,3 +324,78 @@ func TestDefinitionKeepsTheWebapp(t *testing.T) {
 		}
 	}
 }
+
+// pwaIconsIn gives the app the icons a browser installs it with.
+func pwaIconsIn(t *testing.T, fs afero.Fs) {
+	t.Helper()
+
+	for _, icon := range pwaIcons {
+		writeFile(t, fs, icon, "png")
+	}
+}
+
+// An app with what it needs to install is marked so, once; one without is
+// left as it is.
+func TestWebappSetsPWA(t *testing.T) {
+	repo := webappRepo(t, gardenDefinition)
+	if err := runWebapp(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := readFile(t, repo.Fs(), DefinitionPath); got != gardenDefinition {
+		t.Errorf("an app without icons was touched:\n%s", got)
+	}
+
+	pwaIconsIn(t, repo.Fs())
+
+	if err := runWebapp(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	def, _, err := LoadDefinition(repo.Fs())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !def.Webapp.PWA {
+		t.Error(`an app with its icons and colours is not marked "pwa"`)
+	}
+
+	first := readFile(t, repo.Fs(), DefinitionPath)
+
+	if err := runWebapp(t, repo); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := readFile(t, repo.Fs(), DefinitionPath); got != first {
+		t.Errorf("a second run rewrote devtool.json:\n%s\nwas\n%s", got, first)
+	}
+}
+
+// "pwa" set on an app that cannot install stops the run, naming what is
+// missing; set on one that can, it is fine.
+func TestWebappRefusesPWAItCannotBe(t *testing.T) {
+	repo := webappRepo(t, `{"name": "Pocket Garden", "kind": "webapp", "webapp": {"port": 8090, "themeColor": "#F4EFE6", "pwa": true}}`)
+
+	err := runWebapp(t, repo)
+	if err == nil {
+		t.Fatal(`"pwa" passed without icons or a background colour`)
+	}
+
+	for _, want := range []string{"frontend/android-chrome-192x192.png", "frontend/android-chrome-512x512.png", `"backgroundColor"`} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %s: %v", want, err)
+		}
+	}
+
+	if strings.Contains(err.Error(), `"themeColor"`) {
+		t.Errorf("the refusal names what is there: %v", err)
+	}
+
+	pwaIconsIn(t, repo.Fs())
+	writeFile(t, repo.Fs(), DefinitionPath, strings.Replace(gardenDefinition, `"auth": true`, `"auth": true, "pwa": true`, 1))
+
+	if err := runWebapp(t, repo); err != nil {
+		t.Errorf(`"pwa" refused on an app that installs: %v`, err)
+	}
+}

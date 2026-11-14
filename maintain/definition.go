@@ -114,6 +114,10 @@ type Webapp struct {
 
 	// Auth lets only the one user in, in the cloud.
 	Auth bool `json:"auth,omitzero"`
+
+	// PWA says the app installs: a run sets it once it can, and refuses to
+	// go on, naming what is missing, while it is set and cannot.
+	PWA bool `json:"pwa,omitzero"`
 }
 
 // equal reports whether two definitions say the same thing.

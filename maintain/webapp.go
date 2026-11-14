@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"go/format"
 	"os"
+	"strings"
 	"text/template"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
@@ -92,6 +93,10 @@ func writeWebapp(fs afero.Fs) error {
 		return fmt.Errorf("%s: %w", DefinitionPath, err)
 	}
 
+	if err := settlePWA(fs, def); err != nil {
+		return fmt.Errorf("%s: %w", DefinitionPath, err)
+	}
+
 	existing, err := afero.ReadFile(fs, webappMain)
 
 	first := errors.Is(err, os.ErrNotExist)
@@ -170,4 +175,53 @@ func checkWebapp(fs afero.Fs, def Definition) error {
 	}
 
 	return nil
+}
+
+// pwaIcons are the icons a browser needs before it offers to install an app,
+// under the names the webapp library looks for them by.
+var pwaIcons = []string{"frontend/android-chrome-192x192.png", "frontend/android-chrome-512x512.png"}
+
+// pwaMissing is what the app lacks to install: the icons, and the colours the
+// installed app is shown in.
+func pwaMissing(fs afero.Fs, w Webapp) ([]string, error) {
+	var missing []string
+
+	for _, icon := range pwaIcons {
+		if ok, err := afero.Exists(fs, icon); err != nil {
+			return nil, err
+		} else if !ok {
+			missing = append(missing, icon)
+		}
+	}
+
+	if w.ThemeColor == "" {
+		missing = append(missing, `"themeColor"`)
+	}
+
+	if w.BackgroundColor == "" {
+		missing = append(missing, `"backgroundColor"`)
+	}
+
+	return missing, nil
+}
+
+// settlePWA sets "pwa" once the app has what it needs to install, and refuses
+// it set while the app has not.
+func settlePWA(fs afero.Fs, def Definition) error {
+	missing, err := pwaMissing(fs, *def.Webapp)
+	if err != nil {
+		return err
+	}
+
+	switch {
+	case def.Webapp.PWA && len(missing) > 0:
+		return fmt.Errorf(`webapp: "pwa" is set, but a browser will not install the app without %s`,
+			strings.Join(missing, ", "))
+	case def.Webapp.PWA || len(missing) > 0:
+		return nil
+	}
+
+	def.Webapp.PWA = true
+
+	return SaveDefinition(fs, def)
 }
