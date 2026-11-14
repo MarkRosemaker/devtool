@@ -39,6 +39,23 @@ func (r *repository) Fs() afero.Fs { return r.Repository.Fs }
 func (r *repository) HardReset() error { return r.GitReset(git.HardReset) }
 func (r *repository) Clean() error     { return r.GitClean() }
 
+// GoTestCover runs the tests, and where they fail because the module files
+// are out of step with the code, settles them and tries once more. A change
+// can import a package go.mod does not require or vendor/ does not hold yet,
+// as a generated test did on sec-edgar, and that is not the change's fault.
+func (r *repository) GoTestCover(ctx context.Context) (float64, error) {
+	coverage, err := r.Repository.GoTestCover(ctx)
+	if !gorepo.ModulesOutOfStep(err) {
+		return coverage, err
+	}
+
+	if serr := r.SettleModules(ctx); serr != nil {
+		return 0, fmt.Errorf("%w\nsettling the module files: %w", err, serr)
+	}
+
+	return r.Repository.GoTestCover(ctx)
+}
+
 // maintainedRepo is what a run needs of one repository: what the engine asks
 // for, its module's requirements, a commit of named files, and its sequence.
 type maintainedRepo interface {
