@@ -52,8 +52,20 @@ func tasks(
 			return r.Serialise(repo.GolangCILintFix)(ctx)
 		}},
 		{Name: "update tools", Short: "tools", Run: repo.UpdateTools},
-		{Name: "go generate", Short: "generate", Run: repo.GoGenerate},
+		{Name: "go generate", Short: "generate", Run: repo.generate},
 	}
+}
+
+// generate runs the generators and settles the module files after them:
+// generated code can import a package go.mod does not require or vendor/
+// does not hold yet, as a generated test did on sec-edgar, and the tests
+// after the task would fail over it.
+func (repo *repository) generate(ctx context.Context) error {
+	if err := repo.GoGenerate(ctx); err != nil {
+		return err
+	}
+
+	return repo.SettleModules(ctx)
 }
 
 // sequence is the [engine.Sequence] the engine calls for this repository,

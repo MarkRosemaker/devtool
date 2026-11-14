@@ -2,10 +2,10 @@ package run
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/MarkRosemaker/ghrepo"
@@ -80,20 +80,29 @@ func newGoRepository(t *testing.T, files map[string]string) (*repository, string
 	return &repository{Repository: repo}, dir
 }
 
-// A test importing a package vendor/ lacks yet passes once the module files
-// are settled, which the test step does by itself, once.
-func TestGoTestCoverSettlesTheModules(t *testing.T) {
-	repo, dir := newGoRepository(t, vendoring)
+// subTest is a test importing a package of example.com/dep that vendor/ does
+// not hold.
+const subTest = "package a\n\nimport (\n\t\"testing\"\n\n" +
+	"\t\"example.com/dep/sub\"\n)\n\nfunc TestA(t *testing.T) { _ = sub.Y }\n"
+
+// A generator writing a test that imports a package vendor/ lacks leaves the
+// tests passing, since the task settles the module files after it.
+func TestGenerateSettlesTheModules(t *testing.T) {
+	files := map[string]string{"gen.go": "package a\n\n//go:generate cp gen.txt a_test.go\n", "gen.txt": subTest}
+	maps.Copy(files, vendoring)
+
+	repo, dir := newGoRepository(t, files)
 
 	if err := repo.GoModVendor(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 
-	writeFile(t, filepath.Join(dir, "a_test.go"), "package a\n\nimport (\n\t\"testing\"\n\n"+
-		"\t\"example.com/dep/sub\"\n)\n\nfunc TestA(t *testing.T) { _ = sub.Y }\n")
+	if err := repo.generate(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 
 	if _, err := repo.GoTestCover(t.Context()); err != nil {
-		t.Fatal(err)
+		t.Fatalf("the tests fail after generating: %v", err)
 	}
 
 	if _, err := os.Stat(filepath.Join(dir, "vendor", "example.com", "dep", "sub", "sub.go")); err != nil {
@@ -101,16 +110,21 @@ func TestGoTestCoverSettlesTheModules(t *testing.T) {
 	}
 }
 
-// A failing test is not the module files' doing, so nothing is settled.
-func TestGoTestCoverLeavesAFailingTest(t *testing.T) {
+// A module that does not vendor is tidied after generating and left without
+// a vendor/.
+func TestGenerateDoesNotStartVendoring(t *testing.T) {
 	repo, dir := newGoRepository(t, map[string]string{
-		"go.mod":    "module example.com/test\n\ngo 1.26\n",
-		"a_test.go": "package a\n\nimport \"testing\"\n\nfunc TestA(t *testing.T) { t.Fatal(\"boom\") }\n",
+		"go.mod":  "module example.com/test\n\ngo 1.26\n",
+		"gen.go":  "package a\n\n//go:generate cp gen.txt b.go\n",
+		"gen.txt": "package a\n\nconst B = 1\n",
 	})
 
-	_, err := repo.GoTestCover(t.Context())
-	if err == nil || !strings.Contains(err.Error(), "boom") {
-		t.Fatalf("GoTestCover() = %v, want the failure", err)
+	if err := repo.generate(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "b.go")); err != nil {
+		t.Errorf("the generator did not run: %v", err)
 	}
 
 	if _, err := os.Stat(filepath.Join(dir, "vendor")); !os.IsNotExist(err) {
@@ -118,23 +132,14 @@ func TestGoTestCoverLeavesAFailingTest(t *testing.T) {
 	}
 }
 
-// Where settling fails too, both failures are told.
-func TestGoTestCoverCannotSettle(t *testing.T) {
+// A generator that fails stops the task before anything is settled.
+func TestGenerateFails(t *testing.T) {
 	repo, _ := newGoRepository(t, map[string]string{
 		"go.mod": "module example.com/test\n\ngo 1.26\n",
-		// Nothing provides it, and with GOPROXY=off nothing can.
-		"a_test.go": "package a\n\nimport (\n\t\"testing\"\n\n\t\"example.com/nowhere\"\n)\n\n" +
-			"func TestA(t *testing.T) { nowhere.X() }\n",
+		"gen.go": "package a\n\n//go:generate false\n",
 	})
 
-	_, err := repo.GoTestCover(t.Context())
-	if err == nil {
-		t.Fatal("passed with an import nothing provides")
-	}
-
-	for _, want := range []string{"no required module provides package", "settling the module files"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("the failure lacks %q:\n%v", want, err)
-		}
+	if err := repo.generate(t.Context()); err == nil {
+		t.Error("a failing generator passed")
 	}
 }
