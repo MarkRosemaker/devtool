@@ -289,6 +289,41 @@ func TestAFailureOnMainStaysOpen(t *testing.T) {
 	}
 }
 
+// A build that failed on main fails every time, so the first run that finds it
+// building closes its issue, with a comment, as it did not for logutil once
+// the disk its run filled was cleared.
+func TestABuildFailureOnMainIsClosedOnceItBuilds(t *testing.T) {
+	svc, src, rec := appWithEvents(t, "")
+
+	for _, fails := range []bool{true, false} {
+		if fails {
+			src.coverErrs["alice/app"] = []error{testsFail(brokenOutput)}
+		}
+
+		if err := svc.Run(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	const url = "https://github.com/alice/app/issues/1"
+
+	want := []string{
+		"issue_filed " + url + ": Build fails on main: example.com/app/b",
+		"issue_closed " + url + ": Build fails on main: example.com/app/b",
+	}
+	if got := issueEvents(rec); !slices.Equal(got, want) {
+		t.Errorf("events = %q\nwant %q", got, want)
+	}
+
+	if comment := src.comments[url]; !strings.Contains(comment, "Fixed: devtool v1.0.0 found that `main` builds and its tests pass at") {
+		t.Errorf("closed with %q", comment)
+	}
+
+	if body := src.issues["alice/app"][0].GetBody(); !strings.Contains(body, "devtool closes it, with a comment,\n  on the first run that finds `main` building") {
+		t.Errorf("the issue does not say devtool closes it:\n%s", body)
+	}
+}
+
 // brokenChange is a task whose change the tests reject on the first run: it
 // passes before any change, and fails after the change.
 func brokenChange(src *fakeSource) {
