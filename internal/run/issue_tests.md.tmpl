@@ -61,6 +61,8 @@ The next run makes those commits again.
   merging it closes this issue.
 {{- if .Task }} Otherwise devtool closes it, with a comment,
   on the first run whose change goes in with the build and the tests passing.
+{{- else if .Build }} Otherwise devtool closes it, with a comment,
+  on the first run that finds `main` building and its tests passing.
 {{- else }} devtool does not close it itself: a test may
   fail on main only now and then, so one run passing proves nothing. Close it
   once you know the cause is fixed.

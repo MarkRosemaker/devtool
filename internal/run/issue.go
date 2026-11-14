@@ -184,6 +184,10 @@ func (f testFailure) marker() string {
 	return "devtool:test-failure " + hex.EncodeToString(sum[:8])
 }
 
+// buildFailsOnMain begins the title of an issue about main failing to build,
+// which tells it apart from one about main's tests failing.
+const buildFailsOnMain = "Build fails on main"
+
 // maxTitled is how many failing tests an issue's title names.
 const maxTitled = 3
 
@@ -200,6 +204,10 @@ func (f testFailure) title() string {
 
 	if names == "" {
 		names = "the suite"
+	}
+
+	if f.Task == "" && f.Build() {
+		return buildFailsOnMain + ": " + names
 	}
 
 	what := "Tests fail"
@@ -386,8 +394,10 @@ func fileReport(ctx context.Context, repo maintainedRepo, r report) (*github.Iss
 // closeFixed closes the open issues devtool filed whose problem the result
 // shows gone, and returns them. A task's change that broke the build or the
 // tests is tried again every run, so a run that succeeds, or fails only on
-// coverage, measured after the tests, shows it gone in. A failure on main is
-// left for a person to close: it may be a test that fails now and then. Coverage that slipped is gone only once it is back at its floor,
+// coverage, measured after the tests, shows it gone in. So does a build that
+// failed on main. Tests that failed on main are left for a person to close:
+// one may fail now and then. Coverage that slipped is gone only once it is
+// back at its floor,
 // which a later run that succeeds does not show by itself, since coverage
 // below the floor fails a run only when it falls there.
 func closeFixed(ctx context.Context, repo maintainedRepo, spec engine.Spec, res event.Result, run func() facts) ([]*github.Issue, error) {
@@ -407,9 +417,14 @@ func closeFixed(ctx context.Context, repo maintainedRepo, spec engine.Spec, res 
 
 		switch body := issue.GetBody(); {
 		case hasLabel(issue, failingOnMain.name):
-			// One run passing is no proof: a test that fails on main now and
-			// then would be closed and filed again without end.
-			continue
+			// One run passing is no proof for a test: one that fails on main
+			// now and then would be closed and filed again without end. A
+			// build that fails, fails every time.
+			if !strings.HasPrefix(issue.GetTitle(), buildFailsOnMain) {
+				continue
+			}
+
+			why = "`main` builds and its tests pass"
 		case strings.Contains(body, "<!-- devtool:test-failure "):
 			why = "the change goes in, with the build and the tests passing"
 		case strings.Contains(body, "<!-- devtool:coverage fell -->") && res.Coverage >= spec.CoverageFloor:

@@ -57,9 +57,10 @@ failing tests, by task and failing tests), and a later run that finds an open
 issue with it refreshes that issue rather than filing another. A run that
 finds the problem gone closes the issue with a comment: a build or tests a
 task's change broke, once the change goes in (a run that succeeds, or fails
-only on coverage, which is measured after the tests), and coverage once it is
-back at its floor. A failure on main is left for a person to close, since one
-run passing does not show that a test failing now and then is fixed. Each issue filed or closed
+only on coverage, which is measured after the tests), a build that failed on
+main once it builds, and coverage once it is back at its floor. Tests failing
+on main are left for a person to close, since one run passing does not show
+that a test failing now and then is fixed. Each issue filed or closed
 is told to the stream as `issue_filed` or `issue_closed`, for patchpal to link. `GITHUB_TOKEN`
 needs permission to write issues and labels for this; a failure to file is
 logged, never the run's.
