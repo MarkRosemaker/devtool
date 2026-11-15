@@ -1,0 +1,20 @@
+# {{ .Stamp }} — add a workflow of your own beside it instead.
+name: Smoke
+
+on:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: smoke
+      - run: npx playwright install --with-deps chromium
+        working-directory: smoke
+      - run: node smoke.js
+        working-directory: smoke

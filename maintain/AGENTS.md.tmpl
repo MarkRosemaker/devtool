@@ -56,10 +56,10 @@ the work in hand cannot go on without the fix.
   sandbox.{{ end }} `make tools` installs what it shells out to, and the Makefile
   puts that directory on its own `PATH`, so you do not have to.
 {{- if .Smoke }}
-- Here it also runs `make smoke`, which renders the frontend in a real
-  browser and fails on any console error or uncaught exception. Its npm
-  dependencies come from `make tools`, and the browser from playwright, or
-  from `PLAYWRIGHT_BROWSERS_PATH` where that is set.
+- Here it also runs `make smoke`, the smoke test below, as does every pull
+  request, in `.github/workflows/smoke.yml`. `make tools` installs
+  Playwright and its Chromium, into `PLAYWRIGHT_BROWSERS_PATH` where that
+  is set.
 {{- end }}
 - Because it regenerates, it may leave changes of its own. Those are its
   output, not a failure: read them, and commit them with the work where they
@@ -127,7 +127,7 @@ exactly as it was recorded.
 {{ end }}{{ if .Frontend }}
 `api/interactions.json` is also the frontend's mock data. In development,
 where `window.ENV` is `"development"`, the generated `api.js` answers from
-`/mocks.json`, and the smoke tests answer from the interactions. An
+`/mocks.json`, and the smoke test answers from the interactions. An
 interaction that is stale or missing means a mocked screen that is wrong
 or empty. Keep each one to what the handler actually returns.
 {{ end }}{{ if .Gitignore }}
@@ -278,6 +278,29 @@ this app. Change it there, in a pull request of its own, and every app has
 it with the next dependency bump. Only then remove this app's copy. What
 only this app does stays here. The library's `docs/architecture.md` says
 how it works, and its roadmap what it is to take on next.
+
+### The smoke test
+
+Every web app has one, and `make ready` and every pull request run it. It
+opens the app in a headless Chromium and fails on anything a page throws or
+logs as an error, on a request to `/api` that `api/interactions.json` has no
+answer for, and on a file `frontend/` does not have.
+
+`smoke/harness.js` does that, and devtool rewrites it every run.
+`smoke/smoke.js` is the app's own, and says what to open and check. Open
+every screen there, and check what each one must show:
+
+- **`app.open(path)`:** opens a page, such as `/#/queue`, and waits for it
+  to settle.
+- **`app.expectText(selector, pattern)`:** fails unless the first match
+  reads so.
+- **`app.say(type, payload)`:** a socket message, as if the server sent it.
+- **`app.page`:** the Playwright page, for anything else.
+
+An answer the interactions do not record, such as a refusal, comes from the
+`api` option of `harness.run`. Other files come from its `serve` option.
+`harness.js` says how. devtool pins Playwright in `smoke/package.json` and
+keeps anything else the test depends on there.
 {{ end }}
 ## Keeping the documents true
 

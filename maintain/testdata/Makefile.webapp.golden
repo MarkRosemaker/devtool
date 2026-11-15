@@ -110,7 +110,7 @@ tools:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	go install golang.org/x/pkgsite/cmd/pkgsite@latest
 	go install github.com/MarkRosemaker/devtool@latest
-	cd smoke && npm install
+	cd smoke && npm install && npx playwright install chromium
 
 # A fragment adds its own with CLEAN_FILES += dist.
 clean:

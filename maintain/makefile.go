@@ -219,7 +219,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		// make tools' use of the network and not ready's.
 		tools.Comment = "Installs what the targets above shell out to, into $(go env GOPATH)/bin " +
 			"and " + smokeDir + "/node_modules."
-		tools.Recipe = append(tools.Recipe, "cd "+smokeDir+" && npm install")
+		tools.Recipe = append(tools.Recipe, "cd "+smokeDir+" && npm install && npx playwright install chromium")
 
 		smoke = []makeTarget{{
 			Name:    "smoke",
@@ -503,14 +503,8 @@ const (
 	smokeScript = "smoke.js"
 )
 
-// hasSmoke reports whether this is a web app with a smoke test to run.
-func hasSmoke(fs afero.Fs, def Definition) (bool, error) {
-	if def.Kind != KindWebapp {
-		return false, nil
-	}
-
-	return afero.Exists(fs, path.Join(smokeDir, smokeScript))
-}
+// hasSmoke reports whether this is a web app, which every one has a smoke test.
+func hasSmoke(def Definition) bool { return def.Webapp != nil }
 
 // readRepoShape works out what the repository itself settles about the
 // house targets. name is the repository's, which a web app's binary is
@@ -542,9 +536,7 @@ func readRepoShape(fs afero.Fs, name string) (repoShape, error) {
 		}
 	}
 
-	if shape.Smoke, err = hasSmoke(fs, def); err != nil {
-		return repoShape{}, err
-	}
+	shape.Smoke = hasSmoke(def)
 
 	if shape.Benchmarks, err = hasBenchmarks(fs); err != nil {
 		return repoShape{}, err

@@ -236,10 +236,7 @@ func collectAgentsData(fs afero.Fs, repoName string) (agentsData, error) {
 		return agentsData{}, err
 	}
 
-	smoke, err := hasSmoke(fs, def)
-	if err != nil {
-		return agentsData{}, err
-	}
+	smoke := hasSmoke(def)
 
 	roadmap, err := afero.Exists(fs, roadmapPath)
 	if err != nil {
