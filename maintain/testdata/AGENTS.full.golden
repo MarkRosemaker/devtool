@@ -215,6 +215,29 @@ it with the next dependency bump. Only then remove this app's copy. What
 only this app does stays here. The library's `docs/architecture.md` says
 how it works, and its roadmap what it is to take on next.
 
+### The smoke test
+
+Every web app has one, and `make ready` and every pull request run it. It
+opens the app in a headless Chromium and fails on anything a page throws or
+logs as an error, on a request to `/api` that `api/interactions.json` has no
+answer for, and on a file `frontend/` does not have.
+
+`smoke/harness.js` does that, and devtool rewrites it every run.
+`smoke/smoke.js` is the app's own, and says what to open and check. Open
+every screen there, and check what each one must show:
+
+- **`app.open(path)`:** opens a page, such as `/#/queue`, and waits for it
+  to settle.
+- **`app.expectText(selector, pattern)`:** fails unless the first match
+  reads so.
+- **`app.say(type, payload)`:** a socket message, as if the server sent it.
+- **`app.page`:** the Playwright page, for anything else.
+
+An answer the interactions do not record, such as a refusal, comes from the
+`api` option of `harness.run`. Other files come from its `serve` option.
+`harness.js` says how. devtool pins Playwright in `smoke/package.json` and
+keeps anything else the test depends on there.
+
 ## Keeping the documents true
 
 - Say what is, concisely. Not what was or how it came to be: that is git's.

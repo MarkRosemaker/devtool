@@ -852,13 +852,13 @@ var goldenTools = toolsFor(Definition{})
 
 // TestGenerateMakefileWebapp covers what a web app gets beyond the rest: its
 // root main package built under the repository's name, and the smoke test in
-// ready once there is one.
+// ready, which every web app has.
 func TestGenerateMakefileWebapp(t *testing.T) {
 	webapp := func(t *testing.T) afero.Fs {
 		t.Helper()
 
 		fs := afero.NewMemMapFs()
-		writeFile(t, fs, DefinitionPath, `{"kind": "webapp"}`)
+		writeFile(t, fs, DefinitionPath, `{"kind": "webapp", "webapp": {"port": 8080}}`)
 		writeFile(t, fs, "main.go", "package main\n")
 		writeFile(t, fs, "cmd/generate/main.go", "package main\n")
 
@@ -866,10 +866,7 @@ func TestGenerateMakefileWebapp(t *testing.T) {
 	}
 
 	t.Run("the root main package is the binary, and smoke runs in ready", func(t *testing.T) {
-		fs := webapp(t)
-		writeFile(t, fs, "smoke/smoke.js", "")
-
-		got := generateAndRead(t, fs)
+		got := generateAndRead(t, webapp(t))
 
 		checkOrder(t, got, []string{
 			"BINARY := bin/repo",
@@ -878,18 +875,8 @@ func TestGenerateMakefileWebapp(t *testing.T) {
 			"build:", "go build -o $(BINARY) $(PKG)",
 			"run: build",
 			"smoke:", "\tcd smoke && node smoke.js",
-			"tools:", "\tcd smoke && npm install",
+			"tools:", "\tcd smoke && npm install && npx playwright install chromium",
 		})
-	})
-
-	t.Run("without smoke/smoke.js there is no smoke target", func(t *testing.T) {
-		got := generateAndRead(t, webapp(t))
-
-		if strings.Contains(got, "smoke") {
-			t.Errorf("want no smoke target without a smoke test:\n%s", got)
-		}
-
-		checkOrder(t, got, []string{"ready: generate fix vet test-race build\n"})
 	})
 
 	t.Run("a command's root main package is not built", func(t *testing.T) {

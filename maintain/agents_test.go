@@ -279,7 +279,7 @@ func TestGenerateAgents(t *testing.T) {
 		for _, want := range []string{
 			"`api/openapi.json` is partly generated",
 			"is also the frontend's mock data",
-			"the smoke tests answer from the interactions",
+			"the smoke test answers from the interactions",
 		} {
 			if !strings.Contains(got, want) {
 				t.Errorf("missing %q:\n%s", want, got)

@@ -178,6 +178,7 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 // generators are the files devtool owns, in the order they have to be
 // written:
 //
+//   - A web app's smoke test before the Makefile, whose smoke target runs it.
 //   - The licence, README and Makefile first, so a repository is licensed,
 //     documented and buildable even if a later generator fails — and so the
 //     make targets AGENTS.md points an agent at exist before it is written.
@@ -199,6 +200,7 @@ func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 		LicenseTask(repo, opts.Holder),
 		ReadmeTask(repo, opts.Coverage),
 		RoadmapTask(repo),
+		SmokeTask(repo),
 		MakefileTask(repo),
 		GitignoreTask(repo),
 		WebappTask(repo),

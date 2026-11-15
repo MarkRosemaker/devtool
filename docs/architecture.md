@@ -100,7 +100,24 @@ private repository still writes a private one's README. `-private` is
 accepted and recorded, for Makefiles that pass it.
 
 A web app's Makefile builds its root `main` package as `bin/<repo>`, and
-`make ready` runs its smoke test, `smoke/smoke.js`, where it has one.
+`make ready` runs its smoke test, which every web app has. `SmokeTask`
+(`maintain/smoke.go`) runs before the Makefile and handles four files:
+
+- **`smoke/harness.js`:** rewritten every run, from `smoke_harness.js`. It
+  serves `frontend/`, answers `/api` from `api/interactions.json` and opens
+  the app in a headless Chromium. The test fails on anything a page throws or
+  logs as an error, on a request with no recorded answer, and on a missing
+  file.
+- **`smoke/package.json`:** Playwright pinned at `playwrightVersion`. The
+  file is merged, so whatever else the test depends on stays.
+- **`smoke/smoke.js`:** the app's own, written once from
+  `smoke_starter.js` where there is none. It opens the app, and the app adds
+  its screens and checks.
+- **`.github/workflows/smoke.yml`:** runs the test on every pull request. A
+  smoke workflow somebody wrote is left alone, as `test.yml` is.
+
+`make tools` installs Playwright and its Chromium, and the `.gitignore`
+block ignores what npm installs.
 
 A web app whose `devtool.json` has a `webapp` section gets its `main.go`
 generated from it and from the root `name` and `description`: a call to
