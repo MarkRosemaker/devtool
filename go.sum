@@ -4,12 +4,12 @@ github.com/MarkRosemaker/devtool-engine v0.0.0-20261115155509-5d6b924b2a2e h1:zF
 github.com/MarkRosemaker/devtool-engine v0.0.0-20261115155509-5d6b924b2a2e/go.mod h1:MKxqsey44X84zYI2pmCfmgEUBo1ROTES84vo0ZSXvr8=
 github.com/MarkRosemaker/errpath v0.0.0-20261115155441-f1bff71a2015 h1:eD6ksU/PyhHz4MNzjFrUK4NJNDNaZh5vA8sKJQ/k51M=
 github.com/MarkRosemaker/errpath v0.0.0-20261115155441-f1bff71a2015/go.mod h1:VnXpUlsS3n1gSToedcQl2FCARGoA16CyitbCanUIv+I=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261115155452-da53b1ea84fc h1:y5UrnoNvAP6gcidL+YGqMr9aOOnt3srWnrDIoS9A1vA=
-github.com/MarkRosemaker/ghrepo v0.0.0-20261115155452-da53b1ea84fc/go.mod h1:YexUtwO0vIrrPWOwOaFAkmtyqKbQkY8mAw4TS6JwPtw=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261116230157-598d73ad7adf h1:d7ExAfhAOeZ9dWyMj2PCtv5IDH167QKA46BZIEt99cQ=
+github.com/MarkRosemaker/ghrepo v0.0.0-20261116230157-598d73ad7adf/go.mod h1:iSIa23gslQbpqZnLVH8fUSNX86m0l93Xcb4zHVv0Pks=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261115155527-f5cf3790d857 h1:toe7svTg+6gh1TPS/ieP+RyJIt4hLxZXnJOkvFjKhKA=
 github.com/MarkRosemaker/golangci-json v0.0.0-20261115155527-f5cf3790d857/go.mod h1:GQvMvU3tgHtWgTDgLzCCt6UW2PTMvnNtEG0QxgLyBuA=
-github.com/MarkRosemaker/gorepo v0.0.0-20261115155809-f68b07653bf7 h1:B1myIV3kD4QPZhQgt7rD/wMZYjoBethhP/vGfATqdUE=
-github.com/MarkRosemaker/gorepo v0.0.0-20261115155809-f68b07653bf7/go.mod h1:PJu8OZm1q/g7dHI7L3no8U/RpXV0VufaSG3ka2/cIIY=
+github.com/MarkRosemaker/gorepo v0.0.0-20261116230625-f7179c332898 h1:UzF/5vyHn6LetRfkjFhewhLsSdGua8uFqAgRHRa/eh4=
+github.com/MarkRosemaker/gorepo v0.0.0-20261116230625-f7179c332898/go.mod h1:hVJRzEButsXXdoX8PtsqgTdPVR+sFjeNgT9GjLfOHhE=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261115155441-4ed6452afdbc h1:5Kyd52NVTZrw5n3JGhLAg2G5SDvEocGXj0p6TELH/wI=
 github.com/MarkRosemaker/json2yaml v0.0.0-20261115155441-4ed6452afdbc/go.mod h1:eUwIjjooIESK1Ymw4bbMdSDF6feAblyZjxyoo5o/W6U=
 github.com/MarkRosemaker/jsonutil v0.0.0-20261115155443-1ff2055c9f09 h1:1/0Sk/HvxbNkeludkYrvAPVAT3b/wjp452P1n7uELnw=
@@ -95,8 +95,8 @@ github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWb
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
 github.com/sagikazarmark/locafero v0.12.0 h1:/NQhBAkUb4+fH1jivKHWusDYFjMOOKU88eegjfxfHb4=
 github.com/sagikazarmark/locafero v0.12.0/go.mod h1:sZh36u/YSZ918v0Io+U9ogLYQJ9tLLBmM4eneO6WwsI=
-github.com/sergi/go-diff v1.4.0 h1:n/SP9D5ad1fORl+llWyN+D6qoUETXNZARKjyY2/KVCw=
-github.com/sergi/go-diff v1.4.0/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
+github.com/sergi/go-diff v1.4.4 h1:hJ31M2v+KXD+fDxKjUpr9qXthRE35QsPNono0FjSTCg=
+github.com/sergi/go-diff v1.4.4/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
 github.com/sirupsen/logrus v1.10.2 h1:G2SED73/qrAu6YwbdxOD6peLkCBI3z7L+ykJFTXJBBo=
 github.com/sirupsen/logrus v1.10.2/go.mod h1:SLEg8TqYulVKKfIGHldVp2K2aYz2DKSVBq4g/H5bR7Q=
 github.com/spf13/afero v1.15.0 h1:b/YBCLWAJdFWJTN9cLhiXXcD7mzKn9Dm86dNnfyQw1I=

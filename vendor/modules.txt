@@ -10,13 +10,13 @@ github.com/MarkRosemaker/devtool-engine/selfupdate
 # github.com/MarkRosemaker/errpath v0.0.0-20261115155441-f1bff71a2015
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261115155452-da53b1ea84fc
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261116230157-598d73ad7adf
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
 # github.com/MarkRosemaker/golangci-json v0.0.0-20261115155527-f5cf3790d857
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261115155809-f68b07653bf7
+# github.com/MarkRosemaker/gorepo v0.0.0-20261116230625-f7179c332898
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/gorepo
 # github.com/MarkRosemaker/json2yaml v0.0.0-20261115155441-4ed6452afdbc
@@ -255,7 +255,7 @@ github.com/pjbgf/sha1cd/ubc
 ## explicit; go 1.23.0
 github.com/sagikazarmark/locafero
 github.com/sagikazarmark/locafero/internal/queue
-# github.com/sergi/go-diff v1.4.0
+# github.com/sergi/go-diff v1.4.4
 ## explicit; go 1.13
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.10.2
