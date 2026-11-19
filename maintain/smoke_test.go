@@ -32,7 +32,7 @@ func TestSmokeScaffolds(t *testing.T) {
 	}
 
 	pkg := readFile(t, fs, "smoke/package.json")
-	for _, want := range []string{`"name": "gorepo-smoke"`, `"private": true`, `"playwright": "` + playwrightVersion + `"`} {
+	for _, want := range []string{`"name": "gorepo-smoke"`, `"private": true`, `"playwright": "` + playwrightTool.Default + `"`} {
 		if !strings.Contains(pkg, want) {
 			t.Errorf("package.json lacks %s:\n%s", want, pkg)
 		}
@@ -69,7 +69,7 @@ func TestSmokeKeepsTheAppsOwn(t *testing.T) {
 	}
 
 	pkg := readFile(t, fs, "smoke/package.json")
-	for _, want := range []string{`"name": "garden-smoke"`, `"react": "18.3.1"`, `"playwright": "` + playwrightVersion + `"`} {
+	for _, want := range []string{`"name": "garden-smoke"`, `"react": "18.3.1"`, `"playwright": "` + playwrightTool.Default + `"`} {
 		if !strings.Contains(pkg, want) {
 			t.Errorf("package.json lacks %s:\n%s", want, pkg)
 		}

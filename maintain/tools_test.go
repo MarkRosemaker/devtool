@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strings"
 	"sync"
@@ -244,4 +246,107 @@ func without(m map[string]string, k string) map[string]string {
 	delete(m, k)
 
 	return m
+}
+
+// A web app pins Playwright beside its Go tools: at the default until a
+// maintained run asks npm, then at the latest, never back, and never
+// installed here, since make tools installs it into smoke/.
+func TestPinToolsPlaywright(t *testing.T) {
+	webapp := func(pins map[string]string) Definition {
+		return Definition{Kind: KindWebapp, Webapp: &Webapp{Port: 8080}, Tools: pins}
+	}
+
+	installed := every("v1.0.0")
+
+	for _, tc := range []struct {
+		name        string
+		def         Definition
+		latest      string
+		checkLatest bool
+		want        string
+	}{
+		{name: "unpinned, without asking: the default", def: webapp(every("v1.0.0")), want: playwrightTool.Default},
+		{name: "pinned, without asking: the pin", def: webapp(with(every("v1.0.0"), "playwright", "1.64.0")), want: "1.64.0"},
+		{
+			name: "a maintained run moves to the latest", def: webapp(with(every("v1.0.0"), "playwright", "1.63.0")),
+			latest: "1.65.1", checkLatest: true, want: "1.65.1",
+		},
+		{
+			name: "and never back", def: webapp(with(every("v1.0.0"), "playwright", "1.65.1")),
+			latest: "1.64.0", checkLatest: true, want: "1.65.1",
+		},
+		{
+			name: "compared as versions, not text", def: webapp(with(every("v1.0.0"), "playwright", "1.9.0")),
+			latest: "1.10.0", checkLatest: true, want: "1.10.0",
+		},
+		{name: "not a web app: no pin", def: Definition{Tools: with(every("v1.0.0"), "playwright", "1.63.0")}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			latest := with(every("v1.0.0"), "playwright", tc.latest)
+			ops := &fakeTools{installed: maps.Clone(installed), latest: latest}
+
+			pins, err := pinTools(t.Context(), ops, tc.def, tc.checkLatest)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got := pins["playwright"]; got != tc.want {
+				t.Errorf("playwright pinned at %q, want %q", got, tc.want)
+			}
+
+			for _, i := range ops.installs {
+				if strings.HasPrefix(i, "playwright@") {
+					t.Errorf("installed %s with go install", i)
+				}
+			}
+		})
+	}
+}
+
+// The pin is what smoke/package.json is written with.
+func TestSmokeUsesThePin(t *testing.T) {
+	repo := webappRepo(t, strings.Replace(gardenDefinition, `"kind": "webapp",`, `"kind": "webapp", "tools": {"playwright": "1.65.1"},`, 1))
+
+	if err := SmokeTask(repo).Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if pkg := readFile(t, repo.Fs(), "smoke/package.json"); !strings.Contains(pkg, `"playwright": "1.65.1"`) {
+		t.Errorf("package.json does not have the pinned Playwright:\n%s", pkg)
+	}
+}
+
+// Latest asks the npm registry what its latest tag names, and refuses an
+// answer that is no version.
+func TestLatestNPM(t *testing.T) {
+	answer := `{"name": "playwright", "version": "1.65.1"}`
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/playwright/latest" {
+			http.NotFound(w, r)
+
+			return
+		}
+
+		_, _ = w.Write([]byte(answer))
+	}))
+	t.Cleanup(srv.Close)
+
+	was := npmRegistry
+	npmRegistry = srv.URL
+	t.Cleanup(func() { npmRegistry = was })
+
+	if v, err := (SystemTools{}).Latest(t.Context(), playwrightTool); err != nil || v != "1.65.1" {
+		t.Errorf("Latest = %q, %v, want 1.65.1", v, err)
+	}
+
+	answer = `{"version": "next"}`
+
+	if _, err := (SystemTools{}).Latest(t.Context(), playwrightTool); err == nil {
+		t.Error("took \"next\" for a version")
+	}
+
+	if _, err := (SystemTools{}).Latest(t.Context(), Tool{Name: "gone", Package: "gone", NPM: true}); err == nil {
+		t.Error("took a 404 for a version")
+	}
 }
