@@ -16,9 +16,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-// playwrightVersion is the Playwright every smoke test runs on.
-const playwrightVersion = "1.63.0"
-
 const (
 	smokeHarness  = "harness.js"
 	smokePackage  = "package.json"
@@ -72,7 +69,7 @@ func writeSmoke(fs afero.Fs, name string) error {
 		return err
 	}
 
-	if err := writeSmokePackage(fs, name); err != nil {
+	if err := writeSmokePackage(fs, name, npmPin(def, playwrightTool)); err != nil {
 		return err
 	}
 
@@ -88,9 +85,9 @@ func writeSmoke(fs afero.Fs, name string) error {
 	return writeSmokeWorkflow(fs)
 }
 
-// writeSmokePackage pins Playwright in smoke/package.json, keeping what else
-// the test depends on.
-func writeSmokePackage(fs afero.Fs, name string) error {
+// writeSmokePackage pins Playwright in smoke/package.json at the version
+// devtool.json pins, keeping what else the test depends on.
+func writeSmokePackage(fs afero.Fs, name, playwright string) error {
 	file := path.Join(smokeDir, smokePackage)
 
 	pkg := map[string]any{"name": name + "-smoke", "private": true}
@@ -112,7 +109,7 @@ func writeSmokePackage(fs afero.Fs, name string) error {
 		deps = map[string]any{}
 	}
 
-	deps["playwright"] = playwrightVersion
+	deps[playwrightTool.Package] = playwright
 	pkg["dependencies"] = deps
 
 	out, err := json.Marshal(pkg, json.Deterministic(true), jsontext.Multiline(true), jsontext.WithIndent("  "))

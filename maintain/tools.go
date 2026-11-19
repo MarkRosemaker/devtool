@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"context"
 	"debug/buildinfo"
+	"encoding/json/v2"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+
+	"golang.org/x/mod/semver"
 )
 
 // Tool is a binary the Makefile shells out to, installed with go install
@@ -21,6 +25,12 @@ type Tool struct {
 
 	// Package is what go install builds; Module is what it is versioned by.
 	Package, Module string
+
+	// NPM marks a package from npm instead, which make tools installs into
+	// the repository's own directory: devtool pins its version, as Default
+	// until a maintained run has asked npm for the latest.
+	NPM     bool
+	Default string
 }
 
 // houseTools are the tools every repository gets.
@@ -32,13 +42,16 @@ type Tool struct {
 //
 // devtool is not among them: it pins itself, as devtoolVersion.
 var houseTools = []Tool{
-	{"golangci-lint", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint", "github.com/golangci/golangci-lint/v2"},
-	{"govulncheck", "golang.org/x/vuln/cmd/govulncheck", "golang.org/x/vuln"},
-	{"pkgsite", "golang.org/x/pkgsite/cmd/pkgsite", "golang.org/x/pkgsite"},
+	{Name: "golangci-lint", Package: "github.com/golangci/golangci-lint/v2/cmd/golangci-lint", Module: "github.com/golangci/golangci-lint/v2"},
+	{Name: "govulncheck", Package: "golang.org/x/vuln/cmd/govulncheck", Module: "golang.org/x/vuln"},
+	{Name: "pkgsite", Package: "golang.org/x/pkgsite/cmd/pkgsite", Module: "golang.org/x/pkgsite"},
 }
 
 // sqlcTool generates the query code of a repository that declares databases.
-var sqlcTool = Tool{"sqlc", "github.com/sqlc-dev/sqlc/cmd/sqlc", "github.com/sqlc-dev/sqlc"}
+var sqlcTool = Tool{Name: "sqlc", Package: "github.com/sqlc-dev/sqlc/cmd/sqlc", Module: "github.com/sqlc-dev/sqlc"}
+
+// playwrightTool runs a web app's smoke test, from smoke/package.json.
+var playwrightTool = Tool{Name: "playwright", Package: "playwright", NPM: true, Default: "1.63.0"}
 
 // toolsFor are the tools a repository with this definition needs.
 func toolsFor(def Definition) []Tool {
@@ -48,6 +61,24 @@ func toolsFor(def Definition) []Tool {
 	}
 
 	return tools
+}
+
+// npmToolsFor are the npm packages a repository with this definition pins.
+func npmToolsFor(def Definition) []Tool {
+	if hasSmoke(def) {
+		return []Tool{playwrightTool}
+	}
+
+	return nil
+}
+
+// npmPin is the version of t the definition pins, or its default.
+func npmPin(def Definition, t Tool) string {
+	if v := def.Tools[t.Name]; v != "" {
+		return v
+	}
+
+	return t.Default
 }
 
 // ToolOps is what pinning tools does on the machine: a test replaces it.
@@ -115,7 +146,34 @@ func pinTools(ctx context.Context, ops ToolOps, def Definition, checkLatest bool
 		pins[t.Name] = want
 	}
 
+	// An npm package is installed in the repository, by make tools, so only
+	// its pin moves here: up, to the latest release on a maintained run.
+	for _, t := range npmToolsFor(def) {
+		want := npmPin(def, t)
+
+		if checkLatest {
+			latest, err := ops.Latest(ctx, t)
+			if err != nil {
+				return nil, fmt.Errorf("asking for the latest %s: %w", t.Name, err)
+			}
+
+			if newerNPM(latest, want) {
+				want = latest
+			}
+		}
+
+		pins[t.Name] = want
+	}
+
 	return pins, nil
+}
+
+// newerNPM reports whether npm version a is later than b. npm writes them
+// without semver's leading "v"; anything unrecognised is not newer.
+func newerNPM(a, b string) bool {
+	va, vb := "v"+a, "v"+b
+
+	return semver.IsValid(va) && (!semver.IsValid(vb) || semver.Compare(va, vb) > 0)
 }
 
 // newest is the later of two versions, either of which may be unknown.
@@ -169,8 +227,13 @@ func (SystemTools) Install(ctx context.Context, t Tool, version string) error {
 }
 
 // Latest asks the module proxy, from outside any module: inside one with a
-// vendor directory, go list refuses to query versions at all.
+// vendor directory, go list refuses to query versions at all. An npm package
+// it asks the npm registry, which needs no npm on the machine.
 func (SystemTools) Latest(ctx context.Context, t Tool) (string, error) {
+	if t.NPM {
+		return latestNPM(ctx, t.Package)
+	}
+
 	cmd := exec.CommandContext(ctx, "go", "list", "-m", "-f", "{{.Version}}", t.Module+"@latest")
 	cmd.Dir = os.TempDir()
 
@@ -271,4 +334,40 @@ func (s *SharedTools) Latest(ctx context.Context, t Tool) (string, error) {
 	s.latest[t.Name] = v
 
 	return v, nil
+}
+
+// npmRegistry is where npm's packages are published; a test points it at a
+// server of its own.
+var npmRegistry = "https://registry.npmjs.org"
+
+// latestNPM is the version npm's "latest" tag names for pkg.
+func latestNPM(ctx context.Context, pkg string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, npmRegistry+"/"+pkg+"/latest", nil)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("the npm registry answered %s for %s", res.Status, pkg)
+	}
+
+	var latest struct {
+		Version string `json:"version"`
+	}
+
+	if err := json.UnmarshalRead(res.Body, &latest); err != nil {
+		return "", fmt.Errorf("reading the npm registry's answer for %s: %w", pkg, err)
+	}
+
+	if !semver.IsValid("v" + latest.Version) {
+		return "", fmt.Errorf("the npm registry gave %s the version %q", pkg, latest.Version)
+	}
+
+	return latest.Version, nil
 }

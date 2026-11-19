@@ -299,8 +299,10 @@ every screen there, and check what each one must show:
 
 An answer the interactions do not record, such as a refusal, comes from the
 `api` option of `harness.run`. Other files come from its `serve` option.
-`harness.js` says how. devtool pins Playwright in `smoke/package.json` and
-keeps anything else the test depends on there.
+`harness.js` says how. Playwright's version is pinned in `devtool.json`
+under `tools`, and maintained runs move it to the latest release. devtool
+writes it into `smoke/package.json` and keeps anything else the test depends
+on there.
 {{ end }}
 ## Keeping the documents true
 

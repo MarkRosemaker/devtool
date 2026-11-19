@@ -108,8 +108,9 @@ A web app's Makefile builds its root `main` package as `bin/<repo>`, and
   the app in a headless Chromium. The test fails on anything a page throws or
   logs as an error, on a request with no recorded answer, and on a missing
   file.
-- **`smoke/package.json`:** Playwright pinned at `playwrightVersion`. The
-  file is merged, so whatever else the test depends on stays.
+- **`smoke/package.json`:** Playwright at the version `devtool.json` pins
+  under `tools`, below. The file is merged, so whatever else the test
+  depends on stays.
 - **`smoke/smoke.js`:** the app's own, written once from
   `smoke_starter.js` where there is none. It opens the app, and the app adds
   its screens and checks.
@@ -438,6 +439,13 @@ Two details are easy to get wrong:
 A run maintains repositories side by side, so they share one `SharedTools`.
 It asks for each latest release once and installs one tool at a time, so two
 repositories never write the same binary at once.
+
+A web app also pins Playwright, an npm package rather than a binary.
+`make tools` installs it into `smoke/` from the `smoke/package.json` devtool
+writes, so here only the pin moves. It starts at `playwrightTool`'s default,
+moves only forward, and on a maintained run moves to what the npm registry
+tags `latest`. devtool asks the registry over HTTP, so a machine needs no npm
+to maintain a web app.
 
 ## What the toolchain stamps, and why it differs per machine
 
