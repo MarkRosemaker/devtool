@@ -25,10 +25,10 @@ github.com/MarkRosemaker/json2yaml
 # github.com/MarkRosemaker/jsonutil v0.0.0-20261118230255-4b04cfc02484
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261120170344-fb0ce37351a8
+# github.com/MarkRosemaker/openapi v0.0.0-20261120192000-3a08d435b6a7
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20261120170236-0ba73a3a2277
+# github.com/MarkRosemaker/ordmap v0.0.0-20261120191929-7379634b83ad
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
 # github.com/MarkRosemaker/yaml v0.0.0-20261118230544-f88f96ca5149
@@ -316,7 +316,7 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
-# golang.org/x/exp v0.0.0-20261120130654-b6de8d37927a
+# golang.org/x/exp v0.0.0-20261120182113-8801fbdfac81
 ## explicit; go 1.26.0
 golang.org/x/exp/maps
 # golang.org/x/mod v0.43.0
