@@ -302,11 +302,13 @@ every run from `store.go.tmpl` and `storetest.go.tmpl`:
 - **`store.go`**: `Open`, which reaches the bucket with the endpoint,
   region and key pair from the environment and refuses to start without them
   or without the bucket; `Reach`, the same for a client of the caller's; and
-  `Has`, `Get`, `Read` and `Put` on the files. The client addresses the bucket
+  `Has`, `Get`, `Read`, `Put` and `List` on the files, `List` paging through
+  the bucket for every name. The client addresses the bucket
   by path and computes only the checksums the API requires, since services
   that speak S3 do not all take the streamed ones the SDK sends by default.
 - **`<name>test/`**: `Open(t)`, a store on a bucket the test serves itself,
-  which keeps what was put, with its headers, for the test to read back.
+  which keeps what was put, with its headers, for the test to read back, and
+  answers a listing of it on one page.
 
 The variables are named after the repository, and the store where there is
 more than one, as a database's URL is: `ATELIER_STORAGE_ENDPOINT`, or
