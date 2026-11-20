@@ -144,8 +144,9 @@ a file of your own beside them.
 `GOREPO_STORAGE_ENDPOINT`, `_REGION`, `_ACCESS_KEY_ID` and `_SECRET_ACCESS_KEY`,
 and refuses to start without them or without the bucket, which is created
 in the storage rather than by the code. It returns a `Store`: `Has`, `Get`
-(a reader to close), `Read`, and `Put` with the `Meta` a file is served with;
-a file the bucket does not have is `ErrNotFound`. A test never reaches real
+(a reader to close), `Read`, `Put` with the `Meta` a file is served with,
+and `List`, the names of every file, by name; a file the bucket does not have
+is `ErrNotFound`. A test never reaches real
 storage: `<name>test.Open(t)` serves a bucket of the test's own and returns
 the store on it, with the `Bucket` that says what it holds.
 

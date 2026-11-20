@@ -42,10 +42,12 @@ func TestStoresWritesTheFiles(t *testing.T) {
 			`EnvSecretAccessKey = "GOREPO_STORAGE_SECRET_ACCESS_KEY"`,
 			"func Open(ctx context.Context) (*Store, error)", "func Reach(ctx context.Context, client *s3.Client) (*Store, error)",
 			"func (s *Store) Has(", "func (s *Store) Put(", "func (s *Store) Get(", "func (s *Store) Read(",
+			"func (s *Store) List(", "s3.NewListObjectsV2Paginator(",
 		},
 		"stores/pictures/picturestest/picturestest.go": {
 			"package picturestest\n", `"example.com/app/stores/pictures"`,
 			"func Open(t testing.TB) (*pictures.Store, *Bucket)", "pictures.NewClient(srv.URL,",
+			"func (b *Bucket) list(w http.ResponseWriter)",
 		},
 	} {
 		got := readFile(t, repo.Fs(), file)

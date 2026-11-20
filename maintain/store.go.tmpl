@@ -146,6 +146,26 @@ func (s *Store) Get(ctx context.Context, name string) (io.ReadCloser, error) {
 	return out.Body, nil
 }
 
+// List returns the names of the files the bucket holds, in the bucket's
+// order: by name.
+func (s *Store) List(ctx context.Context) ([]string, error) {
+	var names []string
+
+	pages := s3.NewListObjectsV2Paginator(s.client, &s3.ListObjectsV2Input{Bucket: &s.bucket})
+	for pages.HasMorePages() {
+		page, err := pages.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("{{.Package}}: listing the bucket: %w", err)
+		}
+
+		for _, o := range page.Contents {
+			names = append(names, aws.ToString(o.Key))
+		}
+	}
+
+	return names, nil
+}
+
 // Read reads the whole file under name, or returns ErrNotFound.
 func (s *Store) Read(ctx context.Context, name string) ([]byte, error) {
 	body, err := s.Get(ctx, name)

@@ -2,13 +2,17 @@
 
 // Package {{.Package}}test opens the {{.Package}} store for a test: on a bucket
 // the test serves itself, which answers S3's HEAD, GET and PUT on path-style
-// addresses and keeps what was put, with the headers it came with.
+// addresses, and a listing of the bucket on one page, and keeps what was put,
+// with the headers it came with.
 package {{.Package}}test
 
 import (
+	"encoding/xml"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -90,7 +94,15 @@ func (b *Bucket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if r.URL.Path == "/"+{{.Package}}.Bucket && r.Method == http.MethodHead {
+	if r.URL.Path == "/"+{{.Package}}.Bucket {
+		switch r.Method {
+		case http.MethodHead:
+		case http.MethodGet:
+			b.list(w)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+
 		return
 	}
 
@@ -125,4 +137,22 @@ func (b *Bucket) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
+}
+
+// list answers a listing of the bucket, every file on one page, by name.
+func (b *Bucket) list(w http.ResponseWriter) {
+	var out strings.Builder
+
+	out.WriteString(`<ListBucketResult><IsTruncated>false</IsTruncated>`)
+
+	for _, p := range slices.Sorted(maps.Keys(b.objects)) {
+		out.WriteString("<Contents><Key>")
+		_ = xml.EscapeText(&out, []byte(strings.TrimPrefix(p, "/"+{{.Package}}.Bucket+"/")))
+		out.WriteString("</Key></Contents>")
+	}
+
+	out.WriteString("</ListBucketResult>")
+
+	w.Header().Set("Content-Type", "application/xml")
+	_, _ = io.WriteString(w, out.String())
 }
