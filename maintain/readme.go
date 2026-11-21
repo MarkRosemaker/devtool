@@ -200,7 +200,9 @@ type readmeLogo struct {
 // An invalid document is an error rather than a badge left off: a
 // repository publishing a broken API description has a problem worth
 // stopping for, and quietly not mentioning it would be the least useful
-// thing to do about it.
+// thing to do about it. The exception is one describing nothing yet beside
+// a freepublicapis.json: the skeleton [FreePublicAPIsTask] starts an API
+// library from, waiting for make generate, which has no badge until then.
 func readOpenAPI(fs afero.Fs) (*openapi.Document, error) {
 	b, err := afero.ReadFile(fs, openAPIPath)
 	if errors.Is(err, os.ErrNotExist) {
@@ -214,7 +216,13 @@ func readOpenAPI(fs afero.Fs) (*openapi.Document, error) {
 		return nil, fmt.Errorf("%s: %w", openAPIPath, err)
 	}
 
-	if err := doc.Validate(); err != nil {
+	if err := doc.Validate(); errors.Is(err, openapi.ErrEmptyDocument) {
+		if ok, xerr := afero.Exists(fs, freePublicAPIsPath); xerr != nil || !ok {
+			return nil, fmt.Errorf("%s: %w", openAPIPath, errors.Join(err, xerr))
+		}
+
+		return nil, nil
+	} else if err != nil {
 		return nil, fmt.Errorf("%s: %w", openAPIPath, err)
 	}
 
