@@ -317,6 +317,33 @@ repository's files, such as naming them by their contents, goes in a file of
 its own beside the generated ones. Where `go.mod` requires no S3 client, the
 task adds it and tidies the module.
 
+## API libraries
+
+An `apilib` with a `freepublicapis.json`, its entry in freepublicapis.com's
+catalog, is laid out from that entry by `FreePublicAPIsTask`
+(`maintain/freepublicapis.go`), ahead of the README, which reads the
+specification for its badge:
+
+- **`api/openapi.json`:** started where there is none, with `openapi: 3.1.0`,
+  the entry's title and description, version `0.0.1`, and the documentation
+  link as `externalDocs`. Where it exists, only what is empty is filled in,
+  and it is written only where something was. `openapi-enrich` owns the rest:
+  it builds the paths from the calls `api/interactions.json` records, and
+  rewrites the file every `make generate`. A run warns where the
+  specification has fewer operations than the catalog counts methods.
+- **`generate.go`:** runs `openapi-enrich`, `openapi-flatten`,
+  `openapi-compress` and `openapi-codegen -client`, in the library's own
+  package, since a `package main` without `main` fails `go build ./...`. The
+  four tools are added to `go.mod` as `go tool` dependencies where they are
+  missing. A `generate.go` without devtool's marker is the repository's own,
+  as `go-api-libs/proton` builds its specification otherwise, and it and its
+  `go.mod` are left alone.
+
+The skeleton describes no operations, which an OpenAPI document must, until
+`make generate` has run. The README takes such a document beside a
+`freepublicapis.json` for one not built yet, with no badge, where any other
+invalid document stops the run.
+
 ## Versions, and how a stale build does damage
 
 Each repository's `devtool.json` records the newest devtool build known to
