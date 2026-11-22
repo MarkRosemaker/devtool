@@ -5,8 +5,8 @@
 	newline ending its own line, so a block contributes exactly its content
 	plus one blank line when it renders and exactly nothing when it does
 	not: that is what keeps a skipped section from leaving its blank lines
-	behind. The stamp above is followed directly by whatever comes first,
-	and renderReadme trims the close back to a single newline.
+	behind. The stamp above is followed by the title, and renderReadme trims
+	the close back to a single newline.
 
 	The badge row is not optional — a repository always has coverage worth
 	showing its owner — so only the badges that need an audience are
@@ -24,6 +24,8 @@
 	badge labelled OpenAPI is claiming. The API's own version lives at
 	.Info.Version and would say something else entirely.
 */ -}}
+# {{ .Title }}
+
 {{ with .OpenAPI -}}
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-{{ .OpenAPI }}-blue)](./api/openapi.json) {{ end -}}
 {{ with .API -}}

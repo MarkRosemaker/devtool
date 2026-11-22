@@ -6,7 +6,6 @@ import (
 	"go/parser"
 	"go/token"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -243,21 +242,17 @@ func TestReadmeHasTheCatalogBadges(t *testing.T) {
 	}
 }
 
-func TestBadgeColor(t *testing.T) {
-	for percent, want := range map[int]string{
-		100: "brightgreen", 90: "brightgreen", 89: "green", 75: "green", 74: "yellowgreen",
-		60: "yellowgreen", 59: "yellow", 45: "yellow", 44: "orange", 30: "orange", 29: "red", 0: "red",
-	} {
-		if got := badgeColor(percent); got != want {
-			t.Errorf("badgeColor(%d) = %q, want %q", percent, got, want)
-		}
-	}
-}
+// fetchedAgo writes the catalog entry as last fetched so long ago, or as
+// never fetched where ago is 0.
+func fetchedAgo(t *testing.T, repo *fakeRepo, ago time.Duration) {
+	t.Helper()
 
-// committedAgo makes the fake repository's git say the catalog entry was
-// last committed so long ago.
-func committedAgo(repo *fakeRepo, ago time.Duration) {
-	repo.output = []byte(strconv.FormatInt(time.Now().Add(-ago).Unix(), 10) + "\n")
+	entry := gamerpower
+	if ago != 0 {
+		entry = strings.Replace(entry, "\n}", ",\n  \"fetched\": \""+time.Now().UTC().Add(-ago).Format(fetchedLayout)+"\"\n}", 1)
+	}
+
+	writeFile(t, repo.Fs(), freePublicAPIsPath, entry)
 }
 
 // fetching replaces what freepublicapis.com answers, counting the calls.
@@ -282,28 +277,38 @@ func fetching(t *testing.T, answer FreePublicAPI, err error) *int {
 	return &calls
 }
 
-// A maintained run asks the catalog again for an entry a week old, and
-// writes what has changed, indented as the entries are.
+// A maintained run asks the catalog again for an entry fetched a week ago or
+// never, and writes what it answers with the day it asked, indented as the
+// entries are. The same entry is then not asked for again on the next run,
+// though nothing in it changed.
 func TestFreePublicAPIsRefreshesAWeekOldEntry(t *testing.T) {
-	repo := apilibRepo(t, true)
-	committedAgo(repo, 8*24*time.Hour)
+	for name, ago := range map[string]time.Duration{"a week ago": 8 * 24 * time.Hour, "never": 0} {
+		t.Run(name, func(t *testing.T) {
+			repo := apilibRepo(t, true)
+			fetchedAgo(t, repo, ago)
 
-	api, _, _ := LoadFreePublicAPI(repo.Fs())
-	api.Health = 61
-	calls := fetching(t, api, nil)
+			api, _, _ := LoadFreePublicAPI(repo.Fs())
+			api.Fetched = ""
+			calls := fetching(t, api, nil)
 
-	if err := FreePublicAPIsTask(repo, true).Run(t.Context()); err != nil {
-		t.Fatal(err)
-	}
+			for range 2 {
+				if err := FreePublicAPIsTask(repo, true).Run(t.Context()); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-	got := readFile(t, repo.Fs(), freePublicAPIsPath)
-	if *calls != 1 || !strings.Contains(got, "\n  \"health\": 61,\n") {
-		t.Errorf("asked %d times, and the entry reads:\n%s", *calls, got)
+			got := readFile(t, repo.Fs(), freePublicAPIsPath)
+			today := time.Now().UTC().Format(fetchedLayout)
+
+			if *calls != 1 || !strings.Contains(got, "\n  \"health\": 95,\n") || !strings.Contains(got, `"fetched": "`+today+`"`) {
+				t.Errorf("asked %d times, want once, and the entry reads:\n%s", *calls, got)
+			}
+		})
 	}
 }
 
-// An entry younger than a week, a local run, and a catalog that cannot be
-// reached all leave the entry as it is.
+// An entry fetched within the week, a local run, and a catalog that cannot
+// be reached all leave the entry as it is.
 func TestFreePublicAPIsKeepsTheEntry(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -312,13 +317,14 @@ func TestFreePublicAPIsKeepsTheEntry(t *testing.T) {
 		err       error
 		wantCalls int
 	}{
-		{"younger than a week", 6 * 24 * time.Hour, true, nil, 0},
+		{"fetched within the week", 6 * 24 * time.Hour, true, nil, 0},
 		{"a local run", 30 * 24 * time.Hour, false, nil, 0},
 		{"the catalog unreachable", 30 * 24 * time.Hour, true, errors.New("offline"), 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := apilibRepo(t, true)
-			committedAgo(repo, tc.ago)
+			fetchedAgo(t, repo, tc.ago)
+			before := readFile(t, repo.Fs(), freePublicAPIsPath)
 
 			api, _, _ := LoadFreePublicAPI(repo.Fs())
 			api.Health = 1
@@ -332,9 +338,40 @@ func TestFreePublicAPIsKeepsTheEntry(t *testing.T) {
 				t.Errorf("asked %d times, want %d", *calls, tc.wantCalls)
 			}
 
-			if got := readFile(t, repo.Fs(), freePublicAPIsPath); got != gamerpower {
+			if got := readFile(t, repo.Fs(), freePublicAPIsPath); got != before {
 				t.Errorf("the entry was rewritten:\n%s", got)
 			}
 		})
+	}
+}
+
+// A README is headed by an API library's catalog title, with its emoji, then
+// by the name devtool.json gives, then by the repository's.
+func TestReadmeTitle(t *testing.T) {
+	api := &FreePublicAPI{Emoji: "🎮", Title: "Free Games API"}
+
+	for _, tc := range []struct {
+		name string
+		def  Definition
+		api  *FreePublicAPI
+		want string
+	}{
+		{"an API library", Definition{Name: "GamerPower"}, api, "🎮 Free Games API"},
+		{"no emoji", Definition{}, &FreePublicAPI{Title: "Free Games API"}, "Free Games API"},
+		{"a named app", Definition{Name: "The Atelier"}, nil, "The Atelier"},
+		{"anything else", Definition{}, nil, "gorepo"},
+	} {
+		if got := readmeTitle("gorepo", tc.def, tc.api); got != tc.want {
+			t.Errorf("%s: %q, want %q", tc.name, got, tc.want)
+		}
+	}
+
+	repo := apilibRepo(t, true)
+	if err := generateReadme(repo.Fs(), "go-api-libs", "gamerpower", true, 100); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := readFile(t, repo.Fs(), readmePath); !strings.Contains(got, "-->\n# 🎮 Free Games API\n\n[![") {
+		t.Errorf("the README is not headed by the catalog title:\n%s", got)
 	}
 }

@@ -1,7 +1,6 @@
 package maintain
 
 import (
-	"bytes"
 	"context"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
@@ -12,7 +11,6 @@ import (
 	"os"
 	"path"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -38,6 +36,10 @@ type FreePublicAPI struct {
 	Methods       int    `json:"methods,omitzero"`
 	Health        int    `json:"health,omitzero"`
 	Source        string `json:"source,omitzero"`
+
+	// Fetched is the day devtool last asked the catalog, which the catalog
+	// itself does not say: an entry is kept as a cache until a week after it.
+	Fetched string `json:"fetched,omitzero"`
 }
 
 // LoadFreePublicAPI reads the repository's catalog entry, reporting whether
@@ -307,18 +309,16 @@ var fetchFreePublicAPI = func(ctx context.Context, id int) (FreePublicAPI, error
 	return *api, nil
 }
 
-// refreshFreePublicAPI asks the catalog for the entry again where the one
-// committed is a week old, and writes what it answers where it differs. A
-// catalog that cannot be reached leaves the entry as it is, as a cache.
-func refreshFreePublicAPI(ctx context.Context, repo engine.Repo, api FreePublicAPI) (FreePublicAPI, error) {
-	out, err := repo.ExecCommand(ctx, "git", "log", "-1", "--format=%ct", "--", freePublicAPIsPath)
-	if err != nil {
-		return api, fmt.Errorf("reading when it was last committed: %w\n%s", err, bytes.TrimSpace(out))
-	}
+// fetchedLayout is how [FreePublicAPI.Fetched] writes the day.
+const fetchedLayout = time.DateOnly
 
-	// Not committed yet: it is as fresh as it gets.
-	committed, err := strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
-	if err != nil || time.Since(time.Unix(committed, 0)) < freePublicAPIMaxAge {
+// refreshFreePublicAPI asks the catalog for the entry again once it was last
+// fetched a week ago, or never, and writes what it answers with the day it
+// was asked: a week from the asking, not from the last change, so an entry
+// that does not change is not asked for again every run. A catalog that
+// cannot be reached leaves the entry as it is, as a cache.
+func refreshFreePublicAPI(ctx context.Context, repo engine.Repo, api FreePublicAPI) (FreePublicAPI, error) {
+	if fetched, err := time.Parse(fetchedLayout, api.Fetched); err == nil && time.Since(fetched) < freePublicAPIMaxAge {
 		return api, nil
 	}
 
@@ -330,9 +330,7 @@ func refreshFreePublicAPI(ctx context.Context, repo engine.Repo, api FreePublicA
 		return api, nil
 	}
 
-	if fresh == api {
-		return api, nil
-	}
+	fresh.Fetched = time.Now().UTC().Format(fetchedLayout)
 
 	b, err := json.Marshal(fresh, jsontext.Multiline(true), jsontext.WithIndent("  "))
 	if err != nil {

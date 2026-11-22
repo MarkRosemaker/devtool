@@ -339,12 +339,15 @@ specification for its badge:
   as `go-api-libs/proton` builds its specification otherwise, and it and its
   `go.mod` are left alone.
 
-The README of such a library carries two badges more: Official
-Documentation, linked to the entry's documentation, and API Health, coloured
-on the coverage badge's scale. The entry is a cache, read without the network.
-A maintained run asks the catalog for it again once the committed one is a
-week old, and writes it only where something changed; a catalog that cannot
-be reached leaves it as it is.
+The README of such a library is titled with the entry's emoji and title,
+and carries two badges more: Official Documentation, linked to the entry's
+documentation, and API Health, coloured on the coverage badge's scale. The
+entry is a cache, read without the network. It records the day devtool last
+asked the catalog as `fetched`, and a maintained run asks again a week after
+that, or where it was never asked, writing the answer with the new day. A
+week from the asking rather than from the last change, so an entry that does
+not change is not asked for every run; a catalog that cannot be reached
+leaves it as it is.
 
 The skeleton describes no operations, which an OpenAPI document must, until
 `make generate` has run. The README takes such a document beside a

@@ -2,6 +2,7 @@ package maintain
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	_ "embed"
 	"errors"
@@ -84,6 +85,12 @@ type readmeData struct {
 	// anything else a README wants to say about the API is then a field
 	// away rather than another thing to thread through.
 	OpenAPI *openapi.Document
+
+	// Title heads the README: an API library's catalog emoji and title, or
+	// the name devtool.json gives, or the repository's. GitHub shows the
+	// repository's name above it, but pkg.go.dev and every other place a
+	// README is read does not.
+	Title string
 
 	// API is the catalog entry of an API library from freepublicapis.com,
 	// for the badges linking its documentation and saying its health, or
@@ -232,6 +239,17 @@ func readOpenAPI(fs afero.Fs) (*openapi.Document, error) {
 	}
 
 	return doc, nil
+}
+
+// readmeTitle is what a README is headed with: an API library's catalog
+// title, with its emoji, then the name devtool.json gives, then the
+// repository's own.
+func readmeTitle(repo string, def Definition, api *FreePublicAPI) string {
+	if api != nil && api.Title != "" {
+		return strings.TrimSpace(api.Emoji + " " + api.Title)
+	}
+
+	return cmp.Or(def.Name, repo)
 }
 
 // CoverageColor is the shields.io colour for [readmeData.Coverage], the
@@ -708,8 +726,7 @@ func extractIdentity(description []byte, meta *readmeMeta) []byte {
 	for line := range strings.SplitSeq(string(description), "\n") {
 		trimmed := strings.TrimSpace(line)
 
-		// The title is the repository's name, which GitHub shows above the
-		// README anyway and the template does not write.
+		// The template writes the title itself.
 		if strings.HasPrefix(trimmed, "# ") {
 			continue
 		}
@@ -816,6 +833,13 @@ func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage f
 	} else if ok {
 		data.API = &api
 	}
+
+	def, _, err := LoadDefinition(fs)
+	if err != nil {
+		return readmeData{}, err
+	}
+
+	data.Title = readmeTitle(name, def, data.API)
 
 	docs, err := readConventionalDocs(fs)
 	if err != nil {

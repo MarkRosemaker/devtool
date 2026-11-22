@@ -651,7 +651,7 @@ var readmeCases = []struct {
 	data readmeData
 }{
 	{"full", readmeData{
-		Owner: "user", Name: "gorepo", Coverage: 96,
+		Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 96,
 		Logo:        &readmeLogo{Alt: "gorepo logo", Source: "logo.png", Width: 240},
 		Tagline:     "Does a thing, well.",
 		Description: "A longer blurb about the thing.",
@@ -662,29 +662,29 @@ var readmeCases = []struct {
 		Tail:        "Thanks for reading.",
 		Docs:        conventionalDocs,
 	}},
-	{"minimal", readmeData{Owner: "user", Name: "gorepo", Coverage: 100}},
-	{"private", readmeData{Owner: "user", Name: "gorepo", Private: true, Coverage: 42, Description: "A blurb."}},
+	{"minimal", readmeData{Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 100}},
+	{"private", readmeData{Owner: "user", Name: "gorepo", Title: "gorepo", Private: true, Coverage: 42, Description: "A blurb."}},
 	// A private repository still gets the footer's first section, and only
 	// that one: the documents are beside the README, Contributing is not.
 	{"private-docs", readmeData{
-		Owner: "user", Name: "gorepo", Private: true, Coverage: 42,
+		Owner: "user", Name: "gorepo", Title: "gorepo", Private: true, Coverage: 42,
 		Description: "A blurb.",
 		Docs:        conventionalDocs,
 	}},
 	// Only one of the two, which is the shape of a repository that has an
 	// architecture note and nothing planned.
 	{"one-doc", readmeData{
-		Owner: "user", Name: "gorepo", Coverage: 70,
+		Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 70,
 		Description: "A blurb.",
 		Docs:        conventionalDocs[:1],
 	}},
-	{"description-only", readmeData{Owner: "user", Name: "gorepo", Coverage: 0, Description: "A blurb."}},
+	{"description-only", readmeData{Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 0, Description: "A blurb."}},
 	{"logo-default-width", readmeData{
-		Owner: "user", Name: "gorepo", Coverage: 61,
+		Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 61,
 		Logo: &readmeLogo{Alt: "gorepo logo", Source: "logo.png"},
 	}},
 	{"openapi", readmeData{
-		Owner: "user", Name: "gorepo", Coverage: 88,
+		Owner: "user", Name: "gorepo", Title: "gorepo", Coverage: 88,
 		OpenAPI: &openapi.Document{
 			OpenAPI: "3.1.0",
 			ExternalDocs: &openapi.ExternalDocs{
