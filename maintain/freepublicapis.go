@@ -1,7 +1,9 @@
 package maintain
 
 import (
+	"bytes"
 	"context"
+	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
@@ -10,11 +12,14 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	engine "github.com/MarkRosemaker/devtool-engine/maintain"
 	"github.com/MarkRosemaker/openapi"
+	"github.com/go-api-libs/freepublicapis/pkg/freepublicapis"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/modfile"
 )
@@ -83,17 +88,20 @@ const apilibGenerate = goGenerated + "\n\npackage %s\n\n" +
 //   - generate.go, which runs openapi-enrich and the tools after it, with the
 //     tools as go tool dependencies. One without devtool's marker is the
 //     repository's own and is left alone, tools and all.
-func FreePublicAPIsTask(repo engine.Repo) engine.Task {
+//
+// Where refresh is set, as on a maintained run, the catalog entry itself is
+// brought up to date once it is a week old, for the README's health badge.
+func FreePublicAPIsTask(repo engine.Repo, refresh bool) engine.Task {
 	return engine.Task{
 		Name:  "freepublicapis",
 		Short: "freepublicapis",
 		Run: func(ctx context.Context) error {
-			return writeFreePublicAPI(ctx, repo)
+			return writeFreePublicAPI(ctx, repo, refresh)
 		},
 	}
 }
 
-func writeFreePublicAPI(ctx context.Context, repo engine.Repo) error {
+func writeFreePublicAPI(ctx context.Context, repo engine.Repo, refresh bool) error {
 	fs := repo.Fs()
 
 	def, _, err := LoadDefinition(fs)
@@ -108,6 +116,12 @@ func writeFreePublicAPI(ctx context.Context, repo engine.Repo) error {
 	api, ok, err := LoadFreePublicAPI(fs)
 	if err != nil || !ok {
 		return err
+	}
+
+	if refresh {
+		if api, err = refreshFreePublicAPI(ctx, repo, api); err != nil {
+			return fmt.Errorf("%s: %w", freePublicAPIsPath, err)
+		}
 	}
 
 	if err := fillOpenAPI(fs, api); err != nil {
@@ -271,4 +285,59 @@ func packageName(module string) string {
 	}
 
 	return name
+}
+
+// freePublicAPIMaxAge is how long a catalog entry is kept before it is asked
+// for again: its health moves, but slowly.
+const freePublicAPIMaxAge = 7 * 24 * time.Hour
+
+// fetchFreePublicAPI asks freepublicapis.com for the API with id; a test
+// replaces it.
+var fetchFreePublicAPI = func(ctx context.Context, id int) (FreePublicAPI, error) {
+	c, err := freepublicapis.NewClient()
+	if err != nil {
+		return FreePublicAPI{}, err
+	}
+
+	api, err := freepublicapis.GetAPI[FreePublicAPI](ctx, c, id)
+	if err != nil {
+		return FreePublicAPI{}, err
+	}
+
+	return *api, nil
+}
+
+// refreshFreePublicAPI asks the catalog for the entry again where the one
+// committed is a week old, and writes what it answers where it differs. A
+// catalog that cannot be reached leaves the entry as it is, as a cache.
+func refreshFreePublicAPI(ctx context.Context, repo engine.Repo, api FreePublicAPI) (FreePublicAPI, error) {
+	out, err := repo.ExecCommand(ctx, "git", "log", "-1", "--format=%ct", "--", freePublicAPIsPath)
+	if err != nil {
+		return api, fmt.Errorf("reading when it was last committed: %w\n%s", err, bytes.TrimSpace(out))
+	}
+
+	// Not committed yet: it is as fresh as it gets.
+	committed, err := strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
+	if err != nil || time.Since(time.Unix(committed, 0)) < freePublicAPIMaxAge {
+		return api, nil
+	}
+
+	fresh, err := fetchFreePublicAPI(ctx, api.ID)
+	if err != nil {
+		slog.WarnContext(ctx, "could not refresh the catalog entry, keeping it as it is",
+			"id", api.ID, "error", err)
+
+		return api, nil
+	}
+
+	if fresh == api {
+		return api, nil
+	}
+
+	b, err := json.Marshal(fresh, jsontext.Multiline(true), jsontext.WithIndent("  "))
+	if err != nil {
+		return api, err
+	}
+
+	return fresh, afero.WriteFile(repo.Fs(), freePublicAPIsPath, b, 0o644)
 }

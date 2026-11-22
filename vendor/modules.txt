@@ -1,6 +1,9 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
+# github.com/MarkRosemaker/cassette v0.0.0-20261118230554-38092db8e666
+## explicit; go 1.27
+github.com/MarkRosemaker/cassette
 # github.com/MarkRosemaker/devtool-engine v0.0.0-20261118230258-0b562a680a88
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/devtool-engine/depgraph
@@ -122,6 +125,12 @@ github.com/fatih/color
 ## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
+# github.com/go-api-libs/api v0.0.0-20261118230644-db74d086d284
+## explicit; go 1.27
+github.com/go-api-libs/api
+# github.com/go-api-libs/freepublicapis v0.0.0-20261118230805-11effba0d330
+## explicit; go 1.27
+github.com/go-api-libs/freepublicapis/pkg/freepublicapis
 # github.com/go-api-libs/types v0.0.0-20261118230255-0e16a3d7de5d
 ## explicit; go 1.27
 github.com/go-api-libs/types

@@ -11,6 +11,7 @@ require (
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261118230255-4b04cfc02484
 	github.com/MarkRosemaker/openapi v0.0.0-20261120192000-3a08d435b6a7
 	github.com/MarkRosemaker/ordmap v0.0.0-20261120191929-7379634b83ad
+	github.com/go-api-libs/freepublicapis v0.0.0-20261118230805-11effba0d330
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
 	github.com/google/go-github/v80 v80.0.0
@@ -21,6 +22,7 @@ require (
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
+	github.com/MarkRosemaker/cassette v0.0.0-20261118230554-38092db8e666 // indirect
 	github.com/MarkRosemaker/errpath v0.0.0-20261118230255-99e20cb3445a // indirect
 	github.com/MarkRosemaker/yaml v0.0.0-20261118230544-f88f96ca5149 // indirect
 	github.com/MarkRosemaker/yaml2json v0.0.0-20261118230255-06c4fe76a5b8 // indirect
@@ -31,6 +33,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
+	github.com/go-api-libs/api v0.0.0-20261118230644-db74d086d284 // indirect
 	github.com/go-api-libs/types v0.0.0-20261118230255-0e16a3d7de5d // indirect
 	github.com/go-git/gcfg/v2 v2.0.3 // indirect
 	github.com/go-git/go-billy/v6 v6.0.0-beta.1 // indirect

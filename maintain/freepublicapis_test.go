@@ -1,12 +1,15 @@
 package maintain
 
 import (
+	"context"
 	"errors"
 	"go/parser"
 	"go/token"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MarkRosemaker/openapi"
 )
@@ -45,7 +48,7 @@ func apilibRepo(t *testing.T, tools bool) *fakeRepo {
 func runFreePublicAPIs(t *testing.T, repo *fakeRepo) {
 	t.Helper()
 
-	if err := FreePublicAPIsTask(repo).Run(t.Context()); err != nil {
+	if err := FreePublicAPIsTask(repo, false).Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -217,5 +220,121 @@ func TestReadOpenAPIWaitsForTheSkeleton(t *testing.T) {
 
 	if _, err := readOpenAPI(repo.Fs()); err == nil {
 		t.Error("a specification without info passed")
+	}
+}
+
+// An API library's README links its documentation and says its health,
+// coloured as coverage is.
+func TestReadmeHasTheCatalogBadges(t *testing.T) {
+	repo := apilibRepo(t, true)
+
+	if err := generateReadme(repo.Fs(), "go-api-libs", "gamerpower", true, 100); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readFile(t, repo.Fs(), readmePath)
+	for _, want := range []string{
+		"[![Official Documentation](https://img.shields.io/badge/docs-API-blue)](https://www.gamerpower.com/api-read)",
+		"![API Health](https://img.shields.io/badge/API_health-95%25-brightgreen)",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the README lacks %s:\n%s", want, got)
+		}
+	}
+}
+
+func TestBadgeColor(t *testing.T) {
+	for percent, want := range map[int]string{
+		100: "brightgreen", 90: "brightgreen", 89: "green", 75: "green", 74: "yellowgreen",
+		60: "yellowgreen", 59: "yellow", 45: "yellow", 44: "orange", 30: "orange", 29: "red", 0: "red",
+	} {
+		if got := badgeColor(percent); got != want {
+			t.Errorf("badgeColor(%d) = %q, want %q", percent, got, want)
+		}
+	}
+}
+
+// committedAgo makes the fake repository's git say the catalog entry was
+// last committed so long ago.
+func committedAgo(repo *fakeRepo, ago time.Duration) {
+	repo.output = []byte(strconv.FormatInt(time.Now().Add(-ago).Unix(), 10) + "\n")
+}
+
+// fetching replaces what freepublicapis.com answers, counting the calls.
+func fetching(t *testing.T, answer FreePublicAPI, err error) *int {
+	t.Helper()
+
+	calls := 0
+	was := fetchFreePublicAPI
+
+	fetchFreePublicAPI = func(_ context.Context, id int) (FreePublicAPI, error) {
+		calls++
+
+		if id != answer.ID {
+			t.Errorf("asked for %d, want %d", id, answer.ID)
+		}
+
+		return answer, err
+	}
+
+	t.Cleanup(func() { fetchFreePublicAPI = was })
+
+	return &calls
+}
+
+// A maintained run asks the catalog again for an entry a week old, and
+// writes what has changed, indented as the entries are.
+func TestFreePublicAPIsRefreshesAWeekOldEntry(t *testing.T) {
+	repo := apilibRepo(t, true)
+	committedAgo(repo, 8*24*time.Hour)
+
+	api, _, _ := LoadFreePublicAPI(repo.Fs())
+	api.Health = 61
+	calls := fetching(t, api, nil)
+
+	if err := FreePublicAPIsTask(repo, true).Run(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readFile(t, repo.Fs(), freePublicAPIsPath)
+	if *calls != 1 || !strings.Contains(got, "\n  \"health\": 61,\n") {
+		t.Errorf("asked %d times, and the entry reads:\n%s", *calls, got)
+	}
+}
+
+// An entry younger than a week, a local run, and a catalog that cannot be
+// reached all leave the entry as it is.
+func TestFreePublicAPIsKeepsTheEntry(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		ago       time.Duration
+		refresh   bool
+		err       error
+		wantCalls int
+	}{
+		{"younger than a week", 6 * 24 * time.Hour, true, nil, 0},
+		{"a local run", 30 * 24 * time.Hour, false, nil, 0},
+		{"the catalog unreachable", 30 * 24 * time.Hour, true, errors.New("offline"), 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := apilibRepo(t, true)
+			committedAgo(repo, tc.ago)
+
+			api, _, _ := LoadFreePublicAPI(repo.Fs())
+			api.Health = 1
+			calls := fetching(t, api, tc.err)
+
+			if err := FreePublicAPIsTask(repo, tc.refresh).Run(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+
+			if *calls != tc.wantCalls {
+				t.Errorf("asked %d times, want %d", *calls, tc.wantCalls)
+			}
+
+			if got := readFile(t, repo.Fs(), freePublicAPIsPath); got != gamerpower {
+				t.Errorf("the entry was rewritten:\n%s", got)
+			}
+		})
 	}
 }

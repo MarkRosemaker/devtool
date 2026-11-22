@@ -202,7 +202,7 @@ func runUpdate(ctx context.Context, repo engine.Repo, opts UpdateOptions) error 
 func generators(repo engine.Repo, opts UpdateOptions) []engine.Task {
 	return []engine.Task{
 		LicenseTask(repo, opts.Holder),
-		FreePublicAPIsTask(repo),
+		FreePublicAPIsTask(repo, opts.CheckLatest),
 		ReadmeTask(repo, opts.Coverage),
 		RoadmapTask(repo),
 		SmokeTask(repo),

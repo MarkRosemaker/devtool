@@ -85,6 +85,11 @@ type readmeData struct {
 	// away rather than another thing to thread through.
 	OpenAPI *openapi.Document
 
+	// API is the catalog entry of an API library from freepublicapis.com,
+	// for the badges linking its documentation and saying its health, or
+	// nil where there is none.
+	API *FreePublicAPI
+
 	// Logo and Tagline come from a fragment's frontmatter — see
 	// [readmeMeta].
 	Logo    *readmeLogo
@@ -232,17 +237,25 @@ func readOpenAPI(fs afero.Fs) (*openapi.Document, error) {
 // CoverageColor is the shields.io colour for [readmeData.Coverage], the
 // scale running from red at nothing covered to bright green at nearly all
 // of it.
-func (d readmeData) CoverageColor() string {
+func (d readmeData) CoverageColor() string { return badgeColor(d.Coverage) }
+
+// HealthColor is the shields.io colour for the API's health, on the same
+// scale as coverage.
+func (d readmeData) HealthColor() string { return badgeColor(d.API.Health) }
+
+// badgeColor is the shields.io colour for a percentage, from red at nothing
+// to bright green at nearly all.
+func badgeColor(percent int) string {
 	switch {
-	case d.Coverage >= 90:
+	case percent >= 90:
 		return "brightgreen"
-	case d.Coverage >= 75:
+	case percent >= 75:
 		return "green"
-	case d.Coverage >= 60:
+	case percent >= 60:
 		return "yellowgreen"
-	case d.Coverage >= 45:
+	case percent >= 45:
 		return "yellow"
-	case d.Coverage >= 30:
+	case percent >= 30:
 		return "orange"
 	default:
 		return "red"
@@ -797,6 +810,12 @@ func collectReadmeData(fs afero.Fs, owner, name string, private bool, coverage f
 	}
 
 	data.OpenAPI = openAPI
+
+	if api, ok, err := LoadFreePublicAPI(fs); err != nil {
+		return readmeData{}, err
+	} else if ok {
+		data.API = &api
+	}
 
 	docs, err := readConventionalDocs(fs)
 	if err != nil {

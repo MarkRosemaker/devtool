@@ -339,6 +339,13 @@ specification for its badge:
   as `go-api-libs/proton` builds its specification otherwise, and it and its
   `go.mod` are left alone.
 
+The README of such a library carries two badges more: Official
+Documentation, linked to the entry's documentation, and API Health, coloured
+on the coverage badge's scale. The entry is a cache, read without the network.
+A maintained run asks the catalog for it again once the committed one is a
+week old, and writes it only where something changed; a catalog that cannot
+be reached leaves it as it is.
+
 The skeleton describes no operations, which an OpenAPI document must, until
 `make generate` has run. The README takes such a document beside a
 `freepublicapis.json` for one not built yet, with no badge, where any other

@@ -26,6 +26,9 @@
 */ -}}
 {{ with .OpenAPI -}}
 [![OpenAPI](https://img.shields.io/badge/OpenAPI-{{ .OpenAPI }}-blue)](./api/openapi.json) {{ end -}}
+{{ with .API -}}
+{{ with .Documentation }}[![Official Documentation](https://img.shields.io/badge/docs-API-blue)]({{ . }}) {{ end -}}
+![API Health](https://img.shields.io/badge/API_health-{{ .Health }}%25-{{ $.HealthColor }}) {{ end -}}
 {{ if not .Private -}}
 [![Go Reference](https://pkg.go.dev/badge/github.com/{{ .Owner }}/{{ .Name }}.svg)](https://pkg.go.dev/github.com/{{ .Owner }}/{{ .Name }}) {{ end -}}
 ![Code Coverage](https://img.shields.io/badge/coverage-{{ .Coverage }}%25-{{ .CoverageColor }})
