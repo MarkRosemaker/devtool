@@ -8,8 +8,8 @@ require (
 	github.com/MarkRosemaker/golangci-json v0.0.0-20261118230327-0bfb1edbdafc
 	github.com/MarkRosemaker/gorepo v0.0.0-20261118230935-040ce9642981
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261118230255-853c75cf2bf9
-	github.com/MarkRosemaker/jsonutil v0.0.0-20261118230255-4b04cfc02484
-	github.com/MarkRosemaker/openapi v0.0.0-20261124050252-52a60c76de04
+	github.com/MarkRosemaker/jsonutil v0.0.0-20261125191625-3f67f86ead2a
+	github.com/MarkRosemaker/openapi v0.0.0-20261125230352-82ba4731490f
 	github.com/MarkRosemaker/ordmap v0.0.0-20261124050216-f3096eb875be
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
