@@ -1,6 +1,6 @@
 {
-	"coverage": 83.4,
-	"devtoolVersion": "v0.0.0-20261126034503-47736e2c8f9e",
+	"coverage": 83.3,
+	"devtoolVersion": "v0.0.0-20261126050834-392641a9add6",
 	"kind": "cli",
 	"tools": {
 		"golangci-lint": "v2.15.0",
