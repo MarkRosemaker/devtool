@@ -143,3 +143,21 @@ func TestGenerateFails(t *testing.T) {
 		t.Error("a failing generator passed")
 	}
 }
+
+// Updating the dependencies generates again, so a test comparing the generated
+// files with the generator sees the code the new versions generate.
+func TestUpdateDependenciesGenerates(t *testing.T) {
+	repo, dir := newGoRepository(t, map[string]string{
+		"go.mod":  "module example.com/test\n\ngo 1.26\n",
+		"gen.go":  "package a\n\n//go:generate cp gen.txt b.go\n",
+		"gen.txt": "package a\n\nconst B = 1\n",
+	})
+
+	if err := repo.updateDependencies(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(dir, "b.go")); err != nil {
+		t.Errorf("the generator did not run: %v", err)
+	}
+}

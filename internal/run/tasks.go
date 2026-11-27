@@ -25,6 +25,9 @@ const licenseHolder = "Marco Rösler (MarkRosemaker)"
 //     discarded by the next run.
 //   - Dependencies and tools are updated before the code is reformatted, so the
 //     formatters see the code the new versions produce.
+//   - Updating the dependencies generates again, so the tests after it see the
+//     code the new versions generate: a repository that tests its generated
+//     files against the generator fails on the update alone.
 //   - Formatting runs after the fixers, so anything they rewrote is left tidy.
 //   - The single-linter fixes come last, one task each, so every commit carries
 //     exactly one kind of change and is easy to read later.
@@ -45,7 +48,7 @@ func tasks(
 			Tools:         tools,
 			CheckLatest:   true,
 		}),
-		{Name: "update dependencies", Short: "deps", Run: repo.UpdateDependencies},
+		{Name: "update dependencies", Short: "deps", Run: repo.updateDependencies},
 		{Name: "go fix", Short: "fix", Run: repo.GoFix},
 		{Name: "go vet", Short: "vet", Run: repo.GoVet},
 		{Name: "golang-ci lint fix", Short: "lintfix", Run: func(ctx context.Context) error {
@@ -54,6 +57,16 @@ func tasks(
 		{Name: "update tools", Short: "tools", Run: repo.UpdateTools},
 		{Name: "go generate", Short: "generate", Run: repo.generate},
 	}
+}
+
+// updateDependencies updates the dependencies, then generates with the new
+// versions, so the generated code changes in the same commit as what changed it.
+func (repo *repository) updateDependencies(ctx context.Context) error {
+	if err := repo.UpdateDependencies(ctx); err != nil {
+		return err
+	}
+
+	return repo.generate(ctx)
 }
 
 // generate runs the generators and settles the module files after them:
