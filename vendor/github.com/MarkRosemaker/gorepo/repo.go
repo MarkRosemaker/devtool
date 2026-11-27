@@ -43,12 +43,13 @@ func (r Repository) UpdateDependencies(ctx context.Context) error {
 	return r.GoModVendor(ctx)
 }
 
-// GoGetAll updates all package dependencies reachable from the module.
+// GoGetAll updates all package dependencies reachable from the module, its tests' included.
 func (r Repository) GoGetAll(ctx context.Context) error {
 	// NOTE:
 	// 	./... = only packages reachable from the module + their real dependencies
 	// all = every module ever mentioned in the build list, including ones that only exist for old versions
-	_, err := r.ExecCommand(ctx, "go", "get", "-u", "./...")
+	// -t = and what only its tests import, which would otherwise fall behind what it does import
+	_, err := r.ExecCommand(ctx, "go", "get", "-u", "-t", "./...")
 	return err
 }
 

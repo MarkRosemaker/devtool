@@ -1,40 +1,40 @@
 # cloud.google.com/go v0.123.0
 ## explicit; go 1.24.0
 cloud.google.com/go/civil
-# github.com/MarkRosemaker/devtool-engine v0.0.0-20261118230258-0b562a680a88
+# github.com/MarkRosemaker/devtool-engine v0.0.0-20261127001958-574a28c3aa0c
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/devtool-engine/depgraph
 github.com/MarkRosemaker/devtool-engine/event
 github.com/MarkRosemaker/devtool-engine/maintain
 github.com/MarkRosemaker/devtool-engine/selfupdate
-# github.com/MarkRosemaker/errpath v0.0.0-20261118230255-99e20cb3445a
+# github.com/MarkRosemaker/errpath v0.0.0-20261127001931-41afc0b86075
 ## explicit; go 1.23.2
 github.com/MarkRosemaker/errpath
-# github.com/MarkRosemaker/ghrepo v0.0.0-20261118230256-cd2b3fd5207e
+# github.com/MarkRosemaker/ghrepo v0.0.0-20261127001944-49c29eaa21c0
 ## explicit; go 1.26.0
 github.com/MarkRosemaker/ghrepo
-# github.com/MarkRosemaker/golangci-json v0.0.0-20261118230327-0bfb1edbdafc
+# github.com/MarkRosemaker/golangci-json v0.0.0-20261127002025-3ac070bdf148
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/golangci-json
-# github.com/MarkRosemaker/gorepo v0.0.0-20261118230935-040ce9642981
+# github.com/MarkRosemaker/gorepo v0.0.0-20261127002430-9fbd0cd2b8ea
 ## explicit; go 1.27.0
 github.com/MarkRosemaker/gorepo
-# github.com/MarkRosemaker/json2yaml v0.0.0-20261118230255-853c75cf2bf9
+# github.com/MarkRosemaker/json2yaml v0.0.0-20261127001931-55b661ab603c
 ## explicit; go 1.27
 github.com/MarkRosemaker/json2yaml
-# github.com/MarkRosemaker/jsonutil v0.0.0-20261126020829-395163231ad4
+# github.com/MarkRosemaker/jsonutil v0.0.0-20261127001933-b07dbcceebd6
 ## explicit; go 1.27
 github.com/MarkRosemaker/jsonutil
-# github.com/MarkRosemaker/openapi v0.0.0-20261126020940-b4a1ac5f1801
+# github.com/MarkRosemaker/openapi v0.0.0-20261127002030-cbffd96bf394
 ## explicit; go 1.27
 github.com/MarkRosemaker/openapi
-# github.com/MarkRosemaker/ordmap v0.0.0-20261124050216-f3096eb875be
+# github.com/MarkRosemaker/ordmap v0.0.0-20261127001949-5d682e0c3100
 ## explicit; go 1.27
 github.com/MarkRosemaker/ordmap
-# github.com/MarkRosemaker/yaml v0.0.0-20261118230544-f88f96ca5149
+# github.com/MarkRosemaker/yaml v0.0.0-20261127001955-6df1e561eef1
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml
-# github.com/MarkRosemaker/yaml2json v0.0.0-20261118230255-06c4fe76a5b8
+# github.com/MarkRosemaker/yaml2json v0.0.0-20261127001931-8d8f24890a05
 ## explicit; go 1.27
 github.com/MarkRosemaker/yaml2json
 # github.com/Masterminds/semver/v3 v3.5.0
@@ -122,7 +122,7 @@ github.com/fatih/color
 ## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
-# github.com/go-api-libs/types v0.0.0-20261118230255-0e16a3d7de5d
+# github.com/go-api-libs/types v0.0.0-20261127001931-55d1cb77be3b
 ## explicit; go 1.27
 github.com/go-api-libs/types
 # github.com/go-git/gcfg/v2 v2.0.3
