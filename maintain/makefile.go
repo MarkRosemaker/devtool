@@ -272,7 +272,7 @@ func houseTargets(shape repoShape) []makeTarget {
 		{Name: "tidy", Recipe: []string{"go mod tidy", "go mod vendor"}},
 		{
 			Name:   "deps",
-			Recipe: []string{"go get -u ./...", "$(MAKE) tidy"},
+			Recipe: []string{"go get -u -t ./...", "$(MAKE) tidy"},
 		},
 		{
 			Name: "generate",
