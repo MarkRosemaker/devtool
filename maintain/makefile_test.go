@@ -705,7 +705,7 @@ func TestGenerateMakefileBundles(t *testing.T) {
 		"test:\n\tgo test ./...",
 		"test-race:\n\tgo test -race ./...",
 		// Composites reuse the target rather than repeating its recipe.
-		"deps:\n\tgo get -u ./...\n\t$(MAKE) tidy",
+		"deps:\n\tgo get -u -t ./...\n\t$(MAKE) tidy",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q:\n%s", want, got)
