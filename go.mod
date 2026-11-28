@@ -9,8 +9,8 @@ require (
 	github.com/MarkRosemaker/gorepo v0.0.0-20261127002430-9fbd0cd2b8ea
 	github.com/MarkRosemaker/json2yaml v0.0.0-20261127001931-55b661ab603c
 	github.com/MarkRosemaker/jsonutil v0.0.0-20261127170131-4c1915dbe001
-	github.com/MarkRosemaker/openapi v0.0.0-20261127230216-d3e575d7df39
-	github.com/MarkRosemaker/ordmap v0.0.0-20261127230155-d3a22df67650
+	github.com/MarkRosemaker/openapi v0.0.0-20261128050245-8a974b6ad980
+	github.com/MarkRosemaker/ordmap v0.0.0-20261128050215-9da629427541
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/golangci/golangci-lint/v2 v2.15.0
 	github.com/google/go-github/v80 v80.0.0
@@ -55,7 +55,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
-	golang.org/x/exp v0.0.0-20261127181632-b10a66b71b35 // indirect
+	golang.org/x/exp v0.0.0-20261128033645-f63ec7c7eed0 // indirect
 	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/oauth2 v0.38.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
